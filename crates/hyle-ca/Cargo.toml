@@ -1,0 +1,10 @@
+[package]
+name = "hyle-ca"
+version = "0.1.0"
+edition = "2021"
+description = "Cellular automata simulation rules — gravity, gas, thermal, acoustic."
+
+[dependencies]
+hyle-core = { path = "../hyle-core" }
+glam      = { workspace = true }
+tracing   = { workspace = true }

@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "crates/hyle",
+    "crates/hyle-core",
+    "crates/hyle-ca",
+    "crates/hyle-lbm",
+    "crates/hyle-wave",
+    "crates/hyle-runtime",
+]
+resolver = "2"
+
+[workspace.dependencies]
+glam    = "0.29"
+tracing = "0.1"

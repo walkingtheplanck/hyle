@@ -1,0 +1,7 @@
+[package]
+name = "hyle-wave"
+version = "0.1.0"
+edition = "2021"
+description = "Wave propagation simulation (future)."
+
+[dependencies]

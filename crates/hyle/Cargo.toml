@@ -1,0 +1,9 @@
+[package]
+name = "hyle"
+version = "0.1.0"
+edition = "2021"
+description = "Hyle — headless voxel simulation library (CA, physics, material model)"
+
+[dependencies]
+hyle-core = { path = "../hyle-core" }
+hyle-ca   = { path = "../hyle-ca" }

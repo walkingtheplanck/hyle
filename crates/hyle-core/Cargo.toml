@@ -1,0 +1,9 @@
+[package]
+name = "hyle-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core types, traits, and material model for Hyle simulation."
+
+[dependencies]
+glam    = { workspace = true }
+tracing = { workspace = true }
