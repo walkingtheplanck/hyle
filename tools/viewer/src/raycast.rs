@@ -1,103 +1,150 @@
-//! DDA (Digital Differential Analyzer) ray-voxel traversal.
+//! DDA ray-voxel traversal with AABB early-out.
 //!
-//! Steps through a uniform grid one cell at a time along a ray,
-//! reporting the first non-air voxel hit.
+//! 1. Intersect ray with world AABB — skip entirely on miss.
+//! 2. Start DDA from the entry point (not the camera).
+//! 3. Exit DDA as soon as the ray leaves the AABB — don't waste steps in void.
 
 use glam::Vec3;
 use hyle_core::voxel::Voxel;
 use hyle_core::VoxelAccess;
 
+use crate::world::Aabb;
+
 /// Result of a successful ray–voxel intersection.
 pub struct Hit {
-    /// The voxel that was hit.
     pub voxel: Voxel,
-    /// World-space position of the hit cell.
-    #[allow(dead_code)]
     pub pos: (i32, i32, i32),
-    /// Face normal of the side that was hit (axis-aligned unit vector).
     pub normal: Vec3,
-    /// Parametric distance along the ray.
-    #[allow(dead_code)]
-    pub t: f32,
 }
 
-/// Cast a ray through `world`, returning the first non-air hit within
-/// `max_steps` grid traversals.
+// Precomputed axis normals to avoid Vec3 construction in the hot loop.
+const NEG_X: Vec3 = Vec3::new(-1.0, 0.0, 0.0);
+const POS_X: Vec3 = Vec3::new(1.0, 0.0, 0.0);
+const NEG_Y: Vec3 = Vec3::new(0.0, -1.0, 0.0);
+const POS_Y: Vec3 = Vec3::new(0.0, 1.0, 0.0);
+const NEG_Z: Vec3 = Vec3::new(0.0, 0.0, -1.0);
+const POS_Z: Vec3 = Vec3::new(0.0, 0.0, 1.0);
+
+/// Slab-method ray-AABB intersection. Returns (t_enter, t_exit) or None.
+#[inline]
+fn intersect_aabb(origin: Vec3, inv_dir: Vec3, aabb: &Aabb) -> Option<(f32, f32)> {
+    let (bmin_x, bmin_y, bmin_z) = aabb.min_f();
+    let (bmax_x, bmax_y, bmax_z) = aabb.max_f();
+
+    let t1x = (bmin_x - origin.x) * inv_dir.x;
+    let t2x = (bmax_x - origin.x) * inv_dir.x;
+    let t1y = (bmin_y - origin.y) * inv_dir.y;
+    let t2y = (bmax_y - origin.y) * inv_dir.y;
+    let t1z = (bmin_z - origin.z) * inv_dir.z;
+    let t2z = (bmax_z - origin.z) * inv_dir.z;
+
+    let t_near = t1x.min(t2x).max(t1y.min(t2y)).max(t1z.min(t2z));
+    let t_far = t1x.max(t2x).min(t1y.max(t2y)).min(t1z.max(t2z));
+
+    if t_near <= t_far && t_far >= 0.0 {
+        Some((t_near.max(0.0), t_far))
+    } else {
+        None
+    }
+}
+
+/// Cast a ray through `world` with AABB culling and bounded DDA.
+#[inline]
 pub fn cast_ray(
     world: &impl VoxelAccess,
     origin: Vec3,
     dir: Vec3,
+    aabb: &Aabb,
     max_steps: u32,
 ) -> Option<Hit> {
-    // Current voxel coordinates
-    let mut x = origin.x.floor() as i32;
-    let mut y = origin.y.floor() as i32;
-    let mut z = origin.z.floor() as i32;
+    // Precompute inverse direction (one div per axis, not per step).
+    let inv_dir = Vec3::new(
+        if dir.x != 0.0 { 1.0 / dir.x } else { f32::INFINITY },
+        if dir.y != 0.0 { 1.0 / dir.y } else { f32::INFINITY },
+        if dir.z != 0.0 { 1.0 / dir.z } else { f32::INFINITY },
+    );
 
-    // Step direction (+1 or -1) per axis
+    // AABB early-out: skip rays that miss the world entirely.
+    let (t_enter, _t_exit) = intersect_aabb(origin, inv_dir, aabb)?;
+
+    // Advance origin to the AABB entry point so DDA starts inside the volume.
+    let start = if t_enter > 0.0 {
+        origin + dir * (t_enter + 0.001)
+    } else {
+        origin
+    };
+
+    let mut x = start.x.floor() as i32;
+    let mut y = start.y.floor() as i32;
+    let mut z = start.z.floor() as i32;
+
     let step_x: i32 = if dir.x >= 0.0 { 1 } else { -1 };
     let step_y: i32 = if dir.y >= 0.0 { 1 } else { -1 };
     let step_z: i32 = if dir.z >= 0.0 { 1 } else { -1 };
 
-    // How far along the ray (in t) to cross one full cell on each axis.
-    // Infinite if the ray is parallel to that axis.
-    let t_delta_x = if dir.x != 0.0 { (1.0 / dir.x).abs() } else { f32::INFINITY };
-    let t_delta_y = if dir.y != 0.0 { (1.0 / dir.y).abs() } else { f32::INFINITY };
-    let t_delta_z = if dir.z != 0.0 { (1.0 / dir.z).abs() } else { f32::INFINITY };
+    let t_delta_x = inv_dir.x.abs();
+    let t_delta_y = inv_dir.y.abs();
+    let t_delta_z = inv_dir.z.abs();
 
-    // Distance to the *next* cell boundary on each axis.
     let mut t_max_x = if dir.x != 0.0 {
         let boundary = if dir.x > 0.0 { (x + 1) as f32 } else { x as f32 };
-        (boundary - origin.x) / dir.x
+        (boundary - start.x) * inv_dir.x
     } else {
         f32::INFINITY
     };
     let mut t_max_y = if dir.y != 0.0 {
         let boundary = if dir.y > 0.0 { (y + 1) as f32 } else { y as f32 };
-        (boundary - origin.y) / dir.y
+        (boundary - start.y) * inv_dir.y
     } else {
         f32::INFINITY
     };
     let mut t_max_z = if dir.z != 0.0 {
         let boundary = if dir.z > 0.0 { (z + 1) as f32 } else { z as f32 };
-        (boundary - origin.z) / dir.z
+        (boundary - start.z) * inv_dir.z
     } else {
         f32::INFINITY
     };
 
+    // Select normal constants based on step direction (no per-step branching).
+    let norm_x = if step_x > 0 { NEG_X } else { POS_X };
+    let norm_y = if step_y > 0 { NEG_Y } else { POS_Y };
+    let norm_z = if step_z > 0 { NEG_Z } else { POS_Z };
+
     let mut normal = Vec3::ZERO;
 
     for _ in 0..max_steps {
-        let voxel = world.get_voxel(x, y, z);
-        if !voxel.is_air() {
-            let t = t_max_x.min(t_max_y).min(t_max_z);
-            return Some(Hit {
-                voxel,
-                pos: (x, y, z),
-                normal,
-                t,
-            });
+        // Bounds check: exit immediately if we've left the AABB.
+        if x < aabb.min_x || x >= aabb.max_x
+            || y < aabb.min_y || y >= aabb.max_y
+            || z < aabb.min_z || z >= aabb.max_z
+        {
+            return None;
         }
 
-        // Advance along whichever axis has the nearest boundary.
+        let voxel = world.get_voxel(x, y, z);
+        if !voxel.is_air() {
+            return Some(Hit { voxel, pos: (x, y, z), normal });
+        }
+
+        // Advance along the axis with the smallest t_max.
         if t_max_x < t_max_y {
             if t_max_x < t_max_z {
                 x += step_x;
                 t_max_x += t_delta_x;
-                normal = Vec3::new(-step_x as f32, 0.0, 0.0);
+                normal = norm_x;
             } else {
                 z += step_z;
                 t_max_z += t_delta_z;
-                normal = Vec3::new(0.0, 0.0, -step_z as f32);
+                normal = norm_z;
             }
         } else if t_max_y < t_max_z {
             y += step_y;
             t_max_y += t_delta_y;
-            normal = Vec3::new(0.0, -step_y as f32, 0.0);
+            normal = norm_y;
         } else {
             z += step_z;
             t_max_z += t_delta_z;
-            normal = Vec3::new(0.0, 0.0, -step_z as f32);
+            normal = norm_z;
         }
     }
 

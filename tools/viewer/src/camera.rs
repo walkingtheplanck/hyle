@@ -1,18 +1,36 @@
-//! Orbital camera — yaw/pitch around a target, generates per-pixel rays.
+//! Orbital camera with precomputed per-frame basis.
 
 use glam::Vec3;
 
 pub struct Camera {
-    /// Point the camera orbits around.
     pub target: Vec3,
-    /// Distance from target.
     pub distance: f32,
-    /// Horizontal angle (radians, 0 = +Z).
     pub yaw: f32,
-    /// Vertical angle (radians, 0 = horizon).
     pub pitch: f32,
-    /// Vertical field of view in radians.
     pub fov_y: f32,
+}
+
+/// Precomputed camera frame — compute once, use for all pixels.
+pub struct CameraFrame {
+    pub eye: Vec3,
+    forward: Vec3,
+    right: Vec3,
+    up: Vec3,
+    half_w: f32,
+    half_h: f32,
+    inv_w: f32,
+    inv_h: f32,
+}
+
+impl CameraFrame {
+    #[inline]
+    pub fn ray_dir(&self, px: u32, py: u32) -> Vec3 {
+        let ndc_x = (2.0 * (px as f32 + 0.5) * self.inv_w) - 1.0;
+        let ndc_y = 1.0 - (2.0 * (py as f32 + 0.5) * self.inv_h);
+
+        (self.forward + self.right * (ndc_x * self.half_w) + self.up * (ndc_y * self.half_h))
+            .normalize()
+    }
 }
 
 impl Camera {
@@ -38,34 +56,57 @@ impl Camera {
             )
     }
 
-    /// Generate a ray direction for pixel `(px, py)` in a viewport of
-    /// `(width, height)`. Returns a normalised direction vector.
-    pub fn ray_dir(&self, px: u32, py: u32, width: u32, height: u32) -> Vec3 {
-        let aspect = width as f32 / height as f32;
-        let half_h = (self.fov_y * 0.5).tan();
-        let half_w = half_h * aspect;
+    /// Horizontal forward direction (for panning).
+    pub fn flat_forward(&self) -> Vec3 {
+        let (sy, cy) = self.yaw.sin_cos();
+        Vec3::new(-cy, 0.0, -sy).normalize()
+    }
 
-        // NDC: [-1, 1]
-        let ndc_x = (2.0 * (px as f32 + 0.5) / width as f32) - 1.0;
-        let ndc_y = 1.0 - (2.0 * (py as f32 + 0.5) / height as f32);
+    /// Horizontal right direction (for panning).
+    pub fn flat_right(&self) -> Vec3 {
+        let (sy, cy) = self.yaw.sin_cos();
+        Vec3::new(sy, 0.0, -cy).normalize()
+    }
 
+    /// Build the per-frame basis.
+    pub fn frame(&self, width: u32, height: u32) -> CameraFrame {
         let eye = self.eye();
+
         let forward = (self.target - eye).normalize();
         let right = forward.cross(Vec3::Y).normalize();
         let up = right.cross(forward);
 
-        (forward + right * (ndc_x * half_w) + up * (ndc_y * half_h)).normalize()
+        let aspect = width as f32 / height as f32;
+        let half_h = (self.fov_y * 0.5).tan();
+        let half_w = half_h * aspect;
+
+        CameraFrame {
+            eye,
+            forward,
+            right,
+            up,
+            half_w,
+            half_h,
+            inv_w: 1.0 / width as f32,
+            inv_h: 1.0 / height as f32,
+        }
     }
 
-    /// Rotate by mouse delta (pixels).
+    /// Orbit by pixel delta.
     pub fn rotate(&mut self, dx: f32, dy: f32) {
-        let sensitivity = 0.005;
-        self.yaw += dx * sensitivity;
-        self.pitch = (self.pitch + dy * sensitivity).clamp(-1.4, 1.4);
+        self.yaw -= dx * 0.005;
+        self.pitch = (self.pitch + dy * 0.005).clamp(-1.4, 1.4);
+    }
+
+    /// Pan the target in the camera's horizontal plane.
+    pub fn pan(&mut self, dx: f32, dy: f32) {
+        let speed = self.distance * 0.002;
+        self.target += self.flat_right() * (dx * speed);
+        self.target += self.flat_forward() * (dy * speed);
     }
 
     /// Zoom by scroll amount.
     pub fn zoom(&mut self, scroll: f32) {
-        self.distance = (self.distance - scroll * 2.0).clamp(3.0, 120.0);
+        self.distance = (self.distance * (1.0 - scroll * 0.1)).clamp(3.0, 120.0);
     }
 }

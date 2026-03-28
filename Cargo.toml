@@ -13,5 +13,5 @@ resolver = "2"
 [workspace.dependencies]
 glam    = "0.29"
 tracing = "0.1"
-minifb  = "0.28"
+eframe  = "0.33"
 rayon   = "1.10"

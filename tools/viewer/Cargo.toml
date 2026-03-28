@@ -10,5 +10,5 @@ hyle      = { path = "../../crates/hyle" }
 hyle-core = { path = "../../crates/hyle-core" }
 hyle-ca   = { path = "../../crates/hyle-ca" }
 glam      = { workspace = true }
-minifb    = { workspace = true }
+eframe    = { workspace = true }
 rayon     = { workspace = true }
