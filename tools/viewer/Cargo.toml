@@ -1,0 +1,14 @@
+[package]
+name = "hyle-viewer"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Dev-only CPU raytracing viewer for Hyle voxel simulations."
+
+[dependencies]
+hyle      = { path = "../../crates/hyle" }
+hyle-core = { path = "../../crates/hyle-core" }
+hyle-ca   = { path = "../../crates/hyle-ca" }
+glam      = { workspace = true }
+minifb    = { workspace = true }
+rayon     = { workspace = true }

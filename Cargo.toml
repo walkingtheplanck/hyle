@@ -6,9 +6,12 @@ members = [
     "crates/hyle-lbm",
     "crates/hyle-wave",
     "crates/hyle-runtime",
+    "tools/viewer",
 ]
 resolver = "2"
 
 [workspace.dependencies]
 glam    = "0.29"
 tracing = "0.1"
+minifb  = "0.28"
+rayon   = "1.10"
