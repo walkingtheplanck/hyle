@@ -29,8 +29,12 @@ pub fn draw_toolbar(
 
             ui.separator();
 
-            if ui.button("Step").clicked() { step = true; }
-            if ui.button("Reset").clicked() { reset = true; }
+            if ui.button("Step").clicked() {
+                step = true;
+            }
+            if ui.button("Reset").clicked() {
+                reset = true;
+            }
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 ui.label(format!(

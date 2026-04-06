@@ -1,104 +1,117 @@
 # Hyle
 
-A general-purpose **3D cellular automaton library** in Rust.
+A general-purpose **3D cellular automaton engine** in Rust.
 
-No physics knowledge required. Define rules, register them, run the simulation.
+Define rules as closures, register them, run the simulation. Supports custom cell types, variable-radius neighborhoods, and world passes for global operations.
 
 ---
 
-## Core concept
+## Quick start
 
 ```rust
-use hyle::{CaWorld, Neighborhood, Action, Cell};
+use hyle_ca_core::{Action, Neighborhood, Rng};
+use hyle_ca_solver::Solver;
 
-// A cell is just a u32. The CA knows nothing about what it means.
-const ALIVE: Cell = 1;
-const DEAD:  Cell = 0;
+const ALIVE: u32 = 1;
+const DEAD: u32 = 0;
 
-// A rule is a plain function — no allocation, no trait objects.
-fn born_rule(n: Neighborhood, _rng: u32) -> Action {
-    if n.count_alive() == 3 { Action::Become(ALIVE) } else { Action::Keep }
-}
+let mut solver = Solver::<u32>::new(64, 64, 64);
 
-fn survive_rule(n: Neighborhood, _rng: u32) -> Action {
+solver.register_rule(DEAD as u8, |n: &Neighborhood<u32>, _rng: Rng| {
     match n.count_alive() {
-        2 | 3 => Action::Keep,
+        5 => Action::Become(ALIVE),
+        _ => Action::Keep,
+    }
+});
+
+solver.register_rule(ALIVE as u8, |n: &Neighborhood<u32>, _rng: Rng| {
+    match n.count_alive() {
+        4..=5 => Action::Keep,
         _ => Action::Become(DEAD),
     }
-}
+});
 
-let mut world = CaWorld::new(64, 64, 64);
-world.register_rule(DEAD  as u8, born_rule);
-world.register_rule(ALIVE as u8, survive_rule);
-world.step();
+solver.step();
 ```
 
 ---
 
-## API
+## Architecture
+
+```
+ca-core     Traits + types (CaSolver, Cell, Neighborhood, Action, Rng)
+ca-solver   Default solver implementation (double-buffered, CPU)
+```
+
+**`ca-core`** defines the interface. Zero dependencies. Depend on this to write rules or implement a custom solver.
+
+**`ca-solver`** is the default implementation. Depend on this to run simulations.
+
+### Custom cell types
 
 ```rust
-// Cell is opaque — pack anything into a u32
-type Cell = u32;
+#[derive(Copy, Clone, Default)]
+struct FluidCell { density: u8, velocity: [i8; 6], material: u8 }
 
-// The 26 neighbors in a 3×3×3 Moore neighborhood
-struct Neighborhood {
-    center: Cell,
-    neighbors: [Cell; 26],
+impl Cell for FluidCell {
+    fn rule_id(&self) -> u8 { self.material }
+    fn is_alive(&self) -> bool { self.density > 0 }
 }
 
-impl Neighborhood {
-    fn get(&self, dx: i32, dy: i32, dz: i32) -> Cell;  // access by offset
-    fn count(&self, pred: impl Fn(Cell) -> bool) -> u32;
-    fn count_alive(&self) -> u32;                       // count non-zero neighbors
-}
+let solver = Solver::<FluidCell>::new(64, 64, 64);
+```
 
-// What a rule returns
-enum Action {
-    Keep,               // leave center cell unchanged
-    Become(Cell),       // replace center with new value
-    Swap(Direction),    // exchange with a face neighbor
-    Set(Direction, Cell), // overwrite a face neighbor
-}
+### Variable-radius neighborhoods
 
-// Per-cell deterministic RNG — use for probabilistic rules
-fn cell_rng(x: u32, y: u32, z: u32, step: u32) -> u32;
+```rust
+// Radius 3 = 342 neighbors instead of 26
+solver.register_rule_with_radius(0, 3, |n, rng| {
+    let far_cell = n.get(3, 0, 0);  // within radius
+    Action::Keep
+});
+```
+
+### World passes
+
+```rust
+// Full grid access — runs after all per-cell rules
+solver.register_world_pass(|grid, out| {
+    for (x, y, z, cell) in grid.iter() {
+        out.set(x as i32, y as i32, z as i32, cell);
+    }
+});
+```
+
+### Debug contract validation
+
+```rust
+use hyle_ca_core::ValidatedSolver;
+
+// Wraps any solver, asserts contracts on every call (debug builds only)
+let validated = ValidatedSolver::new(solver);
 ```
 
 ---
 
-## Viewer demo — 3D Conway's Game of Life
+## Viewer demo
 
 ```
 cargo run --release -p hyle-viewer
 ```
 
-Renders a 64×64×64 3D GoL simulation with GPU raytracing.
-
-**Controls:**
+3D Game of Life (Life 4555) with GPU raytracing.
 
 | Input | Action |
 |---|---|
 | Right-drag | Orbit camera |
 | Middle-drag | Pan |
 | Scroll | Zoom |
-| WASD / QE | Move camera target |
+| WASD / QE | Move camera |
 | R | Reset simulation |
 | Tab | Toggle mouse capture |
 
 ---
 
-## Crates
-
-| Crate | Description |
-|---|---|
-| `hyle` | Re-exports `hyle-ca` — use this as the entry point |
-| `hyle-ca` | Core CA engine: `CaWorld`, `Neighborhood`, `Action`, `Rule` |
-| `hyle-core` | Voxel/material types used by the viewer renderer |
-| `hyle-viewer` | Interactive 3D viewer with GPU raytracing |
-
----
-
 ## License
 
-MIT
+GPL-3.0-only

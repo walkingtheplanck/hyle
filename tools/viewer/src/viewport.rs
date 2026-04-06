@@ -6,18 +6,28 @@ use crate::gpu::{GpuRaytracer, VoxelUpload};
 use crate::world::{Materials, SimpleWorld};
 
 /// Upload voxels to the GPU if the world changed.
-fn sync_voxels(gpu: &mut GpuRaytracer, world: &SimpleWorld, device: &wgpu::Device, queue: &wgpu::Queue) {
+fn sync_voxels(
+    gpu: &mut GpuRaytracer,
+    world: &SimpleWorld,
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+) {
     let data = world.export_material_ids();
     let b = &world.bounds;
-    gpu.upload_voxels(device, queue, &VoxelUpload {
-        data: &data,
-        sx: b.size_x() as u32,
-        sy: b.size_y() as u32,
-        sz: b.size_z() as u32,
-    });
+    gpu.upload_voxels(
+        device,
+        queue,
+        &VoxelUpload {
+            data: &data,
+            sx: b.size_x() as u32,
+            sy: b.size_y() as u32,
+            sz: b.size_z() as u32,
+        },
+    );
 }
 
 /// Render the viewport. Handles GPU sync, camera rendering, and mouse orbit/zoom.
+#[allow(clippy::too_many_arguments)]
 pub fn render(
     ui: &mut egui::Ui,
     render_state: &eframe::egui_wgpu::RenderState,
@@ -37,7 +47,7 @@ pub fn render(
 
     {
         let mut renderer = render_state.renderer.write();
-        gpu.resize(device, &mut *renderer, viewport_w, viewport_h);
+        gpu.resize(device, &mut renderer, viewport_w, viewport_h);
     }
 
     if *world_dirty {
@@ -49,7 +59,8 @@ pub fn render(
     gpu.render(device, queue, &cam_frame, &world.bounds);
 
     let tex_id = gpu.texture_id();
-    let sized = egui::load::SizedTexture::new(tex_id, Vec2::new(viewport_w as f32, viewport_h as f32));
+    let sized =
+        egui::load::SizedTexture::new(tex_id, Vec2::new(viewport_w as f32, viewport_h as f32));
     let response = ui.add(
         egui::Image::from_texture(sized)
             .fit_to_exact_size(avail)

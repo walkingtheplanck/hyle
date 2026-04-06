@@ -1,17 +1,13 @@
-//! Core CA types: Cell trait, Neighborhood, Region, Action, Direction, grid views.
+//! Core CA types: Cell trait, Neighborhood, Action, grid views, RNG.
 
-mod traits;
-mod neighborhood;
-mod region;
-mod grid;
 mod action;
-mod direction;
+mod grid;
+mod neighborhood;
 mod rng;
+mod traits;
 
-pub use traits::Cell;
-pub use neighborhood::Neighborhood;
-pub use region::Region;
-pub use grid::{GridReader, GridWriter};
 pub use action::Action;
-pub use direction::Direction;
-pub use rng::cell_rng;
+pub use grid::{GridReader, GridWriter};
+pub use neighborhood::Neighborhood;
+pub use rng::Rng;
+pub use traits::Cell;

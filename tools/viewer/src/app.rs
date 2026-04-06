@@ -27,7 +27,10 @@ pub struct ViewerApp {
 
 impl ViewerApp {
     pub fn new(cc: &eframe::CreationContext) -> Self {
-        let render_state = cc.wgpu_render_state.as_ref().expect("wgpu backend required");
+        let render_state = cc
+            .wgpu_render_state
+            .as_ref()
+            .expect("wgpu backend required");
         let device = &render_state.device;
         let queue = &render_state.queue;
         let mut renderer = render_state.renderer.write();
@@ -56,9 +59,15 @@ impl ViewerApp {
     }
 
     fn fps(&self) -> f64 {
-        if self.frame_times.is_empty() { return 0.0; }
+        if self.frame_times.is_empty() {
+            return 0.0;
+        }
         let avg = self.frame_times.iter().sum::<f64>() / self.frame_times.len() as f64;
-        if avg > 0.0 { 1000.0 / avg } else { 0.0 }
+        if avg > 0.0 {
+            1000.0 / avg
+        } else {
+            0.0
+        }
     }
 }
 
@@ -67,7 +76,9 @@ impl eframe::App for ViewerApp {
         let dt_ms = self.last_frame.elapsed().as_secs_f64() * 1000.0;
         self.last_frame = Instant::now();
         self.frame_times.push_back(dt_ms);
-        if self.frame_times.len() > 60 { self.frame_times.pop_front(); }
+        if self.frame_times.len() > 60 {
+            self.frame_times.pop_front();
+        }
 
         ctx.request_repaint();
 
@@ -82,7 +93,10 @@ impl eframe::App for ViewerApp {
         }
 
         let vp_size = ctx.available_rect().size();
-        let approx_vp = (vp_size.x.max(64.0) as u32, (vp_size.y - 36.0).max(64.0) as u32);
+        let approx_vp = (
+            vp_size.x.max(64.0) as u32,
+            (vp_size.y - 36.0).max(64.0) as u32,
+        );
         let fps = self.fps();
 
         let (step, reset) = ui::draw_toolbar(
@@ -102,7 +116,10 @@ impl eframe::App for ViewerApp {
             self.world_dirty = true;
         }
 
-        let render_state = frame.wgpu_render_state().expect("wgpu render state").clone();
+        let render_state = frame
+            .wgpu_render_state()
+            .expect("wgpu render state")
+            .clone();
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
             .show(ctx, |ui| {

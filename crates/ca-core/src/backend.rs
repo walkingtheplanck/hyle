@@ -5,7 +5,7 @@ use crate::cell::Cell;
 /// The simulation interface shared by all solvers (CPU, GPU, etc.).
 ///
 /// Rule registration is NOT part of this trait — it's solver-specific.
-/// CPU solvers take Rust `fn()`, GPU solvers take WGSL shader source.
+/// CPU solvers take Rust closures, GPU solvers take WGSL shader source.
 ///
 /// Contracts (enforced by `ValidatedSolver` in debug builds):
 /// - `get(x,y,z)` returns `C::default()` for out-of-bounds coordinates.
@@ -29,4 +29,10 @@ pub trait CaSolver<C: Cell> {
 
     /// Number of steps completed so far.
     fn step_count(&self) -> u32;
+
+    /// Iterate all cells as `(x, y, z, cell)`.
+    ///
+    /// For GPU backends, this may trigger a device→host download.
+    /// The returned Vec is owned — no lifetime issues across backends.
+    fn iter_cells(&self) -> Vec<(u32, u32, u32, C)>;
 }

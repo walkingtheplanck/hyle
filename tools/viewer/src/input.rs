@@ -12,7 +12,10 @@ pub struct InputState {
 
 impl InputState {
     pub fn new() -> Self {
-        Self { captured: false, prev_capture_pos: None }
+        Self {
+            captured: false,
+            prev_capture_pos: None,
+        }
     }
 
     /// Read keyboard input and return what actions should be taken.
@@ -34,7 +37,20 @@ impl InputState {
             )
         });
 
-        let (tab, esc, r_key, w_key, a_key, s_key, d_key, q_key, e_key, space_key, shift_key, scroll_y) = input;
+        let (
+            tab,
+            esc,
+            r_key,
+            w_key,
+            a_key,
+            s_key,
+            d_key,
+            q_key,
+            e_key,
+            space_key,
+            shift_key,
+            scroll_y,
+        ) = input;
 
         if tab {
             self.captured = !self.captured;
@@ -47,23 +63,37 @@ impl InputState {
 
         // Camera movement
         let pan_speed = 0.5;
-        if w_key { camera.target += camera.flat_forward() * pan_speed; }
-        if s_key { camera.target -= camera.flat_forward() * pan_speed; }
-        if a_key { camera.target -= camera.flat_right() * pan_speed; }
-        if d_key { camera.target += camera.flat_right() * pan_speed; }
-        if q_key { camera.target.y -= pan_speed; }
-        if e_key { camera.target.y += pan_speed; }
+        if w_key {
+            camera.target += camera.flat_forward() * pan_speed;
+        }
+        if s_key {
+            camera.target -= camera.flat_forward() * pan_speed;
+        }
+        if a_key {
+            camera.target -= camera.flat_right() * pan_speed;
+        }
+        if d_key {
+            camera.target += camera.flat_right() * pan_speed;
+        }
+        if q_key {
+            camera.target.y -= pan_speed;
+        }
+        if e_key {
+            camera.target.y += pan_speed;
+        }
         // Space = up, Shift = down (vertical camera movement)
-        if space_key { camera.target.y += pan_speed; }
-        if shift_key { camera.target.y -= pan_speed; }
+        if space_key {
+            camera.target.y += pan_speed;
+        }
+        if shift_key {
+            camera.target.y -= pan_speed;
+        }
 
         if scroll_y.abs() > 0.1 {
             camera.zoom(scroll_y / 30.0);
         }
 
-        KeyboardActions {
-            reset: r_key,
-        }
+        KeyboardActions { reset: r_key }
     }
 
     /// Handle mouse interaction on the viewport response (orbit, pan, capture).

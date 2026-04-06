@@ -14,8 +14,8 @@ pub const AIR: Voxel = 0;
 
 /// Minimal material definition — just what the renderer needs.
 pub struct Material {
-    pub base_color: [f32; 4],       // linear RGBA
-    pub emission_color: [f32; 3],   // linear RGB
+    pub base_color: [f32; 4],     // linear RGBA
+    pub emission_color: [f32; 3], // linear RGB
     pub emission_intensity: f32,
 }
 
@@ -47,14 +47,21 @@ impl Materials {
     /// Export as flat [f32; 8] palette for GPU buffer.
     /// Each entry: [r, g, b, a, emit_r, emit_g, emit_b, emit_intensity].
     pub fn export_palette(&self) -> Vec<[f32; 8]> {
-        self.defs.iter().map(|d| [
-            d.base_color[0], d.base_color[1],
-            d.base_color[2], d.base_color[3],
-            d.emission_color[0] * d.emission_intensity,
-            d.emission_color[1] * d.emission_intensity,
-            d.emission_color[2] * d.emission_intensity,
-            d.emission_intensity,
-        ]).collect()
+        self.defs
+            .iter()
+            .map(|d| {
+                [
+                    d.base_color[0],
+                    d.base_color[1],
+                    d.base_color[2],
+                    d.base_color[3],
+                    d.emission_color[0] * d.emission_intensity,
+                    d.emission_color[1] * d.emission_intensity,
+                    d.emission_color[2] * d.emission_intensity,
+                    d.emission_intensity,
+                ]
+            })
+            .collect()
     }
 }
 
@@ -74,13 +81,25 @@ pub struct Aabb {
 impl Aabb {
     #[inline]
     pub fn contains(&self, x: i32, y: i32, z: i32) -> bool {
-        x >= self.min_x && x < self.max_x
-            && y >= self.min_y && y < self.max_y
-            && z >= self.min_z && z < self.max_z
+        x >= self.min_x
+            && x < self.max_x
+            && y >= self.min_y
+            && y < self.max_y
+            && z >= self.min_z
+            && z < self.max_z
     }
-    #[inline] pub fn size_x(&self) -> usize { (self.max_x - self.min_x) as usize }
-    #[inline] pub fn size_y(&self) -> usize { (self.max_y - self.min_y) as usize }
-    #[inline] pub fn size_z(&self) -> usize { (self.max_z - self.min_z) as usize }
+    #[inline]
+    pub fn size_x(&self) -> usize {
+        (self.max_x - self.min_x) as usize
+    }
+    #[inline]
+    pub fn size_y(&self) -> usize {
+        (self.max_y - self.min_y) as usize
+    }
+    #[inline]
+    pub fn size_z(&self) -> usize {
+        (self.max_z - self.min_z) as usize
+    }
 }
 
 // -- SimpleWorld --------------------------------------------------------------
@@ -131,6 +150,13 @@ impl SimpleWorld {
 /// Create a 64×64×64 empty world ready for GoL simulation.
 pub fn gol_world() -> (SimpleWorld, Materials) {
     let size = 64i32;
-    let bounds = Aabb { min_x: 0, min_y: 0, min_z: 0, max_x: size, max_y: size, max_z: size };
+    let bounds = Aabb {
+        min_x: 0,
+        min_y: 0,
+        min_z: 0,
+        max_x: size,
+        max_y: size,
+        max_z: size,
+    };
     (SimpleWorld::new(bounds), Materials::new())
 }

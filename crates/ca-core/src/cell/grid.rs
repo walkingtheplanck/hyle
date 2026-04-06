@@ -12,16 +12,18 @@ pub struct GridReader<'a, C: Cell> {
 
 impl<'a, C: Cell> GridReader<'a, C> {
     pub fn new(cells: &'a [C], width: u32, height: u32, depth: u32) -> Self {
-        GridReader { cells, width, height, depth }
+        GridReader {
+            cells,
+            width,
+            height,
+            depth,
+        }
     }
 
     /// Get the cell at (x, y, z). Returns `C::default()` for out-of-bounds.
     #[inline]
     pub fn get(&self, x: i32, y: i32, z: i32) -> C {
-        if (x as u32) >= self.width
-            || (y as u32) >= self.height
-            || (z as u32) >= self.depth
-        {
+        if (x as u32) >= self.width || (y as u32) >= self.height || (z as u32) >= self.depth {
             return C::default();
         }
         self.cells[self.idx(x as u32, y as u32, z as u32)]
@@ -58,15 +60,17 @@ pub struct GridWriter<'a, C: Cell> {
 
 impl<'a, C: Cell> GridWriter<'a, C> {
     pub fn new(cells: &'a mut [C], width: u32, height: u32, depth: u32) -> Self {
-        GridWriter { cells, width, height, depth }
+        GridWriter {
+            cells,
+            width,
+            height,
+            depth,
+        }
     }
 
     /// Set the cell at (x, y, z). No-op for out-of-bounds.
     pub fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
-        if (x as u32) >= self.width
-            || (y as u32) >= self.height
-            || (z as u32) >= self.depth
-        {
+        if (x as u32) >= self.width || (y as u32) >= self.height || (z as u32) >= self.depth {
             return;
         }
         let i = self.idx(x as u32, y as u32, z as u32);

@@ -225,11 +225,8 @@ impl GpuRaytracer {
         let output_view = output_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         // Register with egui
-        let output_texture_id = renderer.register_native_texture(
-            device,
-            &output_view,
-            wgpu::FilterMode::Nearest,
-        );
+        let output_texture_id =
+            renderer.register_native_texture(device, &output_view, wgpu::FilterMode::Nearest);
 
         // Bind group
         let bind_group = Self::make_bind_group(
@@ -321,7 +318,9 @@ impl GpuRaytracer {
         }
 
         self.output_texture = Self::create_output_texture(device, w, h);
-        self.output_view = self.output_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        self.output_view = self
+            .output_texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
 
         renderer.update_egui_texture_from_wgpu_texture(
             device,
@@ -395,7 +394,9 @@ impl GpuRaytracer {
             },
         );
 
-        self.voxel_view = self.voxel_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        self.voxel_view = self
+            .voxel_texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
 
         self.bind_group = Self::make_bind_group(
             device,
@@ -458,11 +459,7 @@ impl GpuRaytracer {
             });
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &self.bind_group, &[]);
-            pass.dispatch_workgroups(
-                (self.width + 7) / 8,
-                (self.height + 7) / 8,
-                1,
-            );
+            pass.dispatch_workgroups(self.width.div_ceil(8), self.height.div_ceil(8), 1);
         }
 
         queue.submit(std::iter::once(encoder.finish()));
@@ -471,5 +468,4 @@ impl GpuRaytracer {
     pub fn texture_id(&self) -> egui::TextureId {
         self.output_texture_id
     }
-
 }

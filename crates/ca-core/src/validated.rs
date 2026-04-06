@@ -68,15 +68,14 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> ValidatedSolver<C, 
     }
 }
 
-impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C>
-    for ValidatedSolver<C, S>
-{
+impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for ValidatedSolver<C, S> {
     fn width(&self) -> u32 {
         let w = self.inner.width();
         assert!(
             w == self.initial_width,
             "contract violation: width() changed from {} to {}",
-            self.initial_width, w
+            self.initial_width,
+            w
         );
         w
     }
@@ -86,7 +85,8 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C>
         assert!(
             h == self.initial_height,
             "contract violation: height() changed from {} to {}",
-            self.initial_height, h
+            self.initial_height,
+            h
         );
         h
     }
@@ -96,7 +96,8 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C>
         assert!(
             d == self.initial_depth,
             "contract violation: depth() changed from {} to {}",
-            self.initial_depth, d
+            self.initial_depth,
+            d
         );
         d
     }
@@ -142,5 +143,9 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C>
 
     fn step_count(&self) -> u32 {
         self.inner.step_count()
+    }
+
+    fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> {
+        self.inner.iter_cells()
     }
 }
