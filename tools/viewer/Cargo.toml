@@ -1,0 +1,14 @@
+[package]
+name = "hyle-viewer"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Dev-only GPU raytracing viewer for Hyle CA simulations."
+
+[dependencies]
+hyle-ca-core = { path = "../../crates/ca-core" }
+hyle-ca-solver = { path = "../../crates/ca-solver" }
+glam         = { workspace = true }
+eframe       = { workspace = true, default-features = false, features = ["wgpu", "default_fonts"] }
+wgpu         = { workspace = true }
+bytemuck     = { version = "1", features = ["derive"] }

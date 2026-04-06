@@ -1,0 +1,8 @@
+[package]
+name = "hyle-ca-solver"
+version = "0.1.0"
+edition = "2021"
+description = "Default solver for the Hyle cellular automaton engine."
+
+[dependencies]
+hyle-ca-core = { path = "../ca-core" }

@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "crates/ca-core",
+    "crates/ca-solver",
+
+    "tools/viewer",
+]
+resolver = "2"
+
+[workspace.dependencies]
+glam    = "0.29"
+eframe  = { version = "0.33", default-features = false }
+wgpu    = "27.0.1"
