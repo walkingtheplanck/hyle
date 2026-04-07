@@ -14,6 +14,7 @@ This is a **framework** and **solver**, not an engine. It does not own a loop or
 
 ## Workflow
 
+- At the start of a session, check if the worktree branch is behind master. If it is, merge master into the branch. If there are merge conflicts, ask before resolving.
 - Always commit after completing a change — especially in worktrees.
 - Use conventional commit format: `<type>: <lowercase description>`
   - Types: feat, fix, refactor, chore, config, docs, test, perf, ci
