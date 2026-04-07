@@ -6,6 +6,7 @@ Read these before making changes:
 - `README.md` — project overview
 - `crates/ca-core/README.md` — framework traits and types
 - `crates/ca-solver/README.md` — default solver implementation
+- `.github/workflows/ci.yml` — CI pipeline and checks
 
 ## Terminology
 
