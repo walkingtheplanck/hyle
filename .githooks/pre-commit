@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+echo "=== Pre-commit: same checks as CI ==="
+
+echo "[1/4] cargo fmt..."
+cargo fmt --all
+git diff --name-only | xargs -r git add
+
+echo "[2/4] cargo clippy..."
+cargo clippy --workspace --all-targets -- -D warnings
+
+echo "[3/4] cargo test..."
+cargo test --workspace --release --quiet
+
+echo "[4/4] cargo doc..."
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --quiet
+
+echo "=== All checks passed ==="
