@@ -10,6 +10,32 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  commit-msg:
+    name: Commit message
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate commit messages
+        run: |
+          PATTERN='^(feat|fix|refactor|chore|docs|test|perf|ci): [a-z].*[^.]$'
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.sha }}"
+          else
+            RANGE="-1"
+          fi
+          git log --format='%s' $RANGE | while IFS= read -r MSG; do
+            [ -z "$MSG" ] && continue
+            echo "$MSG" | grep -qE '^Merge ' && continue
+            if ! echo "$MSG" | grep -qE "$PATTERN"; then
+              echo "BAD: $MSG"
+              echo "Expected: <type>: <lowercase description>"
+              echo "Types: feat, fix, refactor, chore, docs, test, perf, ci"
+              exit 1
+            fi
+          done
+
   fmt:
     name: Formatting
     runs-on: ubuntu-latest

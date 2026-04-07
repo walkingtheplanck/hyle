@@ -1,6 +1,6 @@
 //! Minimal voxel world for the CA viewer.
 //!
-//! Dense 3D array backed by a flat Vec<u16>. Two materials only:
+//! Dense 3D array backed by a flat `Vec<u16>`. Two materials only:
 //!   0 = AIR, 1 = ALIVE (used by the 3D GoL simulation).
 
 // -- Voxel --------------------------------------------------------------------
