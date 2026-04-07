@@ -113,6 +113,17 @@ cargo run --release -p hyle-viewer
 
 ---
 
+## Roadmap
+
+- [ ] **Neighborhood types** — Von Neumann (face-only), Weighted (distance falloff), Spherical (Euclidean radius)
+- [ ] **Torus topology** — Wrapping boundaries, configurable per-region so wrapping and non-wrapping cells can coexist
+- [ ] **Pattern serialization** — Save/load grid state
+- [ ] **Chunk-based sparse storage** — Skip empty regions, scale to large grids
+- [ ] **Analysis tools** — Population counts, entropy, step statistics
+- [ ] **Parallel stepping** — Rayon for CPU, leveraging the existing double-buffer design
+
+---
+
 ## License
 
 GPL-3.0-only
