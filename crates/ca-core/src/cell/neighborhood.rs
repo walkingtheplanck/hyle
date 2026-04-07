@@ -6,7 +6,7 @@ use super::Cell;
 ///
 /// Contains `(2R+1)³ - 1` neighbor cells (the center is excluded).
 /// Radius 1 gives the standard 26-cell Moore neighborhood.
-/// The engine pre-allocates and reuses the buffer — no per-cell allocation.
+/// The solver pre-allocates and reuses the buffer — no per-cell allocation.
 ///
 /// Passed by reference to rules.
 pub struct Neighborhood<C: Cell> {

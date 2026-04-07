@@ -1,12 +1,22 @@
 # Hyle
 
-A general-purpose **3D cellular automaton engine** in Rust.
+A 3D cellular automaton framework for Rust.
 
-Define rules as closures, register them, step the automaton. Supports custom cell types, variable-radius neighborhoods, and world passes for global operations.
+> Define rules as closures, register them, step the simulation.
+> Supports custom cell types, variable-radius neighborhoods, and world passes.
 
 ---
 
-## Quick start
+## Crates
+
+| Crate | Purpose |
+|-------|---------|
+| [`hyle-ca-core`](crates/ca-core) | Traits and types — depend on this to write rules or a custom solver |
+| [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver (double-buffered) — depend on this to run automata |
+
+---
+
+## Quick Start
 
 ```rust
 use hyle_ca_core::{Action, Neighborhood, Rng};
@@ -36,18 +46,9 @@ solver.step();
 
 ---
 
-## Architecture
+## Features
 
-```
-ca-core     Traits + types (CaSolver, Cell, Neighborhood, Action, Rng)
-ca-solver   Default solver implementation (double-buffered, CPU)
-```
-
-**`ca-core`** defines the interface. Zero dependencies. Depend on this to write rules or implement a custom solver.
-
-**`ca-solver`** is the default implementation. Depend on this to run automata.
-
-### Custom cell types
+### Custom Cell Types
 
 ```rust
 #[derive(Copy, Clone, Default)]
@@ -61,7 +62,7 @@ impl Cell for FluidCell {
 let solver = Solver::<FluidCell>::new(64, 64, 64);
 ```
 
-### Variable-radius neighborhoods
+### Variable-Radius Neighborhoods
 
 ```rust
 // Radius 3 = 342 neighbors instead of 26
@@ -71,7 +72,7 @@ solver.register_rule_with_radius(0, 3, |n, rng| {
 });
 ```
 
-### World passes
+### World Passes
 
 ```rust
 // Full grid access — runs after all per-cell rules
@@ -82,7 +83,7 @@ solver.register_world_pass(|grid, out| {
 });
 ```
 
-### Debug contract validation
+### Debug Contract Validation
 
 ```rust
 use hyle_ca_core::ValidatedSolver;
@@ -93,7 +94,7 @@ let validated = ValidatedSolver::new(solver);
 
 ---
 
-## Viewer demo
+## Viewer
 
 ```
 cargo run --release -p hyle-viewer

@@ -1,4 +1,4 @@
-//! Default solver for the Hyle cellular automaton engine.
+//! Default solver for the Hyle cellular automaton framework.
 //!
 //! Double-buffered, single-threaded CA solver with two-tier rule system:
 //! per-cell rules (any radius) and world passes (full grid access).

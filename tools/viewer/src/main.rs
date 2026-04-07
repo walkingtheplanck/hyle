@@ -1,4 +1,4 @@
-//! Hyle Viewer — 3D Conway's Game of Life using the hyle-ca engine.
+//! Hyle Viewer — 3D Conway's Game of Life using the hyle-ca framework.
 //!
 //! `cargo run --release -p hyle-viewer`
 //!

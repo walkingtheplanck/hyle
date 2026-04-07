@@ -2,7 +2,7 @@
 name = "hyle-ca-solver"
 version = "0.1.0"
 edition = "2021"
-description = "Default solver for the Hyle cellular automaton engine."
+description = "Default solver for the Hyle cellular automaton framework."
 license = "GPL-3.0-only"
 repository = "https://github.com/walkingtheplanck/hyle"
 keywords = ["cellular-automata", "voxel", "gamedev", "automaton"]

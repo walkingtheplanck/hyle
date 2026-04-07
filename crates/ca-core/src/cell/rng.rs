@@ -2,7 +2,7 @@
 
 /// Deterministic per-cell random number generator.
 ///
-/// Produced by the engine from the cell's position and step count.
+/// Produced by the solver from the cell's position and step count.
 /// The same (x, y, z, step) always produces the same value —
 /// results are reproducible.
 #[derive(Clone, Copy, Debug)]
