@@ -3,6 +3,10 @@ name = "hyle-ca-solver"
 version = "0.1.0"
 edition = "2021"
 description = "Default solver for the Hyle cellular automaton engine."
+license = "GPL-3.0-only"
+repository = "https://github.com/walkingtheplanck/hyle"
+keywords = ["cellular-automata", "simulation", "voxel", "gamedev"]
+categories = ["simulation", "game-development"]
 
 [dependencies]
-hyle-ca-core = { path = "../ca-core" }
+hyle-ca-core = { path = "../ca-core", version = "0.1.0" }

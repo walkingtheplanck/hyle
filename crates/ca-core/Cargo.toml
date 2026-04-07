@@ -3,5 +3,9 @@ name = "hyle-ca-core"
 version = "0.1.0"
 edition = "2021"
 description = "Core types and traits for the Hyle cellular automaton engine."
+license = "GPL-3.0-only"
+repository = "https://github.com/walkingtheplanck/hyle"
+keywords = ["cellular-automata", "simulation", "voxel", "gamedev"]
+categories = ["simulation", "game-development"]
 
 [dependencies]
