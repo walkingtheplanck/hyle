@@ -8,6 +8,7 @@ license = "GPL-3.0-only"
 repository = "https://github.com/walkingtheplanck/hyle"
 keywords = ["cellular-automata", "voxel", "gamedev", "automaton"]
 categories = ["game-development", "algorithms"]
+exclude = ["tests/"]
 
 [dependencies]
 hyle-ca-core = { path = "../ca-core", version = "0.1.0" }
