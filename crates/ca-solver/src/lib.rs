@@ -1,6 +1,6 @@
 //! Default solver for the Hyle cellular automaton engine.
 //!
-//! Double-buffered, single-threaded simulation with two-tier rule system:
+//! Double-buffered, single-threaded CA solver with two-tier rule system:
 //! per-cell rules (any radius) and world passes (full grid access).
 
 use hyle_ca_core::cell::{Action, Cell, GridReader, GridWriter, Neighborhood, Rng};

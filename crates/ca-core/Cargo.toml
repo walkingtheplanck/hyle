@@ -5,7 +5,7 @@ edition = "2021"
 description = "Core types and traits for the Hyle cellular automaton engine."
 license = "GPL-3.0-only"
 repository = "https://github.com/walkingtheplanck/hyle"
-keywords = ["cellular-automata", "simulation", "voxel", "gamedev"]
-categories = ["simulation", "game-development"]
+keywords = ["cellular-automata", "voxel", "gamedev", "automaton"]
+categories = ["game-development", "algorithms"]
 
 [dependencies]

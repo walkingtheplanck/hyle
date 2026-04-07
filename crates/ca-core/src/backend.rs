@@ -2,7 +2,7 @@
 
 use crate::cell::Cell;
 
-/// The simulation interface shared by all solvers (CPU, GPU, etc.).
+/// The common interface shared by all CA solvers (CPU, GPU, etc.).
 ///
 /// Rule registration is NOT part of this trait — it's solver-specific.
 /// CPU solvers take Rust closures, GPU solvers take WGSL shader source.
@@ -24,7 +24,7 @@ pub trait CaSolver<C: Cell> {
     /// Set the cell at (x, y, z). No-op for out-of-bounds.
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C);
 
-    /// Advance the simulation by one step.
+    /// Advance the automaton by one step.
     fn step(&mut self);
 
     /// Number of steps completed so far.

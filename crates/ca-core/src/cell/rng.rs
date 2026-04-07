@@ -4,7 +4,7 @@
 ///
 /// Produced by the engine from the cell's position and step count.
 /// The same (x, y, z, step) always produces the same value —
-/// simulations are reproducible.
+/// results are reproducible.
 #[derive(Clone, Copy, Debug)]
 pub struct Rng(u32);
 

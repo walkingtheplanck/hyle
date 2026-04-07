@@ -6,7 +6,7 @@
 /// and treats any non-zero value as alive — suitable for classic
 /// binary CA like Game of Life.
 ///
-/// For richer simulations (fluids, multi-channel state), define your
+/// For richer automata (fluids, multi-channel state), define your
 /// own struct and implement this trait.
 pub trait Cell: Copy + Default + Send + Sync + 'static {
     /// Which rule to apply to this cell (indexes into the rule table).

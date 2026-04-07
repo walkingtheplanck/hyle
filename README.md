@@ -2,7 +2,7 @@
 
 A general-purpose **3D cellular automaton engine** in Rust.
 
-Define rules as closures, register them, run the simulation. Supports custom cell types, variable-radius neighborhoods, and world passes for global operations.
+Define rules as closures, register them, step the automaton. Supports custom cell types, variable-radius neighborhoods, and world passes for global operations.
 
 ---
 
@@ -45,7 +45,7 @@ ca-solver   Default solver implementation (double-buffered, CPU)
 
 **`ca-core`** defines the interface. Zero dependencies. Depend on this to write rules or implement a custom solver.
 
-**`ca-solver`** is the default implementation. Depend on this to run simulations.
+**`ca-solver`** is the default implementation. Depend on this to run automata.
 
 ### Custom cell types
 
@@ -107,7 +107,7 @@ cargo run --release -p hyle-viewer
 | Middle-drag | Pan |
 | Scroll | Zoom |
 | WASD / QE | Move camera |
-| R | Reset simulation |
+| R | Reset |
 | Tab | Toggle mouse capture |
 
 ---
