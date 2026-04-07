@@ -8,6 +8,8 @@ mod traits;
 
 pub use action::Action;
 pub use grid::{GridReader, GridWriter};
-pub use neighborhood::Neighborhood;
+pub use neighborhood::{
+    inverse_square, MooreNeighborhood, Neighborhood, SphericalNeighborhood, VonNeumannNeighborhood,
+};
 pub use rng::Rng;
 pub use traits::Cell;

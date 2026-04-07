@@ -11,7 +11,7 @@ fn rule_kill_all() {
     let mut s = Solver::<u32>::new(4, 4, 4);
     s.set(2, 2, 2, 1);
     s.set(1, 1, 1, 1);
-    s.register_rule(1, |_n: &Neighborhood<u32>, _rng: Rng| Action::Become(0));
+    s.register_rule(1, |_n: &dyn Neighborhood<u32>, _rng: Rng| Action::Become(0));
 
     s.step();
 
@@ -28,7 +28,7 @@ fn rule_spread_to_neighbors() {
     let mut s = Solver::<u32>::new(5, 5, 5);
     s.set(2, 2, 2, 1); // single alive cell in center
 
-    s.register_rule(0, |n: &Neighborhood<u32>, _rng: Rng| {
+    s.register_rule(0, |n: &dyn Neighborhood<u32>, _rng: Rng| {
         if n.count_alive() > 0 {
             Action::Become(1)
         } else {
@@ -36,7 +36,7 @@ fn rule_spread_to_neighbors() {
         }
     });
     // Alive cells stay alive
-    s.register_rule(1, |_n: &Neighborhood<u32>, _rng: Rng| Action::Keep);
+    s.register_rule(1, |_n: &dyn Neighborhood<u32>, _rng: Rng| Action::Keep);
 
     s.step();
 
@@ -60,14 +60,14 @@ fn rule_threshold_birth() {
     s.set(1, 2, 2, 1);
     s.set(3, 2, 2, 1);
 
-    s.register_rule(0, |n: &Neighborhood<u32>, _rng: Rng| {
+    s.register_rule(0, |n: &dyn Neighborhood<u32>, _rng: Rng| {
         if n.count_alive() == 2 {
             Action::Become(1)
         } else {
             Action::Keep
         }
     });
-    s.register_rule(1, |_n: &Neighborhood<u32>, _rng: Rng| Action::Keep);
+    s.register_rule(1, |_n: &dyn Neighborhood<u32>, _rng: Rng| Action::Keep);
 
     s.step();
 
@@ -81,14 +81,14 @@ fn rule_threshold_no_birth() {
     let mut s = Solver::<u32>::new(5, 5, 5);
     s.set(1, 2, 2, 1); // only 1 neighbor
 
-    s.register_rule(0, |n: &Neighborhood<u32>, _rng: Rng| {
+    s.register_rule(0, |n: &dyn Neighborhood<u32>, _rng: Rng| {
         if n.count_alive() == 2 {
             Action::Become(1)
         } else {
             Action::Keep
         }
     });
-    s.register_rule(1, |_n: &Neighborhood<u32>, _rng: Rng| Action::Keep);
+    s.register_rule(1, |_n: &dyn Neighborhood<u32>, _rng: Rng| Action::Keep);
 
     s.step();
 
@@ -117,15 +117,15 @@ fn rule_type_interaction() {
         }
     }
 
-    s.register_rule(1, |n: &Neighborhood<u32>, _rng: Rng| {
-        let ice_count = n.count(|c| c == 2);
+    s.register_rule(1, |n: &dyn Neighborhood<u32>, _rng: Rng| {
+        let ice_count = n.count(&|c| c == 2);
         if ice_count == 26 {
             Action::Become(2) // freeze
         } else {
             Action::Keep
         }
     });
-    s.register_rule(2, |_n: &Neighborhood<u32>, _rng: Rng| Action::Keep);
+    s.register_rule(2, |_n: &dyn Neighborhood<u32>, _rng: Rng| Action::Keep);
 
     s.step();
 
@@ -145,14 +145,14 @@ fn rule_closure_captures_threshold() {
     s.set(3, 2, 2, 1);
     s.set(2, 1, 2, 1);
 
-    s.register_rule(0, move |n: &Neighborhood<u32>, _rng: Rng| {
+    s.register_rule(0, move |n: &dyn Neighborhood<u32>, _rng: Rng| {
         if n.count_alive() >= threshold {
             Action::Become(1)
         } else {
             Action::Keep
         }
     });
-    s.register_rule(1, |_n: &Neighborhood<u32>, _rng: Rng| Action::Keep);
+    s.register_rule(1, |_n: &dyn Neighborhood<u32>, _rng: Rng| Action::Keep);
 
     s.step();
 
@@ -169,14 +169,14 @@ fn deterministic_across_runs() {
         s.set(3, 4, 4, 1);
         s.set(5, 4, 4, 1);
 
-        s.register_rule(0, |n: &Neighborhood<u32>, rng: Rng| {
+        s.register_rule(0, |n: &dyn Neighborhood<u32>, rng: Rng| {
             if n.count_alive() == 3 && rng.chance(2) {
                 Action::Become(1)
             } else {
                 Action::Keep
             }
         });
-        s.register_rule(1, |n: &Neighborhood<u32>, _rng: Rng| {
+        s.register_rule(1, |n: &dyn Neighborhood<u32>, _rng: Rng| {
             if n.count_alive() < 2 {
                 Action::Become(0)
             } else {
@@ -213,7 +213,7 @@ fn double_buffer_isolation() {
     }
 
     // Rule: die if you have exactly 26 alive neighbors (fully surrounded)
-    s.register_rule(1, |n: &Neighborhood<u32>, _rng: Rng| {
+    s.register_rule(1, |n: &dyn Neighborhood<u32>, _rng: Rng| {
         if n.count_alive() == 26 {
             Action::Become(0)
         } else {
@@ -238,14 +238,14 @@ fn rule_with_radius_2() {
     s.set(4, 4, 4, 1); // single cell at center
 
     // Dead cells at radius 2 can see the alive cell
-    s.register_rule_with_radius(0, 2, |n: &Neighborhood<u32>, _rng: Rng| {
+    s.register_rule_with_radius(0, 2, |n: &dyn Neighborhood<u32>, _rng: Rng| {
         if n.count_alive() > 0 {
             Action::Become(1)
         } else {
             Action::Keep
         }
     });
-    s.register_rule(1, |_n: &Neighborhood<u32>, _rng: Rng| Action::Keep);
+    s.register_rule(1, |_n: &dyn Neighborhood<u32>, _rng: Rng| Action::Keep);
 
     s.step();
 

@@ -35,14 +35,15 @@ impl Simulation {
         let mut ca = Solver::new(64, 64, 64);
 
         // Life 4555: S4-5 / B5 (26-neighbor Moore neighborhood)
-        ca.register_rule(ALIVE as u8, |n: &Neighborhood<u32>, _rng: Rng| {
-            match n.count_alive() {
+        ca.register_rule(
+            ALIVE as u8,
+            |n: &dyn Neighborhood<u32>, _rng: Rng| match n.count_alive() {
                 4..=5 => Action::Keep,
                 _ => Action::Become(DEAD),
-            }
-        });
+            },
+        );
 
-        ca.register_rule(DEAD as u8, |n: &Neighborhood<u32>, _rng: Rng| {
+        ca.register_rule(DEAD as u8, |n: &dyn Neighborhood<u32>, _rng: Rng| {
             match n.count_alive() {
                 5 => Action::Become(ALIVE),
                 _ => Action::Keep,

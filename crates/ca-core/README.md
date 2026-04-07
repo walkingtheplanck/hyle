@@ -46,7 +46,7 @@ Rules are closures that receive a [`Neighborhood`] and [`Rng`], and return an [`
 use hyle_ca_core::{Action, Neighborhood, Rng};
 
 // 3D Game of Life (Life 4555): survive with 4-5 neighbors, birth with 5
-fn alive_rule(n: &Neighborhood<u32>, _rng: Rng) -> Action<u32> {
+fn alive_rule(n: &dyn Neighborhood<u32>, _rng: Rng) -> Action<u32> {
     match n.count_alive() {
         4..=5 => Action::Keep,
         _ => Action::Become(0),

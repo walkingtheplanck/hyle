@@ -33,7 +33,7 @@ fn world_pass_reads_post_rule_state() {
     s.set(1, 1, 1, 1);
 
     // Rule: type 1 becomes type 2
-    s.register_rule(1, |_n: &Neighborhood<u32>, _rng: Rng| Action::Become(2));
+    s.register_rule(1, |_n: &dyn Neighborhood<u32>, _rng: Rng| Action::Become(2));
 
     // World pass: read the cell and verify it was already changed by the rule
     s.register_world_pass(|grid, out| {
@@ -80,7 +80,7 @@ fn world_pass_conservation_check() {
     }
 
     // Rule that might not conserve mass
-    s.register_rule(1, |n: &Neighborhood<u32>, _rng: Rng| {
+    s.register_rule(1, |n: &dyn Neighborhood<u32>, _rng: Rng| {
         if n.count_alive() > 5 {
             Action::Become(0)
         } else {

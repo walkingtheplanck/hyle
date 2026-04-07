@@ -1,18 +1,37 @@
 #![doc = include_str!("../README.md")]
 
-use hyle_ca_core::cell::{Action, Cell, GridReader, GridWriter, Neighborhood, Rng};
+use hyle_ca_core::cell::{
+    Action, Cell, GridReader, GridWriter, MooreNeighborhood, Neighborhood, Rng,
+    SphericalNeighborhood, VonNeumannNeighborhood,
+};
 use hyle_ca_core::CaSolver;
 
-/// A boxed per-cell rule: (radius, closure).
-type BoxedRule<C> = (u32, Box<dyn Fn(&Neighborhood<C>, Rng) -> Action<C>>);
+/// Neighborhood shape selector for rule registration.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NShape {
+    /// Full cube: Chebyshev distance ≤ R. R=1 → 26 neighbors.
+    Moore,
+    /// Diamond: Manhattan distance ≤ R. R=1 → 6 neighbors (face-adjacent).
+    VonNeumann,
+    /// Sphere: Euclidean distance ≤ R. R=1 → 6 neighbors.
+    Spherical,
+}
+
+/// A boxed per-cell rule: (radius, shape, closure).
+type BoxedRule<C> = (
+    u32,
+    NShape,
+    Box<dyn Fn(&dyn Neighborhood<C>, Rng) -> Action<C>>,
+);
 
 /// A boxed world pass closure.
 type BoxedWorldPass<C> = Box<dyn Fn(&GridReader<C>, &mut GridWriter<C>)>;
 
 /// Default 3D cellular automaton solver, generic over cell type `C`.
 ///
-/// Rules are Rust closures — register them with `register_rule()` or
-/// `register_rule_with_radius()`. World passes run after all per-cell rules.
+/// Rules are Rust closures — register them with `register_rule()`,
+/// `register_rule_with_radius()`, or `register_rule_with_shape()`.
+/// World passes run after all per-cell rules.
 pub struct Solver<C: Cell = u32> {
     width: u32,
     height: u32,
@@ -21,7 +40,7 @@ pub struct Solver<C: Cell = u32> {
     cells: Vec<C>,
     cells_next: Vec<C>,
 
-    /// Per-cell rules indexed by cell type. Stores (radius, boxed closure).
+    /// Per-cell rules indexed by cell type. Stores (radius, shape, boxed closure).
     rules: Vec<Option<BoxedRule<C>>>,
 
     /// World passes, run in registration order after all per-cell rules.
@@ -48,25 +67,36 @@ impl<C: Cell> Solver<C> {
         }
     }
 
-    /// Register a per-cell rule with radius 1 (26-cell Moore neighborhood).
+    /// Register a per-cell rule with radius 1 and Moore neighborhood (26 neighbors).
     pub fn register_rule(
         &mut self,
         cell_type: u8,
-        rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
+        rule: impl Fn(&dyn Neighborhood<C>, Rng) -> Action<C> + 'static,
     ) {
-        self.rules[cell_type as usize] = Some((1, Box::new(rule)));
+        self.rules[cell_type as usize] = Some((1, NShape::Moore, Box::new(rule)));
     }
 
-    /// Register a per-cell rule with a custom radius.
-    /// Radius 1 = 26 neighbors, radius 2 = 124, radius 3 = 342, etc.
+    /// Register a per-cell rule with a custom radius and Moore neighborhood.
     pub fn register_rule_with_radius(
         &mut self,
         cell_type: u8,
         radius: u32,
-        rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
+        rule: impl Fn(&dyn Neighborhood<C>, Rng) -> Action<C> + 'static,
     ) {
         assert!(radius >= 1, "radius must be >= 1");
-        self.rules[cell_type as usize] = Some((radius, Box::new(rule)));
+        self.rules[cell_type as usize] = Some((radius, NShape::Moore, Box::new(rule)));
+    }
+
+    /// Register a per-cell rule with a custom radius and neighborhood shape.
+    pub fn register_rule_with_shape(
+        &mut self,
+        cell_type: u8,
+        radius: u32,
+        shape: NShape,
+        rule: impl Fn(&dyn Neighborhood<C>, Rng) -> Action<C> + 'static,
+    ) {
+        assert!(radius >= 1, "radius must be >= 1");
+        self.rules[cell_type as usize] = Some((radius, shape, Box::new(rule)));
     }
 
     /// Register a world pass. Runs after all per-cell rules, in registration order.
@@ -89,15 +119,35 @@ impl<C: Cell> Solver<C> {
         let h = self.height as i32;
         let d = self.depth as i32;
 
-        let max_radius = self
-            .rules
-            .iter()
-            .filter_map(|r| r.as_ref())
-            .map(|(radius, _)| *radius)
-            .max()
-            .unwrap_or(1);
+        // Find max radius per shape to pre-allocate neighborhood buffers.
+        let mut max_moore: u32 = 0;
+        let mut max_vn: u32 = 0;
+        let mut max_sphere: u32 = 0;
 
-        let mut nbr = Neighborhood::new(max_radius);
+        for rule in self.rules.iter().flatten() {
+            match rule.1 {
+                NShape::Moore => max_moore = max_moore.max(rule.0),
+                NShape::VonNeumann => max_vn = max_vn.max(rule.0),
+                NShape::Spherical => max_sphere = max_sphere.max(rule.0),
+            }
+        }
+
+        // Pre-allocate one buffer per shape that's actually used.
+        let mut nbr_moore = if max_moore > 0 {
+            Some(MooreNeighborhood::new(max_moore))
+        } else {
+            None
+        };
+        let mut nbr_vn = if max_vn > 0 {
+            Some(VonNeumannNeighborhood::new(max_vn))
+        } else {
+            None
+        };
+        let mut nbr_sphere = if max_sphere > 0 {
+            Some(SphericalNeighborhood::new(max_sphere))
+        } else {
+            None
+        };
 
         for z in 0..d {
             for y in 0..h {
@@ -106,17 +156,33 @@ impl<C: Cell> Solver<C> {
                     let center = unsafe { self.get_unchecked(x as u32, y as u32, z as u32) };
                     let cell_type = center.rule_id() as usize;
 
-                    let (radius, rule) = match &self.rules[cell_type] {
-                        Some(r) => (r.0, &r.1),
+                    let (radius, shape, rule) = match &self.rules[cell_type] {
+                        Some(r) => (r.0, r.1, &r.2),
                         None => continue,
                     };
 
-                    nbr.resize(radius);
-                    nbr.fill(center, [x, y, z], |dx, dy, dz| {
-                        self.get(x + dx, y + dy, z + dz)
-                    });
-                    let rng = Rng::new(x as u32, y as u32, z as u32, self.step_count);
-                    let action = rule(&nbr, rng);
+                    let sample = |dx: i32, dy: i32, dz: i32| self.get(x + dx, y + dy, z + dz);
+
+                    let action = match shape {
+                        NShape::Moore => {
+                            let nbr = nbr_moore.as_mut().unwrap();
+                            nbr.resize(radius);
+                            nbr.fill(center, [x, y, z], sample);
+                            rule(nbr, Rng::new(x as u32, y as u32, z as u32, self.step_count))
+                        }
+                        NShape::VonNeumann => {
+                            let nbr = nbr_vn.as_mut().unwrap();
+                            nbr.resize(radius);
+                            nbr.fill(center, [x, y, z], sample);
+                            rule(nbr, Rng::new(x as u32, y as u32, z as u32, self.step_count))
+                        }
+                        NShape::Spherical => {
+                            let nbr = nbr_sphere.as_mut().unwrap();
+                            nbr.resize(radius);
+                            nbr.fill(center, [x, y, z], sample);
+                            rule(nbr, Rng::new(x as u32, y as u32, z as u32, self.step_count))
+                        }
+                    };
 
                     if let Action::Become(c) = action {
                         let ci = self.idx(x as u32, y as u32, z as u32);
