@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
       - name: Validate commit messages
         run: |
-          PATTERN='^(feat|fix|refactor|chore|docs|test|perf|ci): [a-z].*[^.]$'
+          PATTERN='^(feat|fix|refactor|chore|config|docs|test|perf|ci): [a-z].*[^.]$'
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             RANGE="${{ github.event.pull_request.base.sha }}..${{ github.sha }}"
           else
@@ -34,13 +34,37 @@ jobs:
             if ! echo "$MSG" | grep -qE "$PATTERN"; then
               echo "BAD: $MSG"
               echo "Expected: <type>: <lowercase description>"
-              echo "Types: feat, fix, refactor, chore, docs, test, perf, ci"
+              echo "Types: feat, fix, refactor, chore, config, docs, test, perf, ci"
               exit 1
             fi
           done
 
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="HEAD~1"
+          fi
+          if git diff --name-only "$BASE" HEAD | grep -qE '\.(rs|toml|lock)$'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   fmt:
     name: Formatting
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +75,8 @@ jobs:
 
   clippy:
     name: Lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +87,8 @@ jobs:
 
   test:
     name: Test
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +97,8 @@ jobs:
 
   doc:
     name: Documentation
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -16,7 +16,7 @@ This is a **framework** and **solver**, not an engine. It does not own a loop or
 
 - Always commit after completing a change — especially in worktrees.
 - Use conventional commit format: `<type>: <lowercase description>`
-  - Types: feat, fix, refactor, chore, docs, test, perf, ci
+  - Types: feat, fix, refactor, chore, config, docs, test, perf, ci
 - After completing a feature or change, add/update tests and update relevant docs (READMEs, doc comments).
 - Pre-commit hook runs CI checks (fmt, clippy, test, doc).
 - Viewer is excluded from CI (needs GPU/display libs).
