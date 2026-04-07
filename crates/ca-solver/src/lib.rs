@@ -1,10 +1,9 @@
 #![doc = include_str!("../README.md")]
 
-use hyle_ca_core::cell::{
-    Action, Cell, GridReader, GridWriter, MooreNeighborhood, Neighborhood, Rng,
+use hyle_ca_core::{
+    Action, CaSolver, Cell, GridReader, GridWriter, MooreNeighborhood, Neighborhood, Rng,
     SphericalNeighborhood, VonNeumannNeighborhood,
 };
-use hyle_ca_core::CaSolver;
 
 /// Neighborhood shape selector for rule registration.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

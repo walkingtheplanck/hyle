@@ -1,6 +1,6 @@
-//! Tier 3: GridReader / GridWriter — full grid access for world passes.
+//! GridReader / GridWriter — full grid access for world passes.
 
-use super::Cell;
+use crate::Cell;
 
 /// Immutable view of the grid. Used by world passes to read cell state.
 pub struct GridReader<'a, C: Cell> {

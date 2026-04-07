@@ -1,6 +1,6 @@
 //! Action — what a rule wants to happen to the center cell.
 
-use super::Cell;
+use crate::Cell;
 
 /// What a rule wants to happen to the center cell.
 ///

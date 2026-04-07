@@ -1,10 +1,14 @@
 //! Neighborhood trait and built-in shapes: Moore, Von Neumann, Spherical.
 
-use super::Cell;
+mod moore;
+mod spherical;
+mod von_neumann;
 
-// ---------------------------------------------------------------------------
-// Trait
-// ---------------------------------------------------------------------------
+pub use moore::MooreNeighborhood;
+pub use spherical::SphericalNeighborhood;
+pub use von_neumann::VonNeumannNeighborhood;
+
+use crate::Cell;
 
 /// A neighborhood of cells around a center cell.
 ///
@@ -72,18 +76,16 @@ pub fn inverse_square(distance: f32) -> f32 {
 // ---------------------------------------------------------------------------
 
 /// Internal storage shared by all built-in neighborhood types.
-struct NeighborhoodData<C: Cell> {
+pub(crate) struct NeighborhoodData<C: Cell> {
     center: C,
     pos: [i32; 3],
     radius: u32,
-    /// Precomputed offsets for this shape + radius.
     offsets: Vec<(i32, i32, i32)>,
-    /// Neighbors with their offsets, parallel-filled each step.
     entries: Vec<(i32, i32, i32, C)>,
 }
 
 impl<C: Cell> NeighborhoodData<C> {
-    fn new(radius: u32, include: impl Fn(i32, i32, i32, u32) -> bool) -> Self {
+    pub(crate) fn new(radius: u32, include: impl Fn(i32, i32, i32, u32) -> bool) -> Self {
         let offsets = compute_offsets(radius, &include);
         let len = offsets.len();
         NeighborhoodData {
@@ -95,7 +97,7 @@ impl<C: Cell> NeighborhoodData<C> {
         }
     }
 
-    fn resize(&mut self, radius: u32, include: impl Fn(i32, i32, i32, u32) -> bool) {
+    pub(crate) fn resize(&mut self, radius: u32, include: impl Fn(i32, i32, i32, u32) -> bool) {
         if self.radius == radius {
             return;
         }
@@ -105,7 +107,7 @@ impl<C: Cell> NeighborhoodData<C> {
             .resize(self.offsets.len(), (0, 0, 0, C::default()));
     }
 
-    fn fill(&mut self, center: C, pos: [i32; 3], sample: impl Fn(i32, i32, i32) -> C) {
+    pub(crate) fn fill(&mut self, center: C, pos: [i32; 3], sample: impl Fn(i32, i32, i32) -> C) {
         self.center = center;
         self.pos = pos;
         for (i, &(dx, dy, dz)) in self.offsets.iter().enumerate() {
@@ -113,7 +115,7 @@ impl<C: Cell> NeighborhoodData<C> {
         }
     }
 
-    fn get(&self, dx: i32, dy: i32, dz: i32) -> C {
+    pub(crate) fn get(&self, dx: i32, dy: i32, dz: i32) -> C {
         for &(ox, oy, oz, c) in &self.entries {
             if ox == dx && oy == dy && oz == dz {
                 return c;
@@ -127,7 +129,6 @@ impl<C: Cell> NeighborhoodData<C> {
     }
 }
 
-/// Compute sorted offset list for a given radius and inclusion predicate.
 fn compute_offsets(
     radius: u32,
     include: &dyn Fn(i32, i32, i32, u32) -> bool,
@@ -148,10 +149,6 @@ fn compute_offsets(
     }
     offsets
 }
-
-// ---------------------------------------------------------------------------
-// Macro for trait impl delegation
-// ---------------------------------------------------------------------------
 
 macro_rules! impl_neighborhood {
     ($ty:ident, $include_fn:expr) => {
@@ -192,48 +189,4 @@ macro_rules! impl_neighborhood {
     };
 }
 
-// ---------------------------------------------------------------------------
-// Moore: full cube, max(|dx|,|dy|,|dz|) <= R
-// ---------------------------------------------------------------------------
-
-/// Moore neighborhood: all cells within Chebyshev distance R.
-///
-/// R=1 → 26 neighbors, R=2 → 124, R=3 → 342. Formula: `(2R+1)³ - 1`.
-pub struct MooreNeighborhood<C: Cell>(NeighborhoodData<C>);
-
-impl_neighborhood!(
-    MooreNeighborhood,
-    |_dx: i32, _dy: i32, _dz: i32, _r: u32| {
-        true // all offsets within the cube are included
-    }
-);
-
-// ---------------------------------------------------------------------------
-// Von Neumann: diamond, |dx|+|dy|+|dz| <= R
-// ---------------------------------------------------------------------------
-
-/// Von Neumann neighborhood: cells within Manhattan distance R.
-///
-/// R=1 → 6 neighbors (face-adjacent), R=2 → 24, R=3 → 62.
-pub struct VonNeumannNeighborhood<C: Cell>(NeighborhoodData<C>);
-
-impl_neighborhood!(
-    VonNeumannNeighborhood,
-    |dx: i32, dy: i32, dz: i32, r: u32| {
-        (dx.unsigned_abs() + dy.unsigned_abs() + dz.unsigned_abs()) <= r
-    }
-);
-
-// ---------------------------------------------------------------------------
-// Spherical: sphere, dx²+dy²+dz² <= R²
-// ---------------------------------------------------------------------------
-
-/// Spherical neighborhood: cells within Euclidean distance R.
-///
-/// R=1 → 6 neighbors, R=2 → 32, R=3 → 122.
-pub struct SphericalNeighborhood<C: Cell>(NeighborhoodData<C>);
-
-impl_neighborhood!(
-    SphericalNeighborhood,
-    |dx: i32, dy: i32, dz: i32, r: u32| { ((dx * dx + dy * dy + dz * dz) as u32) <= r * r }
-);
+pub(crate) use impl_neighborhood;

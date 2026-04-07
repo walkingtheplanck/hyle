@@ -1,14 +1,21 @@
 #![doc = include_str!("../README.md")]
 
+pub mod action;
 pub mod backend;
 pub mod cell;
+pub mod grid;
+pub mod neighborhood;
+pub mod rng;
 pub mod validated;
 
+pub use action::Action;
 pub use backend::CaSolver;
-pub use cell::{
-    inverse_square, Action, Cell, GridReader, GridWriter, MooreNeighborhood, Neighborhood, Rng,
-    SphericalNeighborhood, VonNeumannNeighborhood,
+pub use cell::Cell;
+pub use grid::{GridReader, GridWriter};
+pub use neighborhood::{
+    inverse_square, MooreNeighborhood, Neighborhood, SphericalNeighborhood, VonNeumannNeighborhood,
 };
+pub use rng::Rng;
 pub use validated::ValidatedSolver;
 
 /// A rule function: given a neighborhood and RNG, return what happens to the center cell.
