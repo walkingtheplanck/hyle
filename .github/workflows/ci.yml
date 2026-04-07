@@ -8,9 +8,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # Only check library crates in CI — the viewer needs GPU/display libraries
-  # that aren't available on headless CI runners.
-  CI_PACKAGES: "-p hyle-ca-core -p hyle-ca-solver"
 
 jobs:
   commit-msg:
@@ -71,7 +68,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - run: cargo fmt --all --check
+      - run: scripts/ci-check.sh fmt
 
   clippy:
     name: Lint
@@ -83,7 +80,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - run: cargo clippy $CI_PACKAGES --all-targets -- -D warnings
+      - run: scripts/ci-check.sh clippy
 
   test:
     name: Test
@@ -93,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test $CI_PACKAGES --release
+      - run: scripts/ci-check.sh test
 
   doc:
     name: Documentation
@@ -103,6 +100,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo doc $CI_PACKAGES --no-deps
-        env:
-          RUSTDOCFLAGS: "-D warnings"
+      - run: scripts/ci-check.sh doc
