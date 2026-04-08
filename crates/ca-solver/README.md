@@ -58,6 +58,37 @@ solver.register_rule_with_radius(cell_type, 3, |n, rng| {
 });
 ```
 
+## Rule Sets
+
+`RuleSet` lets you group related registrations under one name and install them
+onto a solver in one call:
+
+```rust,ignore
+use hyle_ca_core::{Action, Neighborhood, Rng};
+use hyle_ca_solver::{RuleSet, Solver};
+
+let rules = RuleSet::new("life-4555")
+    .rule(1, |n: &Neighborhood<u32>, _rng: Rng| match n.count_alive() {
+        4..=5 => Action::Keep,
+        _ => Action::Become(0),
+    })
+    .rule(0, |n: &Neighborhood<u32>, _rng: Rng| match n.count_alive() {
+        5 => Action::Become(1),
+        _ => Action::Keep,
+    })
+    .world_pass(|grid, out| {
+        let alive = grid.iter().filter(|(_, _, _, c)| *c != 0).count() as u32;
+        out.set(0, 0, 0, alive);
+    });
+
+let mut solver = Solver::<u32>::new(64, 64, 64);
+solver.install_rule_set(rules);
+```
+
+Installing a rule set keeps the existing low-level semantics:
+- later registrations still override earlier rules for the same cell type
+- world passes are appended in order
+
 ## World Passes
 
 World passes run after all per-cell rules, in registration order. They receive

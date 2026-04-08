@@ -1,4 +1,4 @@
-//! Default CPU solver — double-buffered, single-threaded.
+//! Default CPU solver â€” double-buffered, single-threaded.
 
 use hyle_ca_core::{
     moore, unweighted, Action, CaSolver, Cell, GridReader, GridWriter, Neighborhood, Rng, ShapeFn,
@@ -6,11 +6,12 @@ use hyle_ca_core::{
 };
 
 use crate::grid::Grid;
+use crate::rule_set::{install_rule_set, RuleSet};
 use crate::rules::{BoxedWorldPass, RegisteredRule};
 
 /// Default 3D cellular automaton solver, generic over cell type `C`.
 ///
-/// Rules are Rust closures — register them with `register_rule()`,
+/// Rules are Rust closures â€” register them with `register_rule()`,
 /// `register_rule_with_radius()`, or `register_rule_with_shape()`.
 /// World passes run after all per-cell rules.
 pub struct Solver<C: Cell = u32> {
@@ -44,10 +45,8 @@ impl<C: Cell> Solver<C> {
         cell_type: u8,
         rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
     ) {
-        self.rules[cell_type as usize] = Some(RegisteredRule {
-            neighborhood: Neighborhood::new(1, moore, unweighted),
-            rule: Box::new(rule),
-        });
+        self.rules[cell_type as usize] =
+            Some(RegisteredRule::with_default_neighborhood(Box::new(rule)));
     }
 
     /// Register a per-cell rule with a custom radius and Moore neighborhood.
@@ -57,11 +56,12 @@ impl<C: Cell> Solver<C> {
         radius: u32,
         rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
     ) {
-        assert!(radius >= 1, "radius must be >= 1");
-        self.rules[cell_type as usize] = Some(RegisteredRule {
-            neighborhood: Neighborhood::new(radius, moore, unweighted),
-            rule: Box::new(rule),
-        });
+        self.rules[cell_type as usize] = Some(RegisteredRule::new(
+            radius,
+            moore,
+            unweighted,
+            Box::new(rule),
+        ));
     }
 
     /// Register a per-cell rule with a custom radius, shape, and weight.
@@ -73,11 +73,8 @@ impl<C: Cell> Solver<C> {
         weight: WeightFn,
         rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
     ) {
-        assert!(radius >= 1, "radius must be >= 1");
-        self.rules[cell_type as usize] = Some(RegisteredRule {
-            neighborhood: Neighborhood::new(radius, shape, weight),
-            rule: Box::new(rule),
-        });
+        self.rules[cell_type as usize] =
+            Some(RegisteredRule::new(radius, shape, weight, Box::new(rule)));
     }
 
     /// Register a world pass. Runs after all per-cell rules, in registration order.
@@ -86,6 +83,15 @@ impl<C: Cell> Solver<C> {
         pass: impl Fn(&GridReader<C>, &mut GridWriter<C>) + 'static,
     ) {
         self.world_passes.push(Box::new(pass));
+    }
+
+    /// Install a named batch of rules and world passes.
+    ///
+    /// Per-cell rules still follow the same semantics as direct registration:
+    /// later registrations override earlier ones for the same `cell_type`.
+    /// World passes are appended and run in installation order.
+    pub fn install_rule_set(&mut self, rule_set: RuleSet<C>) {
+        install_rule_set(&mut self.rules, &mut self.world_passes, rule_set);
     }
 
     /// Evaluate per-cell rules.

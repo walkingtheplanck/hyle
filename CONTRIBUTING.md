@@ -88,7 +88,24 @@ Conventional format: `<type>: <lowercase description>`
 
 Rules:
 - Description starts lowercase, no trailing period.
+- Every commit must include a description of what the change includes and the motivation for making it.
+- Put that extra context in the commit body after the subject line.
+- The body should briefly cover:
+  - what changed
+  - why the change was needed
 - The commit-msg hook enforces this format.
+
+Example:
+
+```text
+feat: add weighted neighborhood presets
+
+Includes preset builders for common weighted neighborhoods and tests for the
+new construction paths.
+
+Motivation: make common solver setups easier to create without repeating the
+same boilerplate in downstream code.
+```
 
 ## CI Pipeline
 
