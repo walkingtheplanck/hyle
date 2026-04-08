@@ -60,8 +60,6 @@ pub struct Neighborhood<C: Cell> {
     entries: Vec<Entry<C>>,
     alive_count: u32,
     weighted_sum: f32,
-    includes: ShapeFn,
-    weight: WeightFn,
 }
 
 impl<C: Cell> Neighborhood<C> {
@@ -94,8 +92,6 @@ impl<C: Cell> Neighborhood<C> {
             entries,
             alive_count: 0,
             weighted_sum: 0.0,
-            includes,
-            weight,
         }
     }
 
@@ -115,14 +111,6 @@ impl<C: Cell> Neighborhood<C> {
                 self.weighted_sum += entry.weight;
             }
         }
-    }
-
-    /// Reconstruct entries for a new radius. Reuses the same shape and weight.
-    pub fn rebuild(&mut self, radius: u32) {
-        if self.radius == radius {
-            return;
-        }
-        *self = Self::new(radius, self.includes, self.weight);
     }
 
     // --- Data access (called by rules) ---
