@@ -7,6 +7,7 @@ pub mod cell;
 pub mod grid;
 pub mod neighborhood;
 pub mod rng;
+pub mod topology;
 pub mod validated;
 
 pub use action::Action;
@@ -18,6 +19,7 @@ pub use neighborhood::{
     ShapeFn, WeightFn,
 };
 pub use rng::Rng;
+pub use topology::Topology;
 pub use validated::ValidatedSolver;
 
 /// A rule function: given a neighborhood and RNG, return what happens to the center cell.

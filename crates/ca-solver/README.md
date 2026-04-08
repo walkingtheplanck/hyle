@@ -37,6 +37,20 @@ solver.register_rule(ALIVE as u8, |n: &Neighborhood<u32>, _rng: Rng| {
 solver.step();
 ```
 
+## Topology
+
+The default solver is bounded, but you can opt into torus wrapping:
+
+```rust,ignore
+use hyle_ca_core::Topology;
+use hyle_ca_solver::Solver;
+
+let solver = Solver::<u32>::with_topology(64, 64, 64, Topology::Torus);
+```
+
+With `Topology::Torus`, direct `get`/`set`, neighborhood sampling, and world
+passes all wrap across grid edges.
+
 ## Registering Rules
 
 Rules are Rust closures registered per cell type (keyed by `Cell::rule_id()`).
@@ -107,7 +121,7 @@ solver.register_world_pass(|grid, out| {
 Each call to `step()`:
 
 1. Copies the current buffer to the next buffer
-2. Evaluates per-cell rules — reads from current, writes to next
+2. Evaluates per-cell rules - reads from current, writes to next
 3. Runs world passes sequentially over the next buffer
 4. Swaps buffers and increments the step counter
 

@@ -1,21 +1,22 @@
-//! Default CPU solver â€” double-buffered, single-threaded.
+//! Default CPU solver - double-buffered, single-threaded.
 
 use hyle_ca_core::{
     moore, unweighted, Action, CaSolver, Cell, GridReader, GridWriter, Neighborhood, Rng, ShapeFn,
-    WeightFn,
+    Topology, WeightFn,
 };
 
-use crate::grid::Grid;
+use crate::grid::{resolve_coord, Grid};
 use crate::rule_set::{install_rule_set, RuleSet};
 use crate::rules::{BoxedWorldPass, RegisteredRule};
 
 /// Default 3D cellular automaton solver, generic over cell type `C`.
 ///
-/// Rules are Rust closures â€” register them with `register_rule()`,
+/// Rules are Rust closures - register them with `register_rule()`,
 /// `register_rule_with_radius()`, or `register_rule_with_shape()`.
 /// World passes run after all per-cell rules.
 pub struct Solver<C: Cell = u32> {
     grid: Grid<C>,
+    topology: Topology,
 
     /// Per-cell rules indexed by cell type (0-255).
     rules: Vec<Option<RegisteredRule<C>>>,
@@ -27,16 +28,32 @@ pub struct Solver<C: Cell = u32> {
 }
 
 impl<C: Cell> Solver<C> {
-    /// Create a new solver filled with `C::default()`.
+    /// Create a new bounded solver filled with `C::default()`.
     pub fn new(width: u32, height: u32, depth: u32) -> Self {
+        Self::with_topology(width, height, depth, Topology::Bounded)
+    }
+
+    /// Create a new solver filled with `C::default()` and the given topology.
+    pub fn with_topology(width: u32, height: u32, depth: u32, topology: Topology) -> Self {
         let mut rules = Vec::with_capacity(256);
         rules.resize_with(256, || None);
         Solver {
             grid: Grid::new(width, height, depth),
+            topology,
             rules,
             world_passes: Vec::new(),
             step_count: 0,
         }
+    }
+
+    /// Set the solver topology for future reads, writes, and steps.
+    pub fn set_topology(&mut self, topology: Topology) {
+        self.topology = topology;
+    }
+
+    /// The active topology used by this solver.
+    pub fn topology(&self) -> Topology {
+        self.topology
     }
 
     /// Register a per-cell rule with radius 1 and Moore neighborhood (26 neighbors).
@@ -100,6 +117,8 @@ impl<C: Cell> Solver<C> {
         let h = self.grid.height;
         let d = self.grid.depth;
         let step_count = self.step_count;
+        let topology = self.topology;
+        let resolve = |x, y, z| resolve_coord(topology, w, h, d, x, y, z);
         let cells: &[C] = &self.grid.cells;
 
         for z in 0..d as i32 {
@@ -115,13 +134,10 @@ impl<C: Cell> Solver<C> {
                     };
 
                     reg.neighborhood.fill(center, [x, y, z], |dx, dy, dz| {
-                        let nx = x + dx;
-                        let ny = y + dy;
-                        let nz = z + dz;
-                        if (nx as u32) >= w || (ny as u32) >= h || (nz as u32) >= d {
-                            return C::default();
+                        match resolve(x + dx, y + dy, z + dz) {
+                            Some((nx, ny, nz)) => cells[self.grid.idx(nx, ny, nz)],
+                            None => C::default(),
                         }
-                        cells[(nx as u32 + ny as u32 * w + nz as u32 * w * h) as usize]
                     });
 
                     let action = (reg.rule)(
@@ -144,20 +160,16 @@ impl<C: Cell> Solver<C> {
         }
 
         let mut pass_read = self.grid.cells_next.clone();
+        let width = self.grid.width;
+        let height = self.grid.height;
+        let depth = self.grid.depth;
+        let topology = self.topology;
+        let resolve = |x, y, z| resolve_coord(topology, width, height, depth, x, y, z);
 
         for pass in &self.world_passes {
-            let reader = GridReader::new(
-                &pass_read,
-                self.grid.width,
-                self.grid.height,
-                self.grid.depth,
-            );
-            let mut writer = GridWriter::new(
-                &mut self.grid.cells_next,
-                self.grid.width,
-                self.grid.height,
-                self.grid.depth,
-            );
+            let reader = GridReader::new(&pass_read, width, height, depth, &resolve);
+            let mut writer =
+                GridWriter::new(&mut self.grid.cells_next, width, height, depth, &resolve);
             pass(&reader, &mut writer);
             pass_read.copy_from_slice(&self.grid.cells_next);
         }
@@ -168,19 +180,33 @@ impl<C: Cell> CaSolver<C> for Solver<C> {
     fn width(&self) -> u32 {
         self.grid.width
     }
+
     fn height(&self) -> u32 {
         self.grid.height
     }
+
     fn depth(&self) -> u32 {
         self.grid.depth
     }
 
+    fn resolve_coord(&self, x: i32, y: i32, z: i32) -> Option<(u32, u32, u32)> {
+        resolve_coord(
+            self.topology,
+            self.grid.width,
+            self.grid.height,
+            self.grid.depth,
+            x,
+            y,
+            z,
+        )
+    }
+
     fn get(&self, x: i32, y: i32, z: i32) -> C {
-        self.grid.get(x, y, z)
+        self.grid.get(self.topology, x, y, z)
     }
 
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
-        self.grid.set(x, y, z, cell);
+        self.grid.set(self.topology, x, y, z, cell);
     }
 
     fn step(&mut self) {

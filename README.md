@@ -3,7 +3,7 @@
 A 3D cellular automaton framework for Rust.
 
 > Define rules as closures, register them, step the simulation.
-> Supports custom cell types, variable-radius neighborhoods, and world passes.
+> Supports custom cell types, variable-radius neighborhoods, torus topology, and world passes.
 
 ---
 
@@ -11,8 +11,8 @@ A 3D cellular automaton framework for Rust.
 
 | Crate | Purpose |
 |-------|---------|
-| [`hyle-ca-core`](crates/ca-core) | Traits and types — depend on this to write rules or a custom solver |
-| [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver (double-buffered) — depend on this to run automata |
+| [`hyle-ca-core`](crates/ca-core) | Traits and types - depend on this to write rules or a custom solver |
+| [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver (double-buffered) - depend on this to run automata |
 
 ---
 
@@ -72,10 +72,20 @@ solver.register_rule_with_radius(0, 3, |n, rng| {
 });
 ```
 
+### Torus Topology
+
+```rust
+use hyle_ca_core::Topology;
+
+let solver = Solver::<u32>::with_topology(64, 64, 64, Topology::Torus);
+```
+
+Reads, writes, rule neighborhoods, and world passes all wrap across grid edges.
+
 ### World Passes
 
 ```rust
-// Full grid access — runs after all per-cell rules
+// Full grid access - runs after all per-cell rules
 solver.register_world_pass(|grid, out| {
     for (x, y, z, cell) in grid.iter() {
         out.set(x as i32, y as i32, z as i32, cell);
@@ -115,12 +125,13 @@ cargo run --release -p hyle-viewer
 
 ## Roadmap
 
-- [x] **Neighborhood types** — Moore, Von Neumann, Spherical shapes + configurable weight functions
-- [ ] **Torus topology** — Wrapping boundaries, configurable per-region so wrapping and non-wrapping cells can coexist
-- [ ] **Pattern serialization** — Save/load grid state
-- [ ] **Chunk-based sparse storage** — Skip empty regions, scale to large grids
-- [ ] **Analysis tools** — Population counts, entropy, step statistics
-- [ ] **Parallel stepping** — Rayon for CPU, leveraging the existing double-buffer design
+- [x] **Neighborhood types** - Moore, Von Neumann, Spherical shapes + configurable weight functions
+- [x] **Global torus topology** - Wrapping boundaries for the whole solver grid
+- [ ] **Regional topology control** - Let wrapping and non-wrapping cells coexist in the same world
+- [ ] **Pattern serialization** - Save/load grid state
+- [ ] **Chunk-based sparse storage** - Skip empty regions, scale to large grids
+- [ ] **Analysis tools** - Population counts, entropy, step statistics
+- [ ] **Parallel stepping** - Rayon for CPU, leveraging the existing double-buffer design
 
 ---
 

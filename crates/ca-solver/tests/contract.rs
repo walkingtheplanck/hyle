@@ -1,6 +1,6 @@
 //! Contract tests: does the solver API behave as documented?
 
-use hyle_ca_core::CaSolver;
+use hyle_ca_core::{CaSolver, Topology};
 use hyle_ca_solver::Solver;
 
 #[test]
@@ -94,4 +94,39 @@ fn step_without_rules_preserves_state() {
     s.set(1, 1, 1, 5);
     s.step(); // no rules registered
     assert_eq!(s.get(1, 1, 1), 5); // cell unchanged
+}
+
+#[test]
+fn torus_topology_is_reported() {
+    let s = Solver::<u32>::with_topology(4, 4, 4, Topology::Torus);
+    assert_eq!(s.topology(), Topology::Torus);
+}
+
+#[test]
+fn bounded_resolve_coord_rejects_out_of_bounds() {
+    let s = Solver::<u32>::new(4, 4, 4);
+    assert_eq!(s.resolve_coord(-1, 0, 0), None);
+    assert_eq!(s.resolve_coord(3, 0, 0), Some((3, 0, 0)));
+}
+
+#[test]
+fn torus_resolve_coord_wraps_coordinates() {
+    let s = Solver::<u32>::with_topology(4, 4, 4, Topology::Torus);
+    assert_eq!(s.resolve_coord(-1, 0, 0), Some((3, 0, 0)));
+    assert_eq!(s.resolve_coord(4, 0, 0), Some((0, 0, 0)));
+}
+
+#[test]
+fn torus_get_wraps_coordinates() {
+    let mut s = Solver::<u32>::with_topology(4, 4, 4, Topology::Torus);
+    s.set(3, 0, 0, 9);
+    assert_eq!(s.get(-1, 0, 0), 9);
+    assert_eq!(s.get(7, 0, 0), 9);
+}
+
+#[test]
+fn torus_set_wraps_coordinates() {
+    let mut s = Solver::<u32>::with_topology(4, 4, 4, Topology::Torus);
+    s.set(-1, 0, 0, 11);
+    assert_eq!(s.get(3, 0, 0), 11);
 }

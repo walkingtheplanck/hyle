@@ -1,7 +1,7 @@
 //! Rule application tests: define rules, step, assert outcomes.
 //! These are generic CA behaviors, not tied to any specific game.
 
-use hyle_ca_core::{Action, CaSolver, Neighborhood, Rng};
+use hyle_ca_core::{Action, CaSolver, Neighborhood, Rng, Topology};
 use hyle_ca_solver::Solver;
 
 // -- Rule: unconditional death ------------------------------------------------
@@ -255,4 +255,23 @@ fn rule_with_radius_2() {
 
     // Cell at distance 3 should still be dead (outside radius 2)
     assert_eq!(s.get(1, 4, 4), 0);
+}
+
+#[test]
+fn torus_rules_wrap_neighbors_across_edges() {
+    let mut s = Solver::<u32>::with_topology(3, 3, 3, Topology::Torus);
+    s.set(0, 1, 1, 1);
+
+    s.register_rule(0, |n: &Neighborhood<u32>, _rng: Rng| {
+        if n.count_alive() > 0 {
+            Action::Become(1)
+        } else {
+            Action::Keep
+        }
+    });
+    s.register_rule(1, |_n: &Neighborhood<u32>, _rng: Rng| Action::Keep);
+
+    s.step();
+
+    assert_eq!(s.get(2, 1, 1), 1);
 }

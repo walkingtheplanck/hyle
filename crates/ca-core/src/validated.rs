@@ -4,7 +4,7 @@
 //! Use in debug builds to catch contract violations early, with a stack trace
 //! at the exact call site.
 //!
-//! Zero cost in release builds — just use the inner solver directly.
+//! Zero cost in release builds - just use the inner solver directly.
 //!
 //! ```ignore
 //! #[cfg(debug_assertions)]
@@ -15,8 +15,7 @@
 
 use std::marker::PhantomData;
 
-use crate::cell::Cell;
-use crate::CaSolver;
+use crate::{CaSolver, Cell};
 
 /// Wrapper that validates CaSolver contracts on every operation.
 ///
@@ -59,13 +58,6 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> ValidatedSolver<C, 
     pub fn into_inner(self) -> S {
         self.inner
     }
-
-    #[inline]
-    fn is_in_bounds(&self, x: i32, y: i32, z: i32) -> bool {
-        (x as u32) < self.inner.width()
-            && (y as u32) < self.inner.height()
-            && (z as u32) < self.inner.depth()
-    }
 }
 
 impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for ValidatedSolver<C, S> {
@@ -102,30 +94,56 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
         d
     }
 
+    fn resolve_coord(&self, x: i32, y: i32, z: i32) -> Option<(u32, u32, u32)> {
+        let resolved = self.inner.resolve_coord(x, y, z);
+
+        if let Some((ix, iy, iz)) = resolved {
+            assert!(
+                ix < self.inner.width() && iy < self.inner.height() && iz < self.inner.depth(),
+                "contract violation: resolve_coord({x},{y},{z}) returned out-of-bounds coordinate ({ix},{iy},{iz})"
+            );
+
+            let canonical = self.inner.resolve_coord(ix as i32, iy as i32, iz as i32);
+            assert!(
+                canonical == Some((ix, iy, iz)),
+                "contract violation: resolve_coord({x},{y},{z}) returned ({ix},{iy},{iz}), but resolving that coordinate again produced {canonical:?}"
+            );
+        }
+
+        resolved
+    }
+
     fn get(&self, x: i32, y: i32, z: i32) -> C {
         let result = self.inner.get(x, y, z);
-
-        // Out-of-bounds must return C::default()
-        if !self.is_in_bounds(x, y, z) {
-            assert!(
-                result == C::default(),
-                "contract violation: get({x},{y},{z}) is out-of-bounds but returned {result:?} instead of {:?}",
-                C::default()
-            );
+        match self.inner.resolve_coord(x, y, z) {
+            Some((ix, iy, iz)) => {
+                let resolved = self.inner.get(ix as i32, iy as i32, iz as i32);
+                assert!(
+                    result == resolved,
+                    "contract violation: get({x},{y},{z}) returned {result:?}, but its resolved coordinate ({ix},{iy},{iz}) returned {resolved:?}"
+                );
+            }
+            None => {
+                assert!(
+                    result == C::default(),
+                    "contract violation: get({x},{y},{z}) resolved to None but returned {result:?} instead of {:?}",
+                    C::default()
+                );
+            }
         }
 
         result
     }
 
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
+        let resolved = self.inner.resolve_coord(x, y, z);
         self.inner.set(x, y, z, cell);
 
-        // If in-bounds, get must return what we just set
-        if self.is_in_bounds(x, y, z) {
-            let readback = self.inner.get(x, y, z);
+        if let Some((ix, iy, iz)) = resolved {
+            let readback = self.inner.get(ix as i32, iy as i32, iz as i32);
             assert!(
                 readback == cell,
-                "contract violation: set({x},{y},{z}, {cell:?}) then get returned {readback:?}"
+                "contract violation: set({x},{y},{z}, {cell:?}) resolved to ({ix},{iy},{iz}) but get returned {readback:?}"
             );
         }
     }

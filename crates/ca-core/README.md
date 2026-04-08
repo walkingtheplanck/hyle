@@ -2,7 +2,7 @@
 
 Core types and traits for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
-This crate defines the **interface** — depend on it to write rules, implement custom cell types, or build a new solver backend. It has **zero dependencies**.
+This crate defines the **interface** - depend on it to write rules, implement custom cell types, or build a new solver backend. It has **zero dependencies**.
 
 ## Key Types
 
@@ -13,6 +13,7 @@ This crate defines the **interface** — depend on it to write rules, implement 
 | [`Action`] | What a rule returns: `Keep` the current cell or `Become(new_cell)` |
 | [`Neighborhood`] | Pre-fetched cube of neighbors passed to rules (any radius) |
 | [`Rng`] | Deterministic per-cell RNG seeded from position and step count |
+| [`Topology`] | Boundary behavior for reads/writes (`Bounded` or `Torus`) |
 | [`GridReader`] / [`GridWriter`] | Read-only and write-only grid views for world passes |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 
@@ -54,8 +55,18 @@ fn alive_rule(n: &Neighborhood<u32>, _rng: Rng) -> Action<u32> {
 }
 ```
 
-Rules are **order-independent** — the solver reads from one buffer and writes to
+Rules are **order-independent** - the solver reads from one buffer and writes to
 another, so evaluation order never affects the result.
+
+## Topology
+
+Solvers can choose how coordinates beyond the grid bounds behave:
+
+- `Topology::Bounded` treats out-of-bounds coordinates as absent
+- `Topology::Torus` wraps coordinates across each axis
+
+World-pass grid views follow the solver topology too, so wrapped access is
+consistent between per-cell rules and world passes.
 
 ## World Passes
 
@@ -67,7 +78,7 @@ use hyle_ca_core::{GridReader, GridWriter};
 
 fn gravity_pass(grid: &GridReader<u32>, out: &mut GridWriter<u32>) {
     for (x, y, z, cell) in grid.iter() {
-        // GridWriter has no get() — you cannot read your own output,
+        // GridWriter has no get() - you cannot read your own output,
         // preventing order-dependent bugs.
         out.set(x as i32, y as i32, z as i32, cell);
     }
@@ -95,7 +106,7 @@ impl<C: Cell> CaSolver<C> for MySolver<C> {
 }
 ```
 
-Rule registration is **not** part of the trait — it's solver-specific. CPU solvers
+Rule registration is **not** part of the trait - it's solver-specific. CPU solvers
 take Rust closures, GPU solvers would take shader source.
 
 Use [`ValidatedSolver`] to wrap your implementation and assert contracts in debug builds.

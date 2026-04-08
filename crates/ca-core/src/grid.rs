@@ -1,6 +1,8 @@
-//! GridReader / GridWriter — full grid access for world passes.
+//! GridReader / GridWriter - full grid access for world passes.
 
 use crate::Cell;
+
+type ResolveFn<'a> = dyn Fn(i32, i32, i32) -> Option<(u32, u32, u32)> + 'a;
 
 /// Immutable view of the grid. Used by world passes to read cell state.
 pub struct GridReader<'a, C: Cell> {
@@ -11,26 +13,34 @@ pub struct GridReader<'a, C: Cell> {
     pub height: u32,
     /// Grid depth in cells.
     pub depth: u32,
+    resolve: &'a ResolveFn<'a>,
 }
 
 impl<'a, C: Cell> GridReader<'a, C> {
     /// Create a new grid reader over the given cell slice.
-    pub fn new(cells: &'a [C], width: u32, height: u32, depth: u32) -> Self {
+    pub fn new(
+        cells: &'a [C],
+        width: u32,
+        height: u32,
+        depth: u32,
+        resolve: &'a ResolveFn<'a>,
+    ) -> Self {
         GridReader {
             cells,
             width,
             height,
             depth,
+            resolve,
         }
     }
 
-    /// Get the cell at (x, y, z). Returns `C::default()` for out-of-bounds.
+    /// Get the cell at (x, y, z) according to the supplied coordinate resolver.
     #[inline]
     pub fn get(&self, x: i32, y: i32, z: i32) -> C {
-        if (x as u32) >= self.width || (y as u32) >= self.height || (z as u32) >= self.depth {
-            return C::default();
+        match (self.resolve)(x, y, z) {
+            Some((x, y, z)) => self.cells[self.idx(x, y, z)],
+            None => C::default(),
         }
-        self.cells[self.idx(x as u32, y as u32, z as u32)]
     }
 
     /// Iterate all cells as `(x, y, z, cell)`.
@@ -53,7 +63,7 @@ impl<'a, C: Cell> GridReader<'a, C> {
 
 /// Write-only access to the next-state grid. Used by world passes.
 ///
-/// Intentionally has no `get()` method — this prevents world passes from
+/// Intentionally has no `get()` method - this prevents world passes from
 /// reading their own output, which would cause order-dependent bugs.
 pub struct GridWriter<'a, C: Cell> {
     cells: &'a mut [C],
@@ -63,26 +73,33 @@ pub struct GridWriter<'a, C: Cell> {
     pub height: u32,
     /// Grid depth in cells.
     pub depth: u32,
+    resolve: &'a ResolveFn<'a>,
 }
 
 impl<'a, C: Cell> GridWriter<'a, C> {
     /// Create a new grid writer over the given cell slice.
-    pub fn new(cells: &'a mut [C], width: u32, height: u32, depth: u32) -> Self {
+    pub fn new(
+        cells: &'a mut [C],
+        width: u32,
+        height: u32,
+        depth: u32,
+        resolve: &'a ResolveFn<'a>,
+    ) -> Self {
         GridWriter {
             cells,
             width,
             height,
             depth,
+            resolve,
         }
     }
 
-    /// Set the cell at (x, y, z). No-op for out-of-bounds.
+    /// Set the cell at (x, y, z) according to the supplied coordinate resolver.
     pub fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
-        if (x as u32) >= self.width || (y as u32) >= self.height || (z as u32) >= self.depth {
-            return;
+        if let Some((x, y, z)) = (self.resolve)(x, y, z) {
+            let i = self.idx(x, y, z);
+            self.cells[i] = cell;
         }
-        let i = self.idx(x as u32, y as u32, z as u32);
-        self.cells[i] = cell;
     }
 
     #[inline]

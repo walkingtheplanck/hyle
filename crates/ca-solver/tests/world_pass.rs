@@ -1,6 +1,6 @@
 //! Tests for world passes (Tier 3: full grid access).
 
-use hyle_ca_core::CaSolver;
+use hyle_ca_core::{CaSolver, Topology};
 use hyle_ca_solver::Solver;
 
 #[test]
@@ -102,4 +102,19 @@ fn world_pass_conservation_check() {
         count <= 10,
         "more alive cells than we started with: {count}"
     );
+}
+
+#[test]
+fn world_pass_respects_torus_topology() {
+    let mut s = Solver::<u32>::with_topology(4, 4, 4, Topology::Torus);
+    s.set(3, 0, 0, 7);
+
+    s.register_world_pass(|grid, out| {
+        let wrapped = grid.get(-1, 0, 0);
+        out.set(-1, 0, 0, wrapped + 1);
+    });
+
+    s.step();
+
+    assert_eq!(s.get(3, 0, 0), 8);
 }
