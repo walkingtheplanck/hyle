@@ -67,10 +67,9 @@ impl<C: Cell> Neighborhood<C> {
         self.weighted_sum = 0.0;
         for entry in &mut self.entries {
             entry.cell = sample(entry.offset.dx, entry.offset.dy, entry.offset.dz);
-            if entry.cell.is_alive() {
-                self.alive_count += 1;
-                self.weighted_sum += entry.weight;
-            }
+            let alive = entry.cell.is_alive() as u32;
+            self.alive_count += alive;
+            self.weighted_sum += alive as f32 * entry.weight;
         }
     }
 
