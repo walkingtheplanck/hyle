@@ -24,12 +24,6 @@ This is a **framework** and **solver**, not an engine. It does not own a loop or
 - Pre-commit hook runs CI checks (fmt, clippy, test, doc).
 - Viewer is excluded from CI (needs GPU/display libs).
 
-## Code Organization
-
-- No logic in `main.rs`, `lib.rs`, or `mod.rs` — these are entry points and re-exports only.
-- Use semantically named files (`shapes.rs`, `weights.rs`, not `utils.rs` or `helpers.rs`).
-- Separate responsibilities into different files or modules.
-
 ## Publishing
 
 - Crate READMEs are the single source of truth for docs (`#![doc = include_str!]`).
