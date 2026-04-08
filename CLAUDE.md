@@ -4,6 +4,7 @@
 
 Read these before making changes:
 - `README.md` — project overview
+- `CONTRIBUTING.md` — code style, docs, CI, commit conventions
 - `crates/ca-core/README.md` — framework traits and types
 - `crates/ca-solver/README.md` — default solver implementation
 - `.github/workflows/ci.yml` — CI pipeline and checks
@@ -22,12 +23,6 @@ This is a **framework** and **solver**, not an engine. It does not own a loop or
 - Git hooks are tracked in `.githooks/`. After cloning, run: `git config core.hooksPath .githooks`
 - Pre-commit hook runs CI checks (fmt, clippy, test, doc).
 - Viewer is excluded from CI (needs GPU/display libs).
-
-## Code Organization
-
-- No logic in `main.rs`, `lib.rs`, or `mod.rs` — these are entry points and re-exports only.
-- Use semantically named files (`shapes.rs`, `weights.rs`, not `utils.rs` or `helpers.rs`).
-- Separate responsibilities into different files or modules.
 
 ## Publishing
 
