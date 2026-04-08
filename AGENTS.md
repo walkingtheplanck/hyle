@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 Read [`AI_INSTRUCTIONS.md`](C:/Users/Lenovo/Desktop/Github_repos/Hyle/.ai/worktrees/xenodochial-swanson/AI_INSTRUCTIONS.md) before making changes.
 
