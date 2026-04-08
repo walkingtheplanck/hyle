@@ -14,8 +14,11 @@ use crate::cell::Cell;
 /// - `step()` increments `step_count()` by exactly 1.
 /// - `width()`, `height()`, `depth()` never change after construction.
 pub trait CaSolver<C: Cell> {
+    /// Grid width in cells.
     fn width(&self) -> u32;
+    /// Grid height in cells.
     fn height(&self) -> u32;
+    /// Grid depth in cells.
     fn depth(&self) -> u32;
 
     /// Get the cell at (x, y, z). Returns `C::default()` for out-of-bounds.

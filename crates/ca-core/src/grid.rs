@@ -5,12 +5,16 @@ use crate::Cell;
 /// Immutable view of the grid. Used by world passes to read cell state.
 pub struct GridReader<'a, C: Cell> {
     cells: &'a [C],
+    /// Grid width in cells.
     pub width: u32,
+    /// Grid height in cells.
     pub height: u32,
+    /// Grid depth in cells.
     pub depth: u32,
 }
 
 impl<'a, C: Cell> GridReader<'a, C> {
+    /// Create a new grid reader over the given cell slice.
     pub fn new(cells: &'a [C], width: u32, height: u32, depth: u32) -> Self {
         GridReader {
             cells,
@@ -53,12 +57,16 @@ impl<'a, C: Cell> GridReader<'a, C> {
 /// reading their own output, which would cause order-dependent bugs.
 pub struct GridWriter<'a, C: Cell> {
     cells: &'a mut [C],
+    /// Grid width in cells.
     pub width: u32,
+    /// Grid height in cells.
     pub height: u32,
+    /// Grid depth in cells.
     pub depth: u32,
 }
 
 impl<'a, C: Cell> GridWriter<'a, C> {
+    /// Create a new grid writer over the given cell slice.
     pub fn new(cells: &'a mut [C], width: u32, height: u32, depth: u32) -> Self {
         GridWriter {
             cells,
