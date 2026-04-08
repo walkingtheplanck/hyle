@@ -8,11 +8,9 @@ use hyle_ca_core::{
 /// A boxed rule closure.
 type BoxedRule<C> = Box<dyn Fn(&Neighborhood<C>, Rng) -> Action<C>>;
 
-/// A per-cell rule with its neighborhood configuration.
+/// A per-cell rule with its pre-built neighborhood buffer.
 struct RegisteredRule<C: Cell> {
-    radius: u32,
-    shape: ShapeFn,
-    weight: WeightFn,
+    neighborhood: Neighborhood<C>,
     rule: BoxedRule<C>,
 }
 
@@ -66,9 +64,7 @@ impl<C: Cell> Solver<C> {
         rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
     ) {
         self.rules[cell_type as usize] = Some(RegisteredRule {
-            radius: 1,
-            shape: moore,
-            weight: unweighted,
+            neighborhood: Neighborhood::new(1, moore, unweighted),
             rule: Box::new(rule),
         });
     }
@@ -82,9 +78,7 @@ impl<C: Cell> Solver<C> {
     ) {
         assert!(radius >= 1, "radius must be >= 1");
         self.rules[cell_type as usize] = Some(RegisteredRule {
-            radius,
-            shape: moore,
-            weight: unweighted,
+            neighborhood: Neighborhood::new(radius, moore, unweighted),
             rule: Box::new(rule),
         });
     }
@@ -100,9 +94,7 @@ impl<C: Cell> Solver<C> {
     ) {
         assert!(radius >= 1, "radius must be >= 1");
         self.rules[cell_type as usize] = Some(RegisteredRule {
-            radius,
-            shape,
-            weight,
+            neighborhood: Neighborhood::new(radius, shape, weight),
             rule: Box::new(rule),
         });
     }
@@ -115,51 +107,45 @@ impl<C: Cell> Solver<C> {
         self.world_passes.push(Box::new(pass));
     }
 
-    /// Get cell without bounds checking. Caller must guarantee in-bounds.
-    #[inline]
-    unsafe fn get_unchecked(&self, x: u32, y: u32, z: u32) -> C {
-        *self.cells.get_unchecked(self.idx(x, y, z))
-    }
-
     /// Evaluate per-cell rules.
     fn step_cell_rules(&mut self) {
-        let w = self.width as i32;
-        let h = self.height as i32;
-        let d = self.depth as i32;
+        let w = self.width;
+        let h = self.height;
+        let d = self.depth;
+        let step_count = self.step_count;
 
-        // Pre-allocate one neighborhood buffer per unique (shape, weight, radius).
-        // For now, create one per rule that exists.
-        let mut neighborhoods: Vec<Option<Neighborhood<C>>> = Vec::with_capacity(256);
-        for rule in &self.rules {
-            neighborhoods.push(
-                rule.as_ref()
-                    .map(|r| Neighborhood::new(r.radius, r.shape, r.weight)),
-            );
-        }
+        // Take cells slice to avoid borrow conflicts with self.rules.
+        let cells: &[C] = &self.cells;
 
-        for z in 0..d {
-            for y in 0..h {
-                for x in 0..w {
-                    // SAFETY: x,y,z are in 0..w, 0..h, 0..d — always in bounds.
-                    let center = unsafe { self.get_unchecked(x as u32, y as u32, z as u32) };
+        for z in 0..d as i32 {
+            for y in 0..h as i32 {
+                for x in 0..w as i32 {
+                    let idx = (x as u32 + y as u32 * w + z as u32 * w * h) as usize;
+                    let center = cells[idx];
                     let cell_type = center.rule_id() as usize;
 
-                    let reg = match &self.rules[cell_type] {
+                    let reg = match &mut self.rules[cell_type] {
                         Some(r) => r,
                         None => continue,
                     };
 
-                    let nbr = neighborhoods[cell_type].as_mut().unwrap();
-                    nbr.fill(center, [x, y, z], |dx, dy, dz| {
-                        self.get(x + dx, y + dy, z + dz)
+                    reg.neighborhood.fill(center, [x, y, z], |dx, dy, dz| {
+                        let nx = x + dx;
+                        let ny = y + dy;
+                        let nz = z + dz;
+                        if (nx as u32) >= w || (ny as u32) >= h || (nz as u32) >= d {
+                            return C::default();
+                        }
+                        cells[(nx as u32 + ny as u32 * w + nz as u32 * w * h) as usize]
                     });
 
-                    let action =
-                        (reg.rule)(nbr, Rng::new(x as u32, y as u32, z as u32, self.step_count));
+                    let action = (reg.rule)(
+                        &reg.neighborhood,
+                        Rng::new(x as u32, y as u32, z as u32, step_count),
+                    );
 
                     if let Action::Become(c) = action {
-                        let ci = self.idx(x as u32, y as u32, z as u32);
-                        self.cells_next[ci] = c;
+                        self.cells_next[idx] = c;
                     }
                 }
             }
