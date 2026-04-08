@@ -5,17 +5,8 @@ use hyle_ca_core::{
     WeightFn,
 };
 
-/// A boxed rule closure.
-type BoxedRule<C> = Box<dyn Fn(&Neighborhood<C>, Rng) -> Action<C>>;
-
-/// A per-cell rule with its pre-built neighborhood buffer.
-struct RegisteredRule<C: Cell> {
-    neighborhood: Neighborhood<C>,
-    rule: BoxedRule<C>,
-}
-
-/// A boxed world pass closure.
-type BoxedWorldPass<C> = Box<dyn Fn(&GridReader<C>, &mut GridWriter<C>)>;
+use crate::grid::Grid;
+use crate::rules::{BoxedWorldPass, RegisteredRule};
 
 /// Default 3D cellular automaton solver, generic over cell type `C`.
 ///
@@ -23,12 +14,7 @@ type BoxedWorldPass<C> = Box<dyn Fn(&GridReader<C>, &mut GridWriter<C>)>;
 /// `register_rule_with_radius()`, or `register_rule_with_shape()`.
 /// World passes run after all per-cell rules.
 pub struct Solver<C: Cell = u32> {
-    width: u32,
-    height: u32,
-    depth: u32,
-
-    cells: Vec<C>,
-    cells_next: Vec<C>,
+    grid: Grid<C>,
 
     /// Per-cell rules indexed by cell type (0-255).
     rules: Vec<Option<RegisteredRule<C>>>,
@@ -42,15 +28,10 @@ pub struct Solver<C: Cell = u32> {
 impl<C: Cell> Solver<C> {
     /// Create a new solver filled with `C::default()`.
     pub fn new(width: u32, height: u32, depth: u32) -> Self {
-        let n = (width * height * depth) as usize;
         let mut rules = Vec::with_capacity(256);
         rules.resize_with(256, || None);
         Solver {
-            width,
-            height,
-            depth,
-            cells: vec![C::default(); n],
-            cells_next: vec![C::default(); n],
+            grid: Grid::new(width, height, depth),
             rules,
             world_passes: Vec::new(),
             step_count: 0,
@@ -109,13 +90,11 @@ impl<C: Cell> Solver<C> {
 
     /// Evaluate per-cell rules.
     fn step_cell_rules(&mut self) {
-        let w = self.width;
-        let h = self.height;
-        let d = self.depth;
+        let w = self.grid.width;
+        let h = self.grid.height;
+        let d = self.grid.depth;
         let step_count = self.step_count;
-
-        // Take cells slice to avoid borrow conflicts with self.rules.
-        let cells: &[C] = &self.cells;
+        let cells: &[C] = &self.grid.cells;
 
         for z in 0..d as i32 {
             for y in 0..h as i32 {
@@ -145,7 +124,7 @@ impl<C: Cell> Solver<C> {
                     );
 
                     if let Action::Become(c) = action {
-                        self.cells_next[idx] = c;
+                        self.grid.cells_next[idx] = c;
                     }
                 }
             }
@@ -158,54 +137,51 @@ impl<C: Cell> Solver<C> {
             return;
         }
 
-        let mut pass_read = self.cells_next.clone();
+        let mut pass_read = self.grid.cells_next.clone();
 
         for pass in &self.world_passes {
-            let reader = GridReader::new(&pass_read, self.width, self.height, self.depth);
-            let mut writer =
-                GridWriter::new(&mut self.cells_next, self.width, self.height, self.depth);
+            let reader = GridReader::new(
+                &pass_read,
+                self.grid.width,
+                self.grid.height,
+                self.grid.depth,
+            );
+            let mut writer = GridWriter::new(
+                &mut self.grid.cells_next,
+                self.grid.width,
+                self.grid.height,
+                self.grid.depth,
+            );
             pass(&reader, &mut writer);
-            pass_read.copy_from_slice(&self.cells_next);
+            pass_read.copy_from_slice(&self.grid.cells_next);
         }
-    }
-
-    #[inline]
-    fn idx(&self, x: u32, y: u32, z: u32) -> usize {
-        (x + y * self.width + z * self.width * self.height) as usize
     }
 }
 
 impl<C: Cell> CaSolver<C> for Solver<C> {
     fn width(&self) -> u32 {
-        self.width
+        self.grid.width
     }
     fn height(&self) -> u32 {
-        self.height
+        self.grid.height
     }
     fn depth(&self) -> u32 {
-        self.depth
+        self.grid.depth
     }
 
     fn get(&self, x: i32, y: i32, z: i32) -> C {
-        if (x as u32) >= self.width || (y as u32) >= self.height || (z as u32) >= self.depth {
-            return C::default();
-        }
-        self.cells[self.idx(x as u32, y as u32, z as u32)]
+        self.grid.get(x, y, z)
     }
 
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
-        if (x as u32) >= self.width || (y as u32) >= self.height || (z as u32) >= self.depth {
-            return;
-        }
-        let i = self.idx(x as u32, y as u32, z as u32);
-        self.cells[i] = cell;
+        self.grid.set(x, y, z, cell);
     }
 
     fn step(&mut self) {
-        self.cells_next.copy_from_slice(&self.cells);
+        self.grid.prepare_step();
         self.step_cell_rules();
         self.step_world_passes();
-        std::mem::swap(&mut self.cells, &mut self.cells_next);
+        self.grid.swap();
         self.step_count += 1;
     }
 
@@ -214,17 +190,6 @@ impl<C: Cell> CaSolver<C> for Solver<C> {
     }
 
     fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> {
-        let w = self.width;
-        let h = self.height;
-        self.cells
-            .iter()
-            .enumerate()
-            .map(move |(i, &c)| {
-                let x = (i as u32) % w;
-                let y = ((i as u32) / w) % h;
-                let z = (i as u32) / (w * h);
-                (x, y, z, c)
-            })
-            .collect()
+        self.grid.iter_cells()
     }
 }
