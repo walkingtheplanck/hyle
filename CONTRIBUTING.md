@@ -13,14 +13,17 @@ The `core.hooksPath` command activates the tracked pre-commit and commit-msg hoo
 
 ## Code Organization
 
+These standards apply to the library crates (`ca-core`, `ca-solver`):
+
 - `main.rs`, `lib.rs`, and `mod.rs` are entry points and re-exports only — no logic.
 - Use semantically named files (`shapes.rs`, `weights.rs`, not `utils.rs` or `helpers.rs`).
 - Separate responsibilities into different files or modules.
 
+The **viewer** (`tools/viewer/`) is an internal dev tool, not a published crate. It is excluded from CI, documentation standards, and code organization rules. Shortcuts and workarounds are acceptable there.
+
 ## Documentation
 
 All public items in library crates require doc comments (`#![deny(missing_docs)]`).
-The viewer is excluded — it's a dev tool, not a published library.
 
 ### What to document
 
