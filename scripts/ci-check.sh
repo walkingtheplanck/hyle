@@ -22,7 +22,9 @@ run_clippy() {
 }
 
 run_test() {
-    echo "[test] cargo test..."
+    echo "[test] cargo test (debug)..."
+    cargo test $PACKAGES --quiet
+    echo "[test] cargo test (release)..."
     cargo test $PACKAGES --release --quiet
 }
 

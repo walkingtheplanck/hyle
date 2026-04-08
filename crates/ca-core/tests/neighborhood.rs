@@ -81,11 +81,18 @@ fn moore_symmetry_opposite_offsets_are_different() {
 }
 
 #[test]
-#[cfg_attr(not(debug_assertions), ignore)]
+#[cfg(debug_assertions)]
 #[should_panic]
 fn moore_get_center_panics_in_debug() {
     let n = filled_moore(0);
     n.get(0, 0, 0);
+}
+
+#[test]
+#[cfg(not(debug_assertions))]
+fn moore_get_center_returns_default_in_release() {
+    let n = filled_moore(0);
+    assert_eq!(n.get(0, 0, 0), 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -126,12 +133,20 @@ fn vn_r1_only_face_adjacent() {
 }
 
 #[test]
-#[cfg_attr(not(debug_assertions), ignore)]
+#[cfg(debug_assertions)]
 #[should_panic]
 fn vn_r1_diagonal_panics_in_debug() {
     let mut n = Neighborhood::new(1, von_neumann, unweighted);
     n.fill(0, [0, 0, 0], |_, _, _| 1);
     n.get(1, 1, 0);
+}
+
+#[test]
+#[cfg(not(debug_assertions))]
+fn vn_r1_diagonal_returns_default_in_release() {
+    let mut n = Neighborhood::new(1, von_neumann, unweighted);
+    n.fill(0, [0, 0, 0], |_, _, _| 1);
+    assert_eq!(n.get(1, 1, 0), 0);
 }
 
 // ---------------------------------------------------------------------------
