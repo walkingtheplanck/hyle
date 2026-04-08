@@ -9,8 +9,8 @@ use crate::Cell;
 /// function (influence per offset). The solver calls [`fill`](Neighborhood::fill)
 /// once per cell per step. Rules read precomputed values in O(1).
 ///
-/// ```ignore
-/// use hyle_ca_core::neighborhood::{Neighborhood, moore, unweighted};
+/// ```rust
+/// use hyle_ca_core::{Neighborhood, moore, unweighted};
 ///
 /// let mut n = Neighborhood::<u32>::new(1, moore, unweighted);
 /// ```

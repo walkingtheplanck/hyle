@@ -41,11 +41,11 @@ solver.step();
 
 The default solver is bounded, but you can opt into torus wrapping:
 
-```rust,ignore
+```rust
 use hyle_ca_core::Topology;
 use hyle_ca_solver::Solver;
 
-let solver = Solver::<u32>::with_topology(64, 64, 64, Topology::Torus);
+let _solver = Solver::<u32>::with_topology(64, 64, 64, Topology::Torus);
 ```
 
 With `Topology::Torus`, direct `get`/`set`, neighborhood sampling, and world
@@ -56,18 +56,33 @@ passes all wrap across grid edges.
 Rules are Rust closures registered per cell type (keyed by `Cell::rule_id()`).
 The default radius is 1 (26-cell Moore neighborhood):
 
-```rust,ignore
+```rust
+use hyle_ca_core::{Action, Neighborhood, Rng};
+use hyle_ca_solver::Solver;
+
+let mut solver = Solver::<u32>::new(8, 8, 8);
+let cell_type = 0u8;
+
 solver.register_rule(cell_type, |neighborhood, rng| {
+    let _ = (neighborhood, rng);
     Action::Keep // or Action::Become(new_cell)
 });
 ```
 
 For larger neighborhoods, use `register_rule_with_radius`:
 
-```rust,ignore
+```rust
+use hyle_ca_core::{Action, Neighborhood, Rng};
+use hyle_ca_solver::Solver;
+
+let mut solver = Solver::<u32>::new(8, 8, 8);
+let cell_type = 0u8;
+
 // Radius 3 = 342 neighbors
 solver.register_rule_with_radius(cell_type, 3, |n, rng| {
+    let _ = rng;
     let far_cell = n.get(3, 0, 0);
+    let _ = far_cell;
     Action::Keep
 });
 ```
@@ -77,7 +92,7 @@ solver.register_rule_with_radius(cell_type, 3, |n, rng| {
 `RuleSet` lets you group related registrations under one name and install them
 onto a solver in one call:
 
-```rust,ignore
+```rust
 use hyle_ca_core::{Action, Neighborhood, Rng};
 use hyle_ca_solver::{RuleSet, Solver};
 
@@ -108,7 +123,11 @@ Installing a rule set keeps the existing low-level semantics:
 World passes run after all per-cell rules, in registration order. They receive
 read-only access to the post-rule grid and write-only access to the output:
 
-```rust,ignore
+```rust
+use hyle_ca_solver::Solver;
+
+let mut solver = Solver::<u32>::new(4, 4, 4);
+
 solver.register_world_pass(|grid, out| {
     for (x, y, z, cell) in grid.iter() {
         out.set(x as i32, y as i32, z as i32, cell);

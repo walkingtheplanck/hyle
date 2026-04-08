@@ -43,7 +43,7 @@ byte as rule ID and treats non-zero values as alive.
 
 Rules are closures that receive a [`Neighborhood`] and [`Rng`], and return an [`Action`]:
 
-```rust,ignore
+```rust
 use hyle_ca_core::{Action, Neighborhood, Rng};
 
 // 3D Game of Life (Life 4555): survive with 4-5 neighbors, birth with 5
@@ -73,7 +73,7 @@ consistent between per-cell rules and world passes.
 World passes run after all per-cell rules and have full grid access. Use them
 for global operations like pressure solving, gravity, or conservation correction:
 
-```rust,ignore
+```rust
 use hyle_ca_core::{GridReader, GridWriter};
 
 fn gravity_pass(grid: &GridReader<u32>, out: &mut GridWriter<u32>) {
@@ -89,10 +89,14 @@ fn gravity_pass(grid: &GridReader<u32>, out: &mut GridWriter<u32>) {
 
 Implement the [`CaSolver`] trait to create a custom backend (GPU, distributed, etc.):
 
-```rust,ignore
+```rust
+use std::marker::PhantomData;
+
 use hyle_ca_core::{CaSolver, Cell};
 
-struct MySolver<C: Cell> { /* ... */ }
+struct MySolver<C: Cell> {
+    _marker: PhantomData<C>,
+}
 
 impl<C: Cell> CaSolver<C> for MySolver<C> {
     fn width(&self) -> u32 { todo!() }

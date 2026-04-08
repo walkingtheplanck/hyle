@@ -6,11 +6,28 @@
 //!
 //! Zero cost in release builds - just use the inner solver directly.
 //!
-//! ```ignore
-//! #[cfg(debug_assertions)]
-//! type Solver = ValidatedSolver<u32, CpuSolver<u32>>;
-//! #[cfg(not(debug_assertions))]
-//! type Solver = CpuSolver<u32>;
+//! ```rust
+//! use std::marker::PhantomData;
+//!
+//! use hyle_ca_core::{CaSolver, Cell, ValidatedSolver};
+//!
+//! struct ExampleSolver<C: Cell> {
+//!     _marker: PhantomData<C>,
+//! }
+//!
+//! impl<C: Cell> CaSolver<C> for ExampleSolver<C> {
+//!     fn width(&self) -> u32 { 8 }
+//!     fn height(&self) -> u32 { 8 }
+//!     fn depth(&self) -> u32 { 8 }
+//!     fn get(&self, _x: i32, _y: i32, _z: i32) -> C { C::default() }
+//!     fn set(&mut self, _x: i32, _y: i32, _z: i32, _cell: C) {}
+//!     fn step(&mut self) {}
+//!     fn step_count(&self) -> u32 { 0 }
+//!     fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> { Vec::new() }
+//! }
+//!
+//! let solver = ExampleSolver::<u32> { _marker: PhantomData };
+//! let _validated = ValidatedSolver::new(solver);
 //! ```
 
 use std::marker::PhantomData;
