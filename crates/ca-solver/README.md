@@ -18,7 +18,7 @@ const DEAD: u32 = 0;
 let mut solver = Solver::<u32>::new(64, 64, 64);
 
 // Birth rule: dead cells with exactly 5 alive neighbors come alive
-solver.register_rule(DEAD as u8, |n: &dyn Neighborhood<u32>, _rng: Rng| {
+solver.register_rule(DEAD as u8, |n: &Neighborhood<u32>, _rng: Rng| {
     match n.count_alive() {
         5 => Action::Become(ALIVE),
         _ => Action::Keep,
@@ -26,7 +26,7 @@ solver.register_rule(DEAD as u8, |n: &dyn Neighborhood<u32>, _rng: Rng| {
 });
 
 // Survival rule: alive cells with 4-5 alive neighbors survive
-solver.register_rule(ALIVE as u8, |n: &dyn Neighborhood<u32>, _rng: Rng| {
+solver.register_rule(ALIVE as u8, |n: &Neighborhood<u32>, _rng: Rng| {
     match n.count_alive() {
         4..=5 => Action::Keep,
         _ => Action::Become(DEAD),

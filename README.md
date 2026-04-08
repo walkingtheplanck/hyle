@@ -27,14 +27,14 @@ const DEAD: u32 = 0;
 
 let mut solver = Solver::<u32>::new(64, 64, 64);
 
-solver.register_rule(DEAD as u8, |n: &dyn Neighborhood<u32>, _rng: Rng| {
+solver.register_rule(DEAD as u8, |n: &Neighborhood<u32>, _rng: Rng| {
     match n.count_alive() {
         5 => Action::Become(ALIVE),
         _ => Action::Keep,
     }
 });
 
-solver.register_rule(ALIVE as u8, |n: &dyn Neighborhood<u32>, _rng: Rng| {
+solver.register_rule(ALIVE as u8, |n: &Neighborhood<u32>, _rng: Rng| {
     match n.count_alive() {
         4..=5 => Action::Keep,
         _ => Action::Become(DEAD),
@@ -115,7 +115,7 @@ cargo run --release -p hyle-viewer
 
 ## Roadmap
 
-- [ ] **Neighborhood types** — Von Neumann (face-only), Weighted (distance falloff), Spherical (Euclidean radius)
+- [x] **Neighborhood types** — Moore, Von Neumann, Spherical shapes + configurable weight functions
 - [ ] **Torus topology** — Wrapping boundaries, configurable per-region so wrapping and non-wrapping cells can coexist
 - [ ] **Pattern serialization** — Save/load grid state
 - [ ] **Chunk-based sparse storage** — Skip empty regions, scale to large grids
