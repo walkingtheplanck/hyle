@@ -41,18 +41,25 @@ impl<C: Cell> Grid<C> {
 
     /// Resolve coordinates to an in-bounds linear index according to topology.
     #[inline]
-    pub fn resolve_idx(&self, topology: Topology, x: i32, y: i32, z: i32) -> Option<usize> {
+    pub fn resolve_idx<T: Topology>(&self, topology: &T, x: i32, y: i32, z: i32) -> Option<usize> {
         let (x, y, z) = resolve_coord(topology, self.width, self.height, self.depth, x, y, z)?;
         Some(self.idx(x, y, z))
     }
 
     /// Get a cell from the current buffer according to topology.
-    pub fn get(&self, topology: Topology, x: i32, y: i32, z: i32) -> C {
+    pub fn get<T: Topology>(&self, topology: &T, x: i32, y: i32, z: i32) -> C {
         self.get_from_slice(&self.cells, topology, x, y, z)
     }
 
     /// Get a cell from an arbitrary backing slice according to topology.
-    pub fn get_from_slice(&self, cells: &[C], topology: Topology, x: i32, y: i32, z: i32) -> C {
+    pub fn get_from_slice<T: Topology>(
+        &self,
+        cells: &[C],
+        topology: &T,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> C {
         match self.resolve_idx(topology, x, y, z) {
             Some(index) => cells[index],
             None => C::default(),
@@ -60,7 +67,7 @@ impl<C: Cell> Grid<C> {
     }
 
     /// Set a cell in the current buffer according to topology.
-    pub fn set(&mut self, topology: Topology, x: i32, y: i32, z: i32, cell: C) {
+    pub fn set<T: Topology>(&mut self, topology: &T, x: i32, y: i32, z: i32, cell: C) {
         if let Some(index) = self.resolve_idx(topology, x, y, z) {
             self.cells[index] = cell;
         }
@@ -93,8 +100,8 @@ impl<C: Cell> Grid<C> {
     }
 }
 
-pub(crate) fn resolve_coord(
-    topology: Topology,
+pub(crate) fn resolve_coord<T: Topology>(
+    topology: &T,
     width: u32,
     height: u32,
     depth: u32,
@@ -102,9 +109,5 @@ pub(crate) fn resolve_coord(
     y: i32,
     z: i32,
 ) -> Option<(u32, u32, u32)> {
-    Some((
-        topology.map_coord(x, width)?,
-        topology.map_coord(y, height)?,
-        topology.map_coord(z, depth)?,
-    ))
+    topology.resolve_coord(x, y, z, width, height, depth)
 }

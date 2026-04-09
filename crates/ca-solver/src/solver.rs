@@ -1,8 +1,8 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
 use hyle_ca_core::{
-    moore, unweighted, Action, CaSolver, Cell, GridReader, GridWriter, Neighborhood, Rng, ShapeFn,
-    Topology, WeightFn,
+    moore, unweighted, Action, BoundedTopology, CaSolver, Cell, GridReader, GridWriter,
+    Neighborhood, Rng, ShapeFn, Topology, WeightFn,
 };
 
 use crate::grid::{resolve_coord, Grid};
@@ -14,9 +14,9 @@ use crate::rules::{BoxedWorldPass, RegisteredRule};
 /// Rules are Rust closures - register them with `register_rule()`,
 /// `register_rule_with_radius()`, or `register_rule_with_shape()`.
 /// World passes run after all per-cell rules.
-pub struct Solver<C: Cell = u32> {
+pub struct Solver<C: Cell = u32, T: Topology = BoundedTopology> {
     grid: Grid<C>,
-    topology: Topology,
+    topology: T,
 
     /// Per-cell rules indexed by cell type (0-255).
     rules: Vec<Option<RegisteredRule<C>>>,
@@ -27,14 +27,19 @@ pub struct Solver<C: Cell = u32> {
     step_count: u32,
 }
 
-impl<C: Cell> Solver<C> {
+impl<C: Cell> Solver<C, BoundedTopology> {
     /// Create a new bounded solver filled with `C::default()`.
     pub fn new(width: u32, height: u32, depth: u32) -> Self {
-        Self::with_topology(width, height, depth, Topology::Bounded)
+        Self::with_topology(width, height, depth, BoundedTopology)
     }
 
     /// Create a new solver filled with `C::default()` and the given topology.
-    pub fn with_topology(width: u32, height: u32, depth: u32, topology: Topology) -> Self {
+    pub fn with_topology<U: Topology>(
+        width: u32,
+        height: u32,
+        depth: u32,
+        topology: U,
+    ) -> Solver<C, U> {
         let mut rules = Vec::with_capacity(256);
         rules.resize_with(256, || None);
         Solver {
@@ -45,15 +50,28 @@ impl<C: Cell> Solver<C> {
             step_count: 0,
         }
     }
+}
 
-    /// Set the solver topology for future reads, writes, and steps.
-    pub fn set_topology(&mut self, topology: Topology) {
-        self.topology = topology;
+impl<C: Cell, T: Topology> Solver<C, T> {
+    /// Convert the solver to a new topology policy without changing its state.
+    pub fn into_topology<U: Topology>(self, topology: U) -> Solver<C, U> {
+        Solver {
+            grid: self.grid,
+            topology,
+            rules: self.rules,
+            world_passes: self.world_passes,
+            step_count: self.step_count,
+        }
     }
 
-    /// The active topology used by this solver.
-    pub fn topology(&self) -> Topology {
-        self.topology
+    /// The active topology policy used by this solver.
+    pub fn topology(&self) -> &T {
+        &self.topology
+    }
+
+    /// Replace the topology policy while preserving the solver state.
+    pub fn set_topology<U: Topology>(self, topology: U) -> Solver<C, U> {
+        self.into_topology(topology)
     }
 
     /// Register a per-cell rule with radius 1 and Moore neighborhood (26 neighbors).
@@ -117,7 +135,7 @@ impl<C: Cell> Solver<C> {
         let h = self.grid.height;
         let d = self.grid.depth;
         let step_count = self.step_count;
-        let topology = self.topology;
+        let topology = &self.topology;
         let resolve = |x, y, z| resolve_coord(topology, w, h, d, x, y, z);
         let cells: &[C] = &self.grid.cells;
 
@@ -163,7 +181,7 @@ impl<C: Cell> Solver<C> {
         let width = self.grid.width;
         let height = self.grid.height;
         let depth = self.grid.depth;
-        let topology = self.topology;
+        let topology = &self.topology;
         let resolve = |x, y, z| resolve_coord(topology, width, height, depth, x, y, z);
 
         for pass in &self.world_passes {
@@ -176,7 +194,9 @@ impl<C: Cell> Solver<C> {
     }
 }
 
-impl<C: Cell> CaSolver<C> for Solver<C> {
+impl<C: Cell, T: Topology> CaSolver<C> for Solver<C, T> {
+    type Topology = T;
+
     fn width(&self) -> u32 {
         self.grid.width
     }
@@ -189,24 +209,16 @@ impl<C: Cell> CaSolver<C> for Solver<C> {
         self.grid.depth
     }
 
-    fn resolve_coord(&self, x: i32, y: i32, z: i32) -> Option<(u32, u32, u32)> {
-        resolve_coord(
-            self.topology,
-            self.grid.width,
-            self.grid.height,
-            self.grid.depth,
-            x,
-            y,
-            z,
-        )
+    fn topology(&self) -> &Self::Topology {
+        &self.topology
     }
 
     fn get(&self, x: i32, y: i32, z: i32) -> C {
-        self.grid.get(self.topology, x, y, z)
+        self.grid.get(&self.topology, x, y, z)
     }
 
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
-        self.grid.set(self.topology, x, y, z, cell);
+        self.grid.set(&self.topology, x, y, z, cell);
     }
 
     fn step(&mut self) {

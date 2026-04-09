@@ -42,13 +42,13 @@ solver.step();
 The default solver is bounded, but you can opt into torus wrapping:
 
 ```rust
-use hyle_ca_core::Topology;
+use hyle_ca_core::TorusTopology;
 use hyle_ca_solver::Solver;
 
-let _solver = Solver::<u32>::with_topology(64, 64, 64, Topology::Torus);
+let _solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 ```
 
-With `Topology::Torus`, direct `get`/`set`, neighborhood sampling, and world
+With `TorusTopology`, direct `get`/`set`, neighborhood sampling, and world
 passes all wrap across grid edges.
 
 ## Registering Rules

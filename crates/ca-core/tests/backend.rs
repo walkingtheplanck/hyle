@@ -2,12 +2,13 @@
 
 use std::marker::PhantomData;
 
-use hyle_ca_core::{CaSolver, Cell};
+use hyle_ca_core::{BoundedTopology, CaSolver, Cell};
 
 struct DummySolver<C: Cell> {
     width: u32,
     height: u32,
     depth: u32,
+    topology: BoundedTopology,
     _marker: PhantomData<C>,
 }
 
@@ -17,12 +18,15 @@ impl<C: Cell> DummySolver<C> {
             width,
             height,
             depth,
+            topology: BoundedTopology,
             _marker: PhantomData,
         }
     }
 }
 
 impl<C: Cell> CaSolver<C> for DummySolver<C> {
+    type Topology = BoundedTopology;
+
     fn width(&self) -> u32 {
         self.width
     }
@@ -33,6 +37,10 @@ impl<C: Cell> CaSolver<C> for DummySolver<C> {
 
     fn depth(&self) -> u32 {
         self.depth
+    }
+
+    fn topology(&self) -> &Self::Topology {
+        &self.topology
     }
 
     fn get(&self, _x: i32, _y: i32, _z: i32) -> C {
@@ -65,4 +73,11 @@ fn default_resolve_coord_rejects_negative_and_large_values() {
 fn default_resolve_coord_accepts_in_bounds_values() {
     let solver = DummySolver::<u32>::new(4, 5, 6);
     assert_eq!(solver.resolve_coord(3, 4, 5), Some((3, 4, 5)));
+}
+
+#[test]
+fn default_resolve_coord_rejects_oversized_dimensions() {
+    let solver = DummySolver::<u32>::new(i32::MAX as u32 + 1, 5, 6);
+    assert_eq!(solver.resolve_coord(0, 0, 0), None);
+    assert_eq!(solver.resolve_coord(-1, 0, 0), None);
 }

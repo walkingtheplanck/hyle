@@ -13,7 +13,8 @@ This crate defines the **interface** - depend on it to write rules, implement cu
 | [`Action`] | What a rule returns: `Keep` the current cell or `Become(new_cell)` |
 | [`Neighborhood`] | Pre-fetched cube of neighbors passed to rules (any radius) |
 | [`Rng`] | Deterministic per-cell RNG seeded from position and step count |
-| [`Topology`] | Boundary behavior for reads/writes (`Bounded` or `Torus`) |
+| [`Topology`] | Trait for boundary behavior policies used by solvers |
+| [`BoundedTopology`] / [`TorusTopology`] | Built-in topology policies |
 | [`GridReader`] / [`GridWriter`] | Read-only and write-only grid views for world passes |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 
@@ -62,8 +63,8 @@ another, so evaluation order never affects the result.
 
 Solvers can choose how coordinates beyond the grid bounds behave:
 
-- `Topology::Bounded` treats out-of-bounds coordinates as absent
-- `Topology::Torus` wraps coordinates across each axis
+- [`BoundedTopology`] treats out-of-bounds coordinates as absent
+- [`TorusTopology`] wraps coordinates across each axis
 
 World-pass grid views follow the solver topology too, so wrapped access is
 consistent between per-cell rules and world passes.
@@ -92,16 +93,20 @@ Implement the [`CaSolver`] trait to create a custom backend (GPU, distributed, e
 ```rust
 use std::marker::PhantomData;
 
-use hyle_ca_core::{CaSolver, Cell};
+use hyle_ca_core::{BoundedTopology, CaSolver, Cell};
 
 struct MySolver<C: Cell> {
+    topology: BoundedTopology,
     _marker: PhantomData<C>,
 }
 
 impl<C: Cell> CaSolver<C> for MySolver<C> {
+    type Topology = BoundedTopology;
+
     fn width(&self) -> u32 { todo!() }
     fn height(&self) -> u32 { todo!() }
     fn depth(&self) -> u32 { todo!() }
+    fn topology(&self) -> &Self::Topology { &self.topology }
     fn get(&self, x: i32, y: i32, z: i32) -> C { todo!() }
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C) { todo!() }
     fn step(&mut self) { todo!() }

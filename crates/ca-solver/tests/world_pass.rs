@@ -1,6 +1,6 @@
 //! Tests for world passes (Tier 3: full grid access).
 
-use hyle_ca_core::{CaSolver, Topology};
+use hyle_ca_core::{CaSolver, TorusTopology};
 use hyle_ca_solver::Solver;
 
 #[test]
@@ -106,7 +106,7 @@ fn world_pass_conservation_check() {
 
 #[test]
 fn world_pass_respects_torus_topology() {
-    let mut s = Solver::<u32>::with_topology(4, 4, 4, Topology::Torus);
+    let mut s = Solver::<u32>::with_topology(4, 4, 4, TorusTopology);
     s.set(3, 0, 0, 7);
 
     s.register_world_pass(|grid, out| {

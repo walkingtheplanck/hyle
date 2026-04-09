@@ -19,7 +19,7 @@ pub use neighborhood::{
     ShapeFn, WeightFn,
 };
 pub use rng::Rng;
-pub use topology::Topology;
+pub use topology::{BoundedTopology, Topology, TorusTopology};
 pub use validated::ValidatedSolver;
 
 /// A rule function: given a neighborhood and RNG, return what happens to the center cell.

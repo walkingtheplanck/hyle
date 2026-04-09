@@ -75,9 +75,9 @@ solver.register_rule_with_radius(0, 3, |n, rng| {
 ### Torus Topology
 
 ```rust
-use hyle_ca_core::Topology;
+use hyle_ca_core::TorusTopology;
 
-let solver = Solver::<u32>::with_topology(64, 64, 64, Topology::Torus);
+let solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 ```
 
 Reads, writes, rule neighborhoods, and world passes all wrap across grid edges.

@@ -9,16 +9,20 @@
 //! ```rust
 //! use std::marker::PhantomData;
 //!
-//! use hyle_ca_core::{CaSolver, Cell, ValidatedSolver};
+//! use hyle_ca_core::{BoundedTopology, CaSolver, Cell, ValidatedSolver};
 //!
 //! struct ExampleSolver<C: Cell> {
+//!     topology: BoundedTopology,
 //!     _marker: PhantomData<C>,
 //! }
 //!
 //! impl<C: Cell> CaSolver<C> for ExampleSolver<C> {
+//!     type Topology = BoundedTopology;
+//!
 //!     fn width(&self) -> u32 { 8 }
 //!     fn height(&self) -> u32 { 8 }
 //!     fn depth(&self) -> u32 { 8 }
+//!     fn topology(&self) -> &Self::Topology { &self.topology }
 //!     fn get(&self, _x: i32, _y: i32, _z: i32) -> C { C::default() }
 //!     fn set(&mut self, _x: i32, _y: i32, _z: i32, _cell: C) {}
 //!     fn step(&mut self) {}
@@ -26,7 +30,7 @@
 //!     fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> { Vec::new() }
 //! }
 //!
-//! let solver = ExampleSolver::<u32> { _marker: PhantomData };
+//! let solver = ExampleSolver::<u32> { topology: BoundedTopology, _marker: PhantomData };
 //! let _validated = ValidatedSolver::new(solver);
 //! ```
 
@@ -78,6 +82,8 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> ValidatedSolver<C, 
 }
 
 impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for ValidatedSolver<C, S> {
+    type Topology = S::Topology;
+
     fn width(&self) -> u32 {
         let w = self.inner.width();
         assert!(
@@ -109,6 +115,10 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
             d
         );
         d
+    }
+
+    fn topology(&self) -> &Self::Topology {
+        self.inner.topology()
     }
 
     fn resolve_coord(&self, x: i32, y: i32, z: i32) -> Option<(u32, u32, u32)> {
