@@ -4,13 +4,13 @@ Default CPU solver for the [Hyle](https://github.com/walkingtheplanck/hyle) cell
 
 Double-buffered, single-threaded solver with a two-tier rule system: per-cell
 rules (any radius) and world passes (full grid access). Depends on
-[`hyle-ca-core`](https://crates.io/crates/hyle-ca-core) for traits and types.
+[`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts) for traits and descriptors.
 
 ## Quick Start
 
 ```rust
-use hyle_ca_core::{Action, CaSolver, Rng};
-use hyle_ca_solver::{Neighborhood, Solver};
+use hyle_ca_contracts::{Action, CaSolver};
+use hyle_ca_solver::{Neighborhood, Rng, Solver};
 
 const ALIVE: u32 = 1;
 const DEAD: u32 = 0;
@@ -42,8 +42,7 @@ solver.step();
 The default solver is bounded, but you can opt into torus wrapping:
 
 ```rust
-use hyle_ca_core::TorusTopology;
-use hyle_ca_solver::Solver;
+use hyle_ca_solver::{Solver, TorusTopology};
 
 let _solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 ```
@@ -57,8 +56,8 @@ Rules are Rust closures registered per cell type (keyed by `Cell::rule_id()`).
 The default radius is 1 (26-cell Moore neighborhood):
 
 ```rust
-use hyle_ca_core::{Action, Rng};
-use hyle_ca_solver::{Neighborhood, Solver};
+use hyle_ca_contracts::Action;
+use hyle_ca_solver::{Neighborhood, Rng, Solver};
 
 let mut solver = Solver::<u32>::new(8, 8, 8);
 let cell_type = 0u8;
@@ -72,8 +71,8 @@ solver.register_rule(cell_type, |neighborhood, rng| {
 For larger neighborhoods, use `register_rule_with_radius`:
 
 ```rust
-use hyle_ca_core::{Action, Rng};
-use hyle_ca_solver::{Neighborhood, Solver};
+use hyle_ca_contracts::Action;
+use hyle_ca_solver::{Neighborhood, Rng, Solver};
 
 let mut solver = Solver::<u32>::new(8, 8, 8);
 let cell_type = 0u8;
@@ -93,8 +92,8 @@ solver.register_rule_with_radius(cell_type, 3, |n, rng| {
 onto a solver in one call:
 
 ```rust
-use hyle_ca_core::{Action, Rng};
-use hyle_ca_solver::{Neighborhood, RuleSet, Solver};
+use hyle_ca_contracts::Action;
+use hyle_ca_solver::{Neighborhood, Rng, RuleSet, Solver};
 
 let rules = RuleSet::new("life-4555")
     .rule(1, |n: &Neighborhood<u32>, _rng: Rng| match n.count_alive() {

@@ -1,8 +1,8 @@
 //! GridReader / GridWriter - full grid access for CPU world passes.
 
-use hyle_ca_core::{Action, Cell, Rng};
+use hyle_ca_contracts::{Action, Cell};
 
-use crate::Neighborhood;
+use crate::{Neighborhood, Rng};
 
 type ResolveFn<'a> = dyn Fn(i32, i32, i32) -> usize + 'a;
 

@@ -1,7 +1,7 @@
 //! Contract tests: does the solver API behave as documented?
 
-use hyle_ca_core::{CaSolver, GridRegion, TorusTopology};
-use hyle_ca_solver::Solver;
+use hyle_ca_contracts::{CaSolver, GridRegion};
+use hyle_ca_solver::{Solver, TorusTopology};
 
 #[test]
 fn dimensions_match_constructor() {

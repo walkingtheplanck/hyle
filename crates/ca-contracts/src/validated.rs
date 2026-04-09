@@ -9,15 +9,46 @@
 //! ```rust
 //! use std::marker::PhantomData;
 //!
-//! use hyle_ca_core::{BoundedTopology, CaSolver, Cell, ValidatedSolver};
+//! use hyle_ca_contracts::{
+//!     AxisTopology, CaSolver, Cell, GridDims, Topology, TopologyDescriptor, ValidatedSolver,
+//! };
+//!
+//! #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+//! struct ExampleTopology;
 //!
 //! struct ExampleSolver<C: Cell> {
-//!     topology: BoundedTopology,
+//!     topology: ExampleTopology,
 //!     _marker: PhantomData<C>,
 //! }
 //!
+//! impl Topology for ExampleTopology {
+//!     fn descriptor(&self) -> TopologyDescriptor {
+//!         TopologyDescriptor::uniform(AxisTopology::Bounded)
+//!     }
+//!
+//!     fn resolve_index(
+//!         &self,
+//!         x: i32,
+//!         y: i32,
+//!         z: i32,
+//!         dims: GridDims,
+//!         guard_idx: usize,
+//!     ) -> usize {
+//!         let ux = x as u32;
+//!         let uy = y as u32;
+//!         let uz = z as u32;
+//!         if ux < dims.width && uy < dims.height && uz < dims.depth {
+//!             (ux as usize)
+//!                 + (uy as usize) * (dims.width as usize)
+//!                 + (uz as usize) * (dims.width as usize) * (dims.height as usize)
+//!         } else {
+//!             guard_idx
+//!         }
+//!     }
+//! }
+//!
 //! impl<C: Cell> CaSolver<C> for ExampleSolver<C> {
-//!     type Topology = BoundedTopology;
+//!     type Topology = ExampleTopology;
 //!
 //!     fn width(&self) -> u32 { 8 }
 //!     fn height(&self) -> u32 { 8 }
@@ -30,7 +61,7 @@
 //!     fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> { Vec::new() }
 //! }
 //!
-//! let solver = ExampleSolver::<u32> { topology: BoundedTopology, _marker: PhantomData };
+//! let solver = ExampleSolver::<u32> { topology: ExampleTopology, _marker: PhantomData };
 //! let _validated = ValidatedSolver::new(solver);
 //! ```
 

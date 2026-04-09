@@ -2,13 +2,45 @@
 
 use std::marker::PhantomData;
 
-use hyle_ca_core::{BoundedTopology, CaSolver, Cell, GridRegion};
+use hyle_ca_contracts::{
+    AxisTopology, CaSolver, Cell, GridDims, GridRegion, Topology, TopologyDescriptor,
+};
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct BoundedLikeTopology;
+
+impl Topology for BoundedLikeTopology {
+    fn descriptor(&self) -> TopologyDescriptor {
+        TopologyDescriptor::uniform(AxisTopology::Bounded)
+    }
+
+    fn resolve_index(&self, x: i32, y: i32, z: i32, dims: GridDims, guard_idx: usize) -> usize {
+        let ux = x as u32;
+        let uy = y as u32;
+        let uz = z as u32;
+        let max_dim = i32::MAX as u32;
+        let in_bounds = (dims.width <= max_dim)
+            && (dims.height <= max_dim)
+            && (dims.depth <= max_dim)
+            && (ux < dims.width)
+            && (uy < dims.height)
+            && (uz < dims.depth);
+
+        if in_bounds {
+            (ux as usize)
+                + (uy as usize) * (dims.width as usize)
+                + (uz as usize) * (dims.width as usize) * (dims.height as usize)
+        } else {
+            guard_idx
+        }
+    }
+}
 
 struct DummySolver<C: Cell> {
     width: u32,
     height: u32,
     depth: u32,
-    topology: BoundedTopology,
+    topology: BoundedLikeTopology,
     cells: Vec<C>,
     _marker: PhantomData<C>,
 }
@@ -28,7 +60,7 @@ impl<C: Cell> DummySolver<C> {
             width,
             height,
             depth,
-            topology: BoundedTopology,
+            topology: BoundedLikeTopology,
             cells,
             _marker: PhantomData,
         }
@@ -36,7 +68,7 @@ impl<C: Cell> DummySolver<C> {
 }
 
 impl<C: Cell> CaSolver<C> for DummySolver<C> {
-    type Topology = BoundedTopology;
+    type Topology = BoundedLikeTopology;
 
     fn width(&self) -> u32 {
         self.width

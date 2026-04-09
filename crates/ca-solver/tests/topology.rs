@@ -1,8 +1,7 @@
 //! Tests for topology index mapping.
 
-use hyle_ca_core::{
-    AxisTopology, BoundedTopology, GridDims, Topology, TopologyDescriptor, TorusTopology,
-};
+use hyle_ca_contracts::{AxisTopology, GridDims, Topology, TopologyDescriptor};
+use hyle_ca_solver::{BoundedTopology, TorusTopology};
 
 #[test]
 fn bounded_maps_out_of_bounds_to_guard_index() {

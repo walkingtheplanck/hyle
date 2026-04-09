@@ -1,6 +1,6 @@
 //! Shared runtime types for CPU neighborhoods.
 
-use hyle_ca_core::Cell;
+use hyle_ca_contracts::Cell;
 
 /// Relative position of a neighbor to the center cell.
 #[derive(Clone, Copy, Debug)]

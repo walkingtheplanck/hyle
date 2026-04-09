@@ -1,7 +1,7 @@
 //! Tests for world passes (Tier 3: full grid access).
 
-use hyle_ca_core::{CaSolver, TorusTopology};
-use hyle_ca_solver::Solver;
+use hyle_ca_contracts::CaSolver;
+use hyle_ca_solver::{Solver, TorusTopology};
 
 #[test]
 fn world_pass_runs_after_rules() {
@@ -27,8 +27,9 @@ fn world_pass_runs_after_rules() {
 
 #[test]
 fn world_pass_reads_post_rule_state() {
-    use hyle_ca_core::{Action, Rng};
+    use hyle_ca_contracts::Action;
     use hyle_ca_solver::Neighborhood;
+    use hyle_ca_solver::Rng;
 
     let mut s = Solver::<u32>::new(4, 4, 4);
     s.set(1, 1, 1, 1);
@@ -71,8 +72,9 @@ fn multiple_world_passes_chain() {
 
 #[test]
 fn world_pass_conservation_check() {
-    use hyle_ca_core::{Action, Rng};
+    use hyle_ca_contracts::Action;
     use hyle_ca_solver::Neighborhood;
+    use hyle_ca_solver::Rng;
 
     let mut s = Solver::<u32>::new(8, 8, 8);
 

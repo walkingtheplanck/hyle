@@ -1,5 +1,6 @@
-use super::{index::linear_index, Topology};
-use crate::{AxisTopology, GridDims, TopologyDescriptor};
+use hyle_ca_contracts::{AxisTopology, GridDims, Topology, TopologyDescriptor};
+
+use super::index::linear_index;
 
 /// Coordinates wrap around each axis independently.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

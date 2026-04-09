@@ -1,5 +1,6 @@
-use super::{index::linear_index, Topology};
-use crate::{AxisTopology, GridDims, TopologyDescriptor};
+use hyle_ca_contracts::{AxisTopology, GridDims, Topology, TopologyDescriptor};
+
+use super::index::linear_index;
 
 /// Coordinates outside the grid are treated as out-of-bounds.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

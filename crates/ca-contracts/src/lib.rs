@@ -6,7 +6,6 @@ pub mod backend;
 pub mod cell;
 /// Declarative, backend-neutral data structures shared across solvers.
 pub mod descriptors;
-pub mod rng;
 pub mod topology;
 pub mod validated;
 
@@ -17,6 +16,5 @@ pub use descriptors::{
     AxisTopology, GridDims, GridRegion, GridSnapshot, NeighborhoodShape, NeighborhoodSpec,
     NeighborhoodWeight, TopologyDescriptor,
 };
-pub use rng::Rng;
-pub use topology::{BoundedTopology, Topology, TorusTopology};
+pub use topology::Topology;
 pub use validated::ValidatedSolver;

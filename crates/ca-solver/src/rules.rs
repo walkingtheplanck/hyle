@@ -1,10 +1,10 @@
 //! Rule and world pass storage types.
 
-use hyle_ca_core::{Action, Cell, NeighborhoodShape, NeighborhoodSpec, NeighborhoodWeight, Rng};
+use hyle_ca_contracts::{Action, Cell, NeighborhoodShape, NeighborhoodSpec, NeighborhoodWeight};
 
 use crate::{
     inverse_square, moore, spherical, unweighted, von_neumann, GridReader, GridWriter,
-    Neighborhood, ShapeFn, WeightFn,
+    Neighborhood, Rng, ShapeFn, WeightFn,
 };
 
 /// A boxed rule closure.

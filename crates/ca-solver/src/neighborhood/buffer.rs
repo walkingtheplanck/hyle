@@ -1,6 +1,6 @@
 //! Neighborhood struct - pre-fetched neighbors around a center cell.
 
-use hyle_ca_core::Cell;
+use hyle_ca_contracts::Cell;
 
 use super::types::{Entry, Offset, ShapeFn, WeightFn};
 

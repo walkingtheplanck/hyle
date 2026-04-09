@@ -1,10 +1,8 @@
-//! Coordinate-topology policies for solver access.
+//! Built-in topology implementations for the default CPU solver.
 
 mod bounded;
 mod index;
-mod policy;
 mod torus;
 
 pub use bounded::BoundedTopology;
-pub use policy::Topology;
 pub use torus::TorusTopology;

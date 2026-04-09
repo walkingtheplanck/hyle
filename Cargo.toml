@@ -1,12 +1,12 @@
 [workspace]
 members = [
-    "crates/ca-core",
+    "crates/ca-contracts",
     "crates/ca-solver",
 
     "tools/viewer",
 ]
 default-members = [
-    "crates/ca-core",
+    "crates/ca-contracts",
     "crates/ca-solver",
 ]
 resolver = "2"

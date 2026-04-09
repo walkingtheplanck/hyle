@@ -1,8 +1,8 @@
 //! Rule application tests: define rules, step, assert outcomes.
 //! These are generic CA behaviors, not tied to any specific game.
 
-use hyle_ca_core::{Action, CaSolver, Rng, TorusTopology};
-use hyle_ca_solver::{Neighborhood, Solver};
+use hyle_ca_contracts::{Action, CaSolver};
+use hyle_ca_solver::{Neighborhood, Rng, Solver, TorusTopology};
 
 // -- Rule: unconditional death ------------------------------------------------
 

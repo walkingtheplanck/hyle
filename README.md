@@ -1,6 +1,6 @@
 # Hyle
 
-[![docs.rs: hyle-ca-core](https://img.shields.io/docsrs/hyle-ca-core?label=hyle-ca-core%20docs)](https://docs.rs/hyle-ca-core)
+[![docs.rs: hyle-ca-contracts](https://img.shields.io/docsrs/hyle-ca-contracts?label=hyle-ca-contracts%20docs)](https://docs.rs/hyle-ca-contracts)
 [![docs.rs: hyle-ca-solver](https://img.shields.io/docsrs/hyle-ca-solver?label=hyle-ca-solver%20docs)](https://docs.rs/hyle-ca-solver)
 
 A 3D cellular automaton framework for Rust.
@@ -14,7 +14,7 @@ A 3D cellular automaton framework for Rust.
 
 | Crate | Purpose |
 |-------|---------|
-| [`hyle-ca-core`](crates/ca-core) | Shared contracts and descriptors - depend on this to implement cells or solver backends |
+| [`hyle-ca-contracts`](crates/ca-contracts) | Shared contracts and descriptors - depend on this to implement cells or solver backends |
 | [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver and runtime rule API - depend on this to run automata with closures |
 
 ---
@@ -22,8 +22,8 @@ A 3D cellular automaton framework for Rust.
 ## Quick Start
 
 ```rust
-use hyle_ca_core::{Action, Rng};
-use hyle_ca_solver::{Neighborhood, Solver};
+use hyle_ca_contracts::Action;
+use hyle_ca_solver::{Neighborhood, Rng, Solver};
 
 const ALIVE: u32 = 1;
 const DEAD: u32 = 0;
@@ -78,7 +78,7 @@ solver.register_rule_with_radius(0, 3, |n, rng| {
 ### Torus Topology
 
 ```rust
-use hyle_ca_core::TorusTopology;
+use hyle_ca_solver::TorusTopology;
 
 let solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 ```
@@ -99,7 +99,7 @@ solver.register_world_pass(|grid, out| {
 ### Debug Contract Validation
 
 ```rust
-use hyle_ca_core::ValidatedSolver;
+use hyle_ca_contracts::ValidatedSolver;
 
 // Wraps any solver, asserts contracts on every call (debug builds only)
 let validated = ValidatedSolver::new(solver);

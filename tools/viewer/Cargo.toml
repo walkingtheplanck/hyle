@@ -6,7 +6,7 @@ publish = false
 description = "Dev-only GPU raytracing viewer for Hyle CA simulations."
 
 [dependencies]
-hyle-ca-core = { path = "../../crates/ca-core" }
+hyle-ca-contracts = { path = "../../crates/ca-contracts" }
 hyle-ca-solver = { path = "../../crates/ca-solver" }
 glam         = { workspace = true }
 eframe       = { workspace = true, default-features = false, features = ["wgpu", "default_fonts"] }
