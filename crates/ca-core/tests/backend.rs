@@ -1,4 +1,4 @@
-//! Tests for the default bounded coordinate resolution on the solver trait.
+//! Tests for the default bounded index resolution on the solver trait.
 
 use std::marker::PhantomData;
 
@@ -61,23 +61,25 @@ impl<C: Cell> CaSolver<C> for DummySolver<C> {
 }
 
 #[test]
-fn default_resolve_coord_rejects_negative_and_large_values() {
+fn default_resolve_index_rejects_negative_and_large_values() {
     let solver = DummySolver::<u32>::new(4, 5, 6);
-    assert_eq!(solver.resolve_coord(-1, 0, 0), None);
-    assert_eq!(solver.resolve_coord(4, 0, 0), None);
-    assert_eq!(solver.resolve_coord(0, 5, 0), None);
-    assert_eq!(solver.resolve_coord(0, 0, 6), None);
+    let guard = solver.guard_index();
+    assert_eq!(solver.resolve_index(-1, 0, 0), guard);
+    assert_eq!(solver.resolve_index(4, 0, 0), guard);
+    assert_eq!(solver.resolve_index(0, 5, 0), guard);
+    assert_eq!(solver.resolve_index(0, 0, 6), guard);
 }
 
 #[test]
-fn default_resolve_coord_accepts_in_bounds_values() {
+fn default_resolve_index_accepts_in_bounds_values() {
     let solver = DummySolver::<u32>::new(4, 5, 6);
-    assert_eq!(solver.resolve_coord(3, 4, 5), Some((3, 4, 5)));
+    assert_eq!(solver.resolve_index(3, 4, 5), 119);
 }
 
 #[test]
-fn default_resolve_coord_rejects_oversized_dimensions() {
+fn default_resolve_index_rejects_oversized_dimensions() {
     let solver = DummySolver::<u32>::new(i32::MAX as u32 + 1, 5, 6);
-    assert_eq!(solver.resolve_coord(0, 0, 0), None);
-    assert_eq!(solver.resolve_coord(-1, 0, 0), None);
+    let guard = solver.guard_index();
+    assert_eq!(solver.resolve_index(0, 0, 0), guard);
+    assert_eq!(solver.resolve_index(-1, 0, 0), guard);
 }

@@ -23,27 +23,45 @@ impl<C: Cell> Grid<C> {
         assert!(height <= max_dim, "height must be <= i32::MAX");
         assert!(depth <= max_dim, "depth must be <= i32::MAX");
 
-        let n = (width * height * depth) as usize;
+        let n = (width as usize)
+            .checked_mul(height as usize)
+            .and_then(|xy| xy.checked_mul(depth as usize))
+            .expect("grid cell count must fit in usize");
+        let total = n.checked_add(1).expect("grid allocation size overflow");
         Grid {
             width,
             height,
             depth,
-            cells: vec![C::default(); n],
-            cells_next: vec![C::default(); n],
+            cells: vec![C::default(); total],
+            cells_next: vec![C::default(); total],
         }
     }
 
-    /// Linear index from 3D coordinates.
+    /// Number of logical cells in the grid.
     #[inline]
-    pub fn idx(&self, x: u32, y: u32, z: u32) -> usize {
-        (x + y * self.width + z * self.width * self.height) as usize
+    pub fn cell_count(&self) -> usize {
+        self.cells.len() - 1
+    }
+
+    /// Index of the dedicated guard cell.
+    #[inline]
+    pub fn guard_idx(&self) -> usize {
+        self.cell_count()
     }
 
     /// Resolve coordinates to an in-bounds linear index according to topology.
     #[inline]
-    pub fn resolve_idx<T: Topology>(&self, topology: &T, x: i32, y: i32, z: i32) -> Option<usize> {
-        let (x, y, z) = resolve_coord(topology, self.width, self.height, self.depth, x, y, z)?;
-        Some(self.idx(x, y, z))
+    pub fn resolve_idx<T: Topology>(&self, topology: &T, x: i32, y: i32, z: i32) -> usize {
+        resolve_index(
+            topology,
+            self.width,
+            self.height,
+            self.depth,
+            self.guard_idx(),
+            x,
+            y,
+            z,
+        )
     }
 
     /// Get a cell from the current buffer according to topology.
@@ -60,15 +78,14 @@ impl<C: Cell> Grid<C> {
         y: i32,
         z: i32,
     ) -> C {
-        match self.resolve_idx(topology, x, y, z) {
-            Some(index) => cells[index],
-            None => C::default(),
-        }
+        let index = self.resolve_idx(topology, x, y, z);
+        cells[index]
     }
 
     /// Set a cell in the current buffer according to topology.
     pub fn set<T: Topology>(&mut self, topology: &T, x: i32, y: i32, z: i32, cell: C) {
-        if let Some(index) = self.resolve_idx(topology, x, y, z) {
+        let index = self.resolve_idx(topology, x, y, z);
+        if index != self.guard_idx() {
             self.cells[index] = cell;
         }
     }
@@ -89,6 +106,7 @@ impl<C: Cell> Grid<C> {
         let h = self.height;
         self.cells
             .iter()
+            .take(self.cell_count())
             .enumerate()
             .map(move |(i, &c)| {
                 let x = (i as u32) % w;
@@ -100,14 +118,16 @@ impl<C: Cell> Grid<C> {
     }
 }
 
-pub(crate) fn resolve_coord<T: Topology>(
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn resolve_index<T: Topology>(
     topology: &T,
     width: u32,
     height: u32,
     depth: u32,
+    guard_idx: usize,
     x: i32,
     y: i32,
     z: i32,
-) -> Option<(u32, u32, u32)> {
-    topology.resolve_coord(x, y, z, width, height, depth)
+) -> usize {
+    topology.resolve_index(x, y, z, width, height, depth, guard_idx)
 }

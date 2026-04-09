@@ -103,17 +103,17 @@ fn torus_topology_is_reported() {
 }
 
 #[test]
-fn bounded_resolve_coord_rejects_out_of_bounds() {
+fn bounded_resolve_index_maps_out_of_bounds_to_guard() {
     let s = Solver::<u32>::new(4, 4, 4);
-    assert_eq!(s.resolve_coord(-1, 0, 0), None);
-    assert_eq!(s.resolve_coord(3, 0, 0), Some((3, 0, 0)));
+    assert_eq!(s.resolve_index(-1, 0, 0), s.guard_index());
+    assert_eq!(s.resolve_index(3, 0, 0), 3);
 }
 
 #[test]
-fn torus_resolve_coord_wraps_coordinates() {
+fn torus_resolve_index_wraps_coordinates() {
     let s = Solver::<u32>::with_topology(4, 4, 4, TorusTopology);
-    assert_eq!(s.resolve_coord(-1, 0, 0), Some((3, 0, 0)));
-    assert_eq!(s.resolve_coord(4, 0, 0), Some((0, 0, 0)));
+    assert_eq!(s.resolve_index(-1, 0, 0), 3);
+    assert_eq!(s.resolve_index(4, 0, 0), 0);
 }
 
 #[test]

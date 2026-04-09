@@ -30,7 +30,7 @@ run_test() {
 
 run_doc() {
     echo "[doc] cargo doc..."
-    RUSTDOCFLAGS="-D warnings" cargo doc $PACKAGES --no-deps --quiet
+    RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --quiet
 }
 
 case "${1:-all}" in

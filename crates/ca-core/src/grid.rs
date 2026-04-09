@@ -2,7 +2,7 @@
 
 use crate::Cell;
 
-type ResolveFn<'a> = dyn Fn(i32, i32, i32) -> Option<(u32, u32, u32)> + 'a;
+type ResolveFn<'a> = dyn Fn(i32, i32, i32) -> usize + 'a;
 
 /// Immutable view of the grid. Used by world passes to read cell state.
 pub struct GridReader<'a, C: Cell> {
@@ -13,6 +13,7 @@ pub struct GridReader<'a, C: Cell> {
     pub height: u32,
     /// Grid depth in cells.
     pub depth: u32,
+    guard_idx: usize,
     resolve: &'a ResolveFn<'a>,
 }
 
@@ -25,11 +26,16 @@ impl<'a, C: Cell> GridReader<'a, C> {
         depth: u32,
         resolve: &'a ResolveFn<'a>,
     ) -> Self {
+        let guard_idx = cells
+            .len()
+            .checked_sub(1)
+            .expect("grid readers require a guard cell");
         GridReader {
             cells,
             width,
             height,
             depth,
+            guard_idx,
             resolve,
         }
     }
@@ -37,27 +43,24 @@ impl<'a, C: Cell> GridReader<'a, C> {
     /// Get the cell at (x, y, z) according to the supplied coordinate resolver.
     #[inline]
     pub fn get(&self, x: i32, y: i32, z: i32) -> C {
-        match (self.resolve)(x, y, z) {
-            Some((x, y, z)) => self.cells[self.idx(x, y, z)],
-            None => C::default(),
-        }
+        let index = (self.resolve)(x, y, z);
+        self.cells[index]
     }
 
     /// Iterate all cells as `(x, y, z, cell)`.
     pub fn iter(&self) -> impl Iterator<Item = (u32, u32, u32, C)> + '_ {
         let w = self.width;
         let h = self.height;
-        self.cells.iter().enumerate().map(move |(i, &c)| {
-            let x = (i as u32) % w;
-            let y = ((i as u32) / w) % h;
-            let z = (i as u32) / (w * h);
-            (x, y, z, c)
-        })
-    }
-
-    #[inline]
-    fn idx(&self, x: u32, y: u32, z: u32) -> usize {
-        (x + y * self.width + z * self.width * self.height) as usize
+        self.cells
+            .iter()
+            .take(self.guard_idx)
+            .enumerate()
+            .map(move |(i, &c)| {
+                let x = (i as u32) % w;
+                let y = ((i as u32) / w) % h;
+                let z = (i as u32) / (w * h);
+                (x, y, z, c)
+            })
     }
 }
 
@@ -73,6 +76,7 @@ pub struct GridWriter<'a, C: Cell> {
     pub height: u32,
     /// Grid depth in cells.
     pub depth: u32,
+    guard_idx: usize,
     resolve: &'a ResolveFn<'a>,
 }
 
@@ -85,25 +89,25 @@ impl<'a, C: Cell> GridWriter<'a, C> {
         depth: u32,
         resolve: &'a ResolveFn<'a>,
     ) -> Self {
+        let guard_idx = cells
+            .len()
+            .checked_sub(1)
+            .expect("grid writers require a guard cell");
         GridWriter {
             cells,
             width,
             height,
             depth,
+            guard_idx,
             resolve,
         }
     }
 
     /// Set the cell at (x, y, z) according to the supplied coordinate resolver.
     pub fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
-        if let Some((x, y, z)) = (self.resolve)(x, y, z) {
-            let i = self.idx(x, y, z);
-            self.cells[i] = cell;
+        let index = (self.resolve)(x, y, z);
+        if index != self.guard_idx {
+            self.cells[index] = cell;
         }
-    }
-
-    #[inline]
-    fn idx(&self, x: u32, y: u32, z: u32) -> usize {
-        (x + y * self.width + z * self.width * self.height) as usize
     }
 }

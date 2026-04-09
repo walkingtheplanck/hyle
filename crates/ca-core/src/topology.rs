@@ -2,13 +2,12 @@
 
 /// Boundary behavior for solver coordinate access.
 pub trait Topology {
-    /// Resolve a single coordinate according to this topology.
+    /// Resolve a 3D coordinate to a linear cell index.
     ///
-    /// Returns `None` when the coordinate cannot be mapped onto the axis.
-    fn map_coord(&self, coord: i32, size: u32) -> Option<u32>;
-
-    /// Resolve a 3D coordinate according to this topology.
-    fn resolve_coord(
+    /// The returned index must either be a valid in-bounds cell index or the
+    /// supplied `guard_idx`, which represents "no cell" for bounded access.
+    #[allow(clippy::too_many_arguments)]
+    fn resolve_index(
         &self,
         x: i32,
         y: i32,
@@ -16,13 +15,8 @@ pub trait Topology {
         width: u32,
         height: u32,
         depth: u32,
-    ) -> Option<(u32, u32, u32)> {
-        Some((
-            self.map_coord(x, width)?,
-            self.map_coord(y, height)?,
-            self.map_coord(z, depth)?,
-        ))
-    }
+        guard_idx: usize,
+    ) -> usize;
 }
 
 /// Coordinates outside the grid are treated as out-of-bounds.
@@ -30,7 +24,16 @@ pub trait Topology {
 pub struct BoundedTopology;
 
 impl Topology for BoundedTopology {
-    fn map_coord(&self, coord: i32, size: u32) -> Option<u32> {
+    fn resolve_index(
+        &self,
+        x: i32,
+        y: i32,
+        z: i32,
+        width: u32,
+        height: u32,
+        depth: u32,
+        guard_idx: usize,
+    ) -> usize {
         // Motivation: for the common bounded case we want a simple cast-and-
         // compare path instead of a signed conversion branch on each axis.
         //
@@ -38,11 +41,25 @@ impl Topology for BoundedTopology {
         // axis size fits in `i32`, any negative `i32` becomes a `u32` value
         // >= 2^31, which is then necessarily >= every valid in-bounds index and
         // rejected by the bounds check. If an implementation reports a larger
-        // axis than that, we conservatively return `None` instead of relying on
-        // the cast trick, which keeps the default bounded behavior safe in both
+        // axis than that, we conservatively return `guard_idx` instead of
+        // relying on the cast trick, which keeps bounded behavior safe in both
         // debug and release builds.
-        let coord = coord as u32;
-        ((size <= i32::MAX as u32) & (coord < size)).then_some(coord)
+        let ux = x as u32;
+        let uy = y as u32;
+        let uz = z as u32;
+        let max_dim = i32::MAX as u32;
+        let in_bounds = (width <= max_dim)
+            & (height <= max_dim)
+            & (depth <= max_dim)
+            & (ux < width)
+            & (uy < height)
+            & (uz < depth);
+
+        if in_bounds {
+            linear_index(ux, uy, uz, width, height)
+        } else {
+            guard_idx
+        }
     }
 }
 
@@ -51,13 +68,36 @@ impl Topology for BoundedTopology {
 pub struct TorusTopology;
 
 impl Topology for TorusTopology {
-    fn map_coord(&self, coord: i32, size: u32) -> Option<u32> {
-        if size == 0 {
-            return None;
+    fn resolve_index(
+        &self,
+        x: i32,
+        y: i32,
+        z: i32,
+        width: u32,
+        height: u32,
+        depth: u32,
+        guard_idx: usize,
+    ) -> usize {
+        if width == 0 || height == 0 || depth == 0 {
+            return guard_idx;
         }
 
-        let size = i64::from(size);
-        let wrapped = i64::from(coord).rem_euclid(size);
-        Some(wrapped as u32)
+        let x = wrap_axis(x, width);
+        let y = wrap_axis(y, height);
+        let z = wrap_axis(z, depth);
+        linear_index(x, y, z, width, height)
     }
+}
+
+#[inline]
+fn wrap_axis(coord: i32, size: u32) -> u32 {
+    let size = i64::from(size);
+    i64::from(coord).rem_euclid(size) as u32
+}
+
+#[inline]
+fn linear_index(x: u32, y: u32, z: u32, width: u32, height: u32) -> usize {
+    (x as usize)
+        + (y as usize) * (width as usize)
+        + (z as usize) * (width as usize) * (height as usize)
 }

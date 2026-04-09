@@ -5,7 +5,7 @@ use hyle_ca_core::{
     Neighborhood, Rng, ShapeFn, Topology, WeightFn,
 };
 
-use crate::grid::{resolve_coord, Grid};
+use crate::grid::{resolve_index, Grid};
 use crate::rule_set::{install_rule_set, RuleSet};
 use crate::rules::{BoxedWorldPass, RegisteredRule};
 
@@ -134,9 +134,10 @@ impl<C: Cell, T: Topology> Solver<C, T> {
         let w = self.grid.width;
         let h = self.grid.height;
         let d = self.grid.depth;
+        let guard_idx = self.grid.guard_idx();
         let step_count = self.step_count;
         let topology = &self.topology;
-        let resolve = |x, y, z| resolve_coord(topology, w, h, d, x, y, z);
+        let resolve = |x, y, z| resolve_index(topology, w, h, d, guard_idx, x, y, z);
         let cells: &[C] = &self.grid.cells;
 
         for z in 0..d as i32 {
@@ -152,10 +153,7 @@ impl<C: Cell, T: Topology> Solver<C, T> {
                     };
 
                     reg.neighborhood.fill(center, [x, y, z], |dx, dy, dz| {
-                        match resolve(x + dx, y + dy, z + dz) {
-                            Some((nx, ny, nz)) => cells[self.grid.idx(nx, ny, nz)],
-                            None => C::default(),
-                        }
+                        cells[resolve(x + dx, y + dy, z + dz)]
                     });
 
                     let action = (reg.rule)(
@@ -181,8 +179,9 @@ impl<C: Cell, T: Topology> Solver<C, T> {
         let width = self.grid.width;
         let height = self.grid.height;
         let depth = self.grid.depth;
+        let guard_idx = self.grid.guard_idx();
         let topology = &self.topology;
-        let resolve = |x, y, z| resolve_coord(topology, width, height, depth, x, y, z);
+        let resolve = |x, y, z| resolve_index(topology, width, height, depth, guard_idx, x, y, z);
 
         for pass in &self.world_passes {
             let reader = GridReader::new(&pass_read, width, height, depth, &resolve);
@@ -211,6 +210,10 @@ impl<C: Cell, T: Topology> CaSolver<C> for Solver<C, T> {
 
     fn topology(&self) -> &Self::Topology {
         &self.topology
+    }
+
+    fn guard_index(&self) -> usize {
+        self.grid.guard_idx()
     }
 
     fn get(&self, x: i32, y: i32, z: i32) -> C {

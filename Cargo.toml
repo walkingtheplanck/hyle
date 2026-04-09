@@ -5,6 +5,10 @@ members = [
 
     "tools/viewer",
 ]
+default-members = [
+    "crates/ca-core",
+    "crates/ca-solver",
+]
 resolver = "2"
 
 [workspace.dependencies]
