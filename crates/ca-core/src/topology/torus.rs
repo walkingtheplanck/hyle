@@ -1,4 +1,4 @@
-use super::{linear_index, Topology};
+use super::{index::linear_index, Topology};
 
 /// Coordinates wrap around each axis independently.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

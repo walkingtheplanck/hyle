@@ -1,4 +1,4 @@
-use super::{linear_index, Topology};
+use super::{index::linear_index, Topology};
 
 /// Coordinates outside the grid are treated as out-of-bounds.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
