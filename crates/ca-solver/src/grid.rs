@@ -14,6 +14,15 @@ pub(crate) struct Grid<C: Cell> {
 impl<C: Cell> Grid<C> {
     /// Create a grid filled with `C::default()`.
     pub fn new(width: u32, height: u32, depth: u32) -> Self {
+        // Coordinate resolution starts from `i32` positions. Keeping each axis
+        // within `i32::MAX` lets bounded topology use the cast-and-compare path
+        // safely: any negative `i32` becomes a `u32` value that is necessarily
+        // larger than every valid dimension and therefore rejected.
+        let max_dim = i32::MAX as u32;
+        assert!(width <= max_dim, "width must be <= i32::MAX");
+        assert!(height <= max_dim, "height must be <= i32::MAX");
+        assert!(depth <= max_dim, "depth must be <= i32::MAX");
+
         let n = (width * height * depth) as usize;
         Grid {
             width,

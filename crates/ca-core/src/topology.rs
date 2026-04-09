@@ -21,7 +21,17 @@ impl Topology {
         }
 
         match self {
-            Topology::Bounded => u32::try_from(coord).ok().filter(|&value| value < size),
+            Topology::Bounded => {
+                // Safety note: bounded resolution relies on all solver dimensions
+                // fitting in `i32`. With that invariant, any negative `i32`
+                // becomes a `u32` value greater than `i32::MAX`, which is then
+                // guaranteed to be >= `size` and rejected by the bounds check.
+                //
+                // This lets us use a simple cast-and-compare path with no signed
+                // conversion branch in the hot coordinate resolution logic.
+                let coord = coord as u32;
+                (coord < size).then_some(coord)
+            }
             Topology::Torus => {
                 let size = i64::from(size);
                 let wrapped = i64::from(coord).rem_euclid(size);

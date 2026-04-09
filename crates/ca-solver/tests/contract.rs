@@ -130,3 +130,9 @@ fn torus_set_wraps_coordinates() {
     s.set(-1, 0, 0, 11);
     assert_eq!(s.get(3, 0, 0), 11);
 }
+
+#[test]
+#[should_panic(expected = "width must be <= i32::MAX")]
+fn constructor_rejects_dimensions_larger_than_i32() {
+    let _ = Solver::<u32>::new(i32::MAX as u32 + 1, 1, 1);
+}
