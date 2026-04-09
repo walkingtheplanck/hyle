@@ -6,6 +6,7 @@ description = "Default solver for the Hyle cellular automaton framework."
 readme = "README.md"
 license = "GPL-3.0-only"
 repository = "https://github.com/walkingtheplanck/hyle"
+documentation = "https://docs.rs/hyle-ca-solver"
 keywords = ["cellular-automata", "voxel", "gamedev", "automaton"]
 categories = ["game-development", "algorithms"]
 exclude = ["tests/"]

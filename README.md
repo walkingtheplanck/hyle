@@ -1,5 +1,8 @@
 # Hyle
 
+[![docs.rs: hyle-ca-core](https://img.shields.io/docsrs/hyle-ca-core?label=hyle-ca-core%20docs)](https://docs.rs/hyle-ca-core)
+[![docs.rs: hyle-ca-solver](https://img.shields.io/docsrs/hyle-ca-solver?label=hyle-ca-solver%20docs)](https://docs.rs/hyle-ca-solver)
+
 A 3D cellular automaton framework for Rust.
 
 > Define rules as closures, register them, step the simulation.
