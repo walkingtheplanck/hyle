@@ -6,8 +6,8 @@
 
 use std::time::Instant;
 
-use hyle_ca_core::{Action, CaSolver, Neighborhood, Rng};
-use hyle_ca_solver::Solver;
+use hyle_ca_core::{Action, CaSolver, Rng};
+use hyle_ca_solver::{Neighborhood, Solver};
 
 use crate::world::{self, SimpleWorld};
 

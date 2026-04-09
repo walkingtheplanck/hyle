@@ -14,16 +14,16 @@ A 3D cellular automaton framework for Rust.
 
 | Crate | Purpose |
 |-------|---------|
-| [`hyle-ca-core`](crates/ca-core) | Traits and types - depend on this to write rules or a custom solver |
-| [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver (double-buffered) - depend on this to run automata |
+| [`hyle-ca-core`](crates/ca-core) | Shared contracts and descriptors - depend on this to implement cells or solver backends |
+| [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver and runtime rule API - depend on this to run automata with closures |
 
 ---
 
 ## Quick Start
 
 ```rust
-use hyle_ca_core::{Action, Neighborhood, Rng};
-use hyle_ca_solver::Solver;
+use hyle_ca_core::{Action, Rng};
+use hyle_ca_solver::{Neighborhood, Solver};
 
 const ALIVE: u32 = 1;
 const DEAD: u32 = 0;

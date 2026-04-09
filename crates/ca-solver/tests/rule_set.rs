@@ -1,10 +1,9 @@
 //! Tests for installing grouped rules and world passes.
 
 use hyle_ca_core::{
-    moore, unweighted, Action, CaSolver, Neighborhood, NeighborhoodShape, NeighborhoodSpec,
-    NeighborhoodWeight, Rng,
+    Action, CaSolver, NeighborhoodShape, NeighborhoodSpec, NeighborhoodWeight, Rng,
 };
-use hyle_ca_solver::{RuleSet, Solver};
+use hyle_ca_solver::{moore, unweighted, Neighborhood, RuleSet, Solver};
 
 #[test]
 fn installs_named_rule_set_rules() {

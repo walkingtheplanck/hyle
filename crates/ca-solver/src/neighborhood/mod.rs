@@ -1,4 +1,4 @@
-//! Neighborhood — pre-fetched neighbors around a center cell.
+//! Runtime neighborhood buffers for the CPU solver.
 //!
 //! Shape and weight are configured via function pointers at construction.
 //! Built-in shape functions: [`moore`], [`von_neumann`], [`spherical`].

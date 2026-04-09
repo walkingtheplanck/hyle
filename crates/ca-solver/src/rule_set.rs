@@ -1,11 +1,9 @@
 //! Named groups of rule and world-pass registrations.
 
-use hyle_ca_core::{
-    moore, unweighted, Action, Cell, GridReader, GridWriter, Neighborhood, NeighborhoodSpec, Rng,
-    ShapeFn, WeightFn,
-};
+use hyle_ca_core::{Action, Cell, NeighborhoodSpec, Rng};
 
 use crate::rules::{BoxedRule, BoxedWorldPass, RegisteredRule};
+use crate::{moore, unweighted, GridReader, GridWriter, Neighborhood, ShapeFn, WeightFn};
 
 enum RuleRegistration<C: Cell> {
     Default {

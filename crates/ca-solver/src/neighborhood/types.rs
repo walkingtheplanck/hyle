@@ -1,6 +1,6 @@
-//! Shared types for neighborhoods: Offset, Entry, function pointer aliases.
+//! Shared runtime types for CPU neighborhoods.
 
-use crate::Cell;
+use hyle_ca_core::Cell;
 
 /// Relative position of a neighbor to the center cell.
 #[derive(Clone, Copy, Debug)]

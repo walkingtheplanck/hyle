@@ -2,7 +2,7 @@
 
 Core types and traits for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
-This crate defines the **interface** - depend on it to write rules, implement custom cell types, or build a new solver backend. It has **zero dependencies**.
+This crate defines the shared **contracts and descriptors**. Depend on it to implement custom cell types or build a new solver backend. It has **zero dependencies**.
 
 ## Key Types
 
@@ -10,12 +10,12 @@ This crate defines the **interface** - depend on it to write rules, implement cu
 |------|------|
 | [`Cell`] | Trait for custom cell state (rule dispatch + alive/dead query) |
 | [`CaSolver`] | Trait that all solver backends implement (get/set/step) |
-| [`Action`] | What a rule returns: `Keep` the current cell or `Become(new_cell)` |
-| [`Neighborhood`] | Pre-fetched cube of neighbors passed to rules (any radius) |
+| [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Backend-neutral grid descriptors and bulk transfer types |
+| [`NeighborhoodSpec`] | Declarative neighborhood description shared across backends |
 | [`Rng`] | Deterministic per-cell RNG seeded from position and step count |
 | [`Topology`] | Trait for boundary behavior policies used by solvers |
 | [`BoundedTopology`] / [`TorusTopology`] | Built-in topology policies |
-| [`GridReader`] / [`GridWriter`] | Read-only and write-only grid views for world passes |
+| [`TopologyDescriptor`] | Uploadable / serializable topology descriptor |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 
 ## Defining a Custom Cell
@@ -36,28 +36,40 @@ impl Cell for FluidCell {
 }
 ```
 
-`rule_id()` selects which rule evaluates this cell. `is_alive()` is used by
-`Neighborhood::count_alive()`. The built-in `u32` implementation uses the low
-byte as rule ID and treats non-zero values as alive.
+`rule_id()` selects which rule evaluates this cell. The built-in `u32`
+implementation uses the low byte as rule ID and treats non-zero values as alive.
 
-## Writing Rules
+## Grid Descriptors
 
-Rules are closures that receive a [`Neighborhood`] and [`Rng`], and return an [`Action`]:
+Backends share the same bulk-transfer descriptors:
 
 ```rust
-use hyle_ca_core::{Action, Neighborhood, Rng};
+use hyle_ca_core::{GridDims, GridRegion, GridSnapshot};
 
-// 3D Game of Life (Life 4555): survive with 4-5 neighbors, birth with 5
-fn alive_rule(n: &Neighborhood<u32>, _rng: Rng) -> Action<u32> {
-    match n.count_alive() {
-        4..=5 => Action::Keep,
-        _ => Action::Become(0),
-    }
-}
+let dims = GridDims::new(8, 8, 8);
+let region = GridRegion::new([2, 2, 2], [2, 2, 2]);
+let snapshot = GridSnapshot::new(dims, vec![0u32; dims.cell_count()]);
+
+assert!(dims.contains_region(region));
+assert_eq!(snapshot.cells.len(), dims.cell_count());
 ```
 
-Rules are **order-independent** - the solver reads from one buffer and writes to
-another, so evaluation order never affects the result.
+CPU rule registration and runtime neighborhood buffers live in
+[`hyle-ca-solver`](https://crates.io/crates/hyle-ca-solver), not in this crate.
+
+## Declarative Neighborhoods
+
+```rust
+use hyle_ca_core::{NeighborhoodShape, NeighborhoodSpec, NeighborhoodWeight};
+
+let spec = NeighborhoodSpec::new(
+    2,
+    NeighborhoodShape::Moore,
+    NeighborhoodWeight::Unweighted,
+);
+
+assert_eq!(spec.radius, 2);
+```
 
 ## Topology
 
@@ -66,24 +78,17 @@ Solvers can choose how coordinates beyond the grid bounds behave:
 - [`BoundedTopology`] treats out-of-bounds coordinates as absent
 - [`TorusTopology`] wraps coordinates across each axis
 
-World-pass grid views follow the solver topology too, so wrapped access is
-consistent between per-cell rules and world passes.
-
-## World Passes
-
-World passes run after all per-cell rules and have full grid access. Use them
-for global operations like pressure solving, gravity, or conservation correction:
-
 ```rust
-use hyle_ca_core::{GridReader, GridWriter};
+use hyle_ca_core::{AxisTopology, BoundedTopology, Topology, TopologyDescriptor, TorusTopology};
 
-fn gravity_pass(grid: &GridReader<u32>, out: &mut GridWriter<u32>) {
-    for (x, y, z, cell) in grid.iter() {
-        // GridWriter has no get() - you cannot read your own output,
-        // preventing order-dependent bugs.
-        out.set(x as i32, y as i32, z as i32, cell);
-    }
-}
+assert_eq!(
+    BoundedTopology.descriptor(),
+    TopologyDescriptor::uniform(AxisTopology::Bounded),
+);
+assert_eq!(
+    TorusTopology.descriptor(),
+    TopologyDescriptor::uniform(AxisTopology::Wrap),
+);
 ```
 
 ## Implementing a Solver

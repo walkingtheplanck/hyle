@@ -1,6 +1,6 @@
 //! Tests for Neighborhood struct, shapes, and weights.
 
-use hyle_ca_core::{inverse_square, moore, spherical, unweighted, von_neumann, Neighborhood};
+use hyle_ca_solver::{inverse_square, moore, spherical, unweighted, von_neumann, Neighborhood};
 
 // ---------------------------------------------------------------------------
 // Moore
@@ -200,7 +200,6 @@ fn inverse_square_weighted_sum() {
     let mut n = Neighborhood::new(1, moore, inverse_square);
     n.fill(0, [0, 0, 0], |_, _, _| 1);
     let w = n.weighted_sum();
-    // 6 face at d²=1 → 6.0, 12 edge at d²=2 → 6.0, 8 corner at d²=3 → 2.67
     assert!((w - 14.667).abs() < 0.1);
 }
 

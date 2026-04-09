@@ -27,7 +27,8 @@ fn world_pass_runs_after_rules() {
 
 #[test]
 fn world_pass_reads_post_rule_state() {
-    use hyle_ca_core::{Action, Neighborhood, Rng};
+    use hyle_ca_core::{Action, Rng};
+    use hyle_ca_solver::Neighborhood;
 
     let mut s = Solver::<u32>::new(4, 4, 4);
     s.set(1, 1, 1, 1);
@@ -70,7 +71,8 @@ fn multiple_world_passes_chain() {
 
 #[test]
 fn world_pass_conservation_check() {
-    use hyle_ca_core::{Action, Neighborhood, Rng};
+    use hyle_ca_core::{Action, Rng};
+    use hyle_ca_solver::Neighborhood;
 
     let mut s = Solver::<u32>::new(8, 8, 8);
 

@@ -1,6 +1,8 @@
-//! GridReader / GridWriter - full grid access for world passes.
+//! GridReader / GridWriter - full grid access for CPU world passes.
 
-use crate::Cell;
+use hyle_ca_core::{Action, Cell, Rng};
+
+use crate::Neighborhood;
 
 type ResolveFn<'a> = dyn Fn(i32, i32, i32) -> usize + 'a;
 
@@ -111,3 +113,9 @@ impl<'a, C: Cell> GridWriter<'a, C> {
         }
     }
 }
+
+/// A CPU rule callback: given a neighborhood and RNG, return the center-cell action.
+pub type Rule<C> = fn(&Neighborhood<C>, Rng) -> Action<C>;
+
+/// A CPU world-pass callback over read-only and write-only grid views.
+pub type WorldPass<C> = fn(&GridReader<C>, &mut GridWriter<C>);

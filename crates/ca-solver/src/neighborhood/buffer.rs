@@ -1,16 +1,17 @@
-//! Neighborhood struct — pre-fetched neighbors around a center cell.
+//! Neighborhood struct - pre-fetched neighbors around a center cell.
+
+use hyle_ca_core::Cell;
 
 use super::types::{Entry, Offset, ShapeFn, WeightFn};
-use crate::Cell;
 
 /// A pre-fetched set of neighbors around a center cell.
 ///
-/// Constructed with a shape function (which offsets to include) and a weight
-/// function (influence per offset). The solver calls [`fill`](Neighborhood::fill)
-/// once per cell per step. Rules read precomputed values in O(1).
+/// Constructed with a shape function and a weight function. The CPU solver
+/// calls [`fill`](Neighborhood::fill) once per cell per step. Rules then read
+/// precomputed values in O(1).
 ///
 /// ```rust
-/// use hyle_ca_core::{Neighborhood, moore, unweighted};
+/// use hyle_ca_solver::{Neighborhood, moore, unweighted};
 ///
 /// let mut n = Neighborhood::<u32>::new(1, moore, unweighted);
 /// ```
@@ -25,8 +26,6 @@ pub struct Neighborhood<C: Cell> {
 
 impl<C: Cell> Neighborhood<C> {
     /// Create a new neighborhood for the given radius, shape, and weight.
-    ///
-    /// Precomputes which offsets belong to the shape and the weight of each.
     pub fn new(radius: u32, includes: ShapeFn, weight: WeightFn) -> Self {
         let r = radius as i32;
         let mut entries = Vec::new();
@@ -57,9 +56,6 @@ impl<C: Cell> Neighborhood<C> {
     }
 
     /// Populate the neighborhood by sampling from the grid.
-    ///
-    /// Called by the solver once per cell per step. Precomputes
-    /// `alive_count` and `weighted_sum` in the same pass.
     pub fn fill(&mut self, center: C, pos: [i32; 3], sample: impl Fn(i32, i32, i32) -> C) {
         self.center = center;
         self.pos = pos;
@@ -72,8 +68,6 @@ impl<C: Cell> Neighborhood<C> {
             self.weighted_sum += alive as f32 * entry.weight;
         }
     }
-
-    // --- Data access (called by rules) ---
 
     /// The center cell this rule is evaluating.
     pub fn center(&self) -> C {
@@ -112,8 +106,6 @@ impl<C: Cell> Neighborhood<C> {
         &self.entries
     }
 
-    // --- Precomputed (O(1)) ---
-
     /// Number of neighbors in this shape at this radius.
     pub fn neighbor_count(&self) -> u32 {
         self.entries.len() as u32
@@ -125,14 +117,9 @@ impl<C: Cell> Neighborhood<C> {
     }
 
     /// Weighted sum of alive neighbors. Precomputed during [`Neighborhood::fill`].
-    ///
-    /// With [`unweighted`](super::unweighted), this equals `count_alive()` as a float.
-    /// With [`inverse_square`](super::inverse_square), closer neighbors contribute more.
     pub fn weighted_sum(&self) -> f32 {
         self.weighted_sum
     }
-
-    // --- Computed (O(n)) ---
 
     /// Count neighbors satisfying a predicate.
     pub fn count(&self, pred: impl Fn(&Entry<C>) -> bool) -> u32 {

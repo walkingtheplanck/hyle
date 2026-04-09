@@ -9,8 +9,8 @@ rules (any radius) and world passes (full grid access). Depends on
 ## Quick Start
 
 ```rust
-use hyle_ca_core::{Action, CaSolver, Neighborhood, Rng};
-use hyle_ca_solver::Solver;
+use hyle_ca_core::{Action, CaSolver, Rng};
+use hyle_ca_solver::{Neighborhood, Solver};
 
 const ALIVE: u32 = 1;
 const DEAD: u32 = 0;
@@ -57,8 +57,8 @@ Rules are Rust closures registered per cell type (keyed by `Cell::rule_id()`).
 The default radius is 1 (26-cell Moore neighborhood):
 
 ```rust
-use hyle_ca_core::{Action, Neighborhood, Rng};
-use hyle_ca_solver::Solver;
+use hyle_ca_core::{Action, Rng};
+use hyle_ca_solver::{Neighborhood, Solver};
 
 let mut solver = Solver::<u32>::new(8, 8, 8);
 let cell_type = 0u8;
@@ -72,8 +72,8 @@ solver.register_rule(cell_type, |neighborhood, rng| {
 For larger neighborhoods, use `register_rule_with_radius`:
 
 ```rust
-use hyle_ca_core::{Action, Neighborhood, Rng};
-use hyle_ca_solver::Solver;
+use hyle_ca_core::{Action, Rng};
+use hyle_ca_solver::{Neighborhood, Solver};
 
 let mut solver = Solver::<u32>::new(8, 8, 8);
 let cell_type = 0u8;
@@ -93,8 +93,8 @@ solver.register_rule_with_radius(cell_type, 3, |n, rng| {
 onto a solver in one call:
 
 ```rust
-use hyle_ca_core::{Action, Neighborhood, Rng};
-use hyle_ca_solver::{RuleSet, Solver};
+use hyle_ca_core::{Action, Rng};
+use hyle_ca_solver::{Neighborhood, RuleSet, Solver};
 
 let rules = RuleSet::new("life-4555")
     .rule(1, |n: &Neighborhood<u32>, _rng: Rng| match n.count_alive() {

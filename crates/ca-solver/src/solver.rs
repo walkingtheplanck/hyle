@@ -1,13 +1,14 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
 use hyle_ca_core::{
-    moore, unweighted, Action, BoundedTopology, CaSolver, Cell, GridReader, GridRegion,
-    GridSnapshot, GridWriter, Neighborhood, NeighborhoodSpec, Rng, ShapeFn, Topology, WeightFn,
+    Action, BoundedTopology, CaSolver, Cell, GridRegion, GridSnapshot, NeighborhoodSpec, Rng,
+    Topology,
 };
 
 use crate::grid::{resolve_index, Grid};
 use crate::rule_set::{install_rule_set, RuleSet};
 use crate::rules::{BoxedWorldPass, RegisteredRule};
+use crate::{moore, unweighted, GridReader, GridWriter, Neighborhood, ShapeFn, WeightFn};
 
 /// Default 3D cellular automaton solver, generic over cell type `C`.
 ///
