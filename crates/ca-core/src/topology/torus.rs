@@ -1,28 +1,24 @@
 use super::{index::linear_index, Topology};
+use crate::{AxisTopology, GridDims, TopologyDescriptor};
 
 /// Coordinates wrap around each axis independently.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct TorusTopology;
 
 impl Topology for TorusTopology {
-    fn resolve_index(
-        &self,
-        x: i32,
-        y: i32,
-        z: i32,
-        width: u32,
-        height: u32,
-        depth: u32,
-        guard_idx: usize,
-    ) -> usize {
-        if width == 0 || height == 0 || depth == 0 {
+    fn descriptor(&self) -> TopologyDescriptor {
+        TopologyDescriptor::uniform(AxisTopology::Wrap)
+    }
+
+    fn resolve_index(&self, x: i32, y: i32, z: i32, dims: GridDims, guard_idx: usize) -> usize {
+        if dims.width == 0 || dims.height == 0 || dims.depth == 0 {
             return guard_idx;
         }
 
-        let x = wrap_axis(x, width);
-        let y = wrap_axis(y, height);
-        let z = wrap_axis(z, depth);
-        linear_index(x, y, z, width, height)
+        let x = wrap_axis(x, dims.width);
+        let y = wrap_axis(y, dims.height);
+        let z = wrap_axis(z, dims.depth);
+        linear_index(x, y, z, dims.width, dims.height)
     }
 }
 

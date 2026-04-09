@@ -1,6 +1,6 @@
 //! Contract tests: does the solver API behave as documented?
 
-use hyle_ca_core::{CaSolver, TorusTopology};
+use hyle_ca_core::{CaSolver, GridRegion, TorusTopology};
 use hyle_ca_solver::Solver;
 
 #[test]
@@ -86,6 +86,39 @@ fn iter_cells_reflects_set() {
         .collect();
     assert_eq!(alive.len(), 1);
     assert_eq!(alive[0], (1, 2, 3, 7));
+}
+
+#[test]
+fn readback_returns_contiguous_snapshot() {
+    let mut s = Solver::<u32>::new(2, 2, 2);
+    s.set(1, 0, 0, 5);
+    s.set(0, 1, 1, 9);
+
+    let snapshot = s.readback();
+
+    assert_eq!(snapshot.dims, s.dims());
+    assert_eq!(snapshot.cells, vec![0, 5, 0, 0, 0, 0, 9, 0]);
+}
+
+#[test]
+fn write_region_updates_subvolume_in_x_major_order() {
+    let mut s = Solver::<u32>::new(3, 3, 2);
+    let region = GridRegion::new([1, 1, 0], [2, 2, 1]);
+    s.write_region(region, &[1, 2, 3, 4]);
+
+    assert_eq!(s.get(1, 1, 0), 1);
+    assert_eq!(s.get(2, 1, 0), 2);
+    assert_eq!(s.get(1, 2, 0), 3);
+    assert_eq!(s.get(2, 2, 0), 4);
+    assert_eq!(s.read_region(region), vec![1, 2, 3, 4]);
+}
+
+#[test]
+fn replace_cells_overwrites_the_full_grid() {
+    let mut s = Solver::<u32>::new(2, 2, 2);
+    s.replace_cells(&[1, 2, 3, 4, 5, 6, 7, 8]);
+
+    assert_eq!(s.readback().cells, vec![1, 2, 3, 4, 5, 6, 7, 8]);
 }
 
 #[test]

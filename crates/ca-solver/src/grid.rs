@@ -1,6 +1,6 @@
 //! Dense 3D grid - double-buffered cell storage.
 
-use hyle_ca_core::{Cell, Topology};
+use hyle_ca_core::{Cell, GridDims, Topology};
 
 /// Dense 3D grid with double buffering for order-independent stepping.
 pub(crate) struct Grid<C: Cell> {
@@ -49,19 +49,16 @@ impl<C: Cell> Grid<C> {
         self.cell_count()
     }
 
+    /// Grid dimensions.
+    #[inline]
+    pub fn dims(&self) -> GridDims {
+        GridDims::new(self.width, self.height, self.depth)
+    }
+
     /// Resolve coordinates to an in-bounds linear index according to topology.
     #[inline]
     pub fn resolve_idx<T: Topology>(&self, topology: &T, x: i32, y: i32, z: i32) -> usize {
-        resolve_index(
-            topology,
-            self.width,
-            self.height,
-            self.depth,
-            self.guard_idx(),
-            x,
-            y,
-            z,
-        )
+        resolve_index(topology, self.dims(), self.guard_idx(), x, y, z)
     }
 
     /// Get a cell from the current buffer according to topology.
@@ -121,13 +118,11 @@ impl<C: Cell> Grid<C> {
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn resolve_index<T: Topology>(
     topology: &T,
-    width: u32,
-    height: u32,
-    depth: u32,
+    dims: GridDims,
     guard_idx: usize,
     x: i32,
     y: i32,
     z: i32,
 ) -> usize {
-    topology.resolve_index(x, y, z, width, height, depth, guard_idx)
+    topology.resolve_index(x, y, z, dims, guard_idx)
 }

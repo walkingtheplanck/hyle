@@ -1,20 +1,16 @@
 use super::{index::linear_index, Topology};
+use crate::{AxisTopology, GridDims, TopologyDescriptor};
 
 /// Coordinates outside the grid are treated as out-of-bounds.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct BoundedTopology;
 
 impl Topology for BoundedTopology {
-    fn resolve_index(
-        &self,
-        x: i32,
-        y: i32,
-        z: i32,
-        width: u32,
-        height: u32,
-        depth: u32,
-        guard_idx: usize,
-    ) -> usize {
+    fn descriptor(&self) -> TopologyDescriptor {
+        TopologyDescriptor::uniform(AxisTopology::Bounded)
+    }
+
+    fn resolve_index(&self, x: i32, y: i32, z: i32, dims: GridDims, guard_idx: usize) -> usize {
         // Motivation: for the common bounded case we want a simple cast-and-
         // compare path instead of a signed conversion branch on each axis.
         //
@@ -29,15 +25,15 @@ impl Topology for BoundedTopology {
         let uy = y as u32;
         let uz = z as u32;
         let max_dim = i32::MAX as u32;
-        let in_bounds = (width <= max_dim)
-            & (height <= max_dim)
-            & (depth <= max_dim)
-            & (ux < width)
-            & (uy < height)
-            & (uz < depth);
+        let in_bounds = (dims.width <= max_dim)
+            & (dims.height <= max_dim)
+            & (dims.depth <= max_dim)
+            & (ux < dims.width)
+            & (uy < dims.height)
+            & (uz < dims.depth);
 
         if in_bounds {
-            linear_index(ux, uy, uz, width, height)
+            linear_index(ux, uy, uz, dims.width, dims.height)
         } else {
             guard_idx
         }

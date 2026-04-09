@@ -1,8 +1,8 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
 use hyle_ca_core::{
-    moore, unweighted, Action, BoundedTopology, CaSolver, Cell, GridReader, GridWriter,
-    Neighborhood, Rng, ShapeFn, Topology, WeightFn,
+    moore, unweighted, Action, BoundedTopology, CaSolver, Cell, GridReader, GridRegion,
+    GridSnapshot, GridWriter, Neighborhood, NeighborhoodSpec, Rng, ShapeFn, Topology, WeightFn,
 };
 
 use crate::grid::{resolve_index, Grid};
@@ -112,6 +112,16 @@ impl<C: Cell, T: Topology> Solver<C, T> {
             Some(RegisteredRule::new(radius, shape, weight, Box::new(rule)));
     }
 
+    /// Register a per-cell rule from a declarative neighborhood specification.
+    pub fn register_rule_with_spec(
+        &mut self,
+        cell_type: u8,
+        spec: NeighborhoodSpec,
+        rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
+    ) {
+        self.rules[cell_type as usize] = Some(RegisteredRule::with_spec(spec, Box::new(rule)));
+    }
+
     /// Register a world pass. Runs after all per-cell rules, in registration order.
     pub fn register_world_pass(
         &mut self,
@@ -131,13 +141,14 @@ impl<C: Cell, T: Topology> Solver<C, T> {
 
     /// Evaluate per-cell rules.
     fn step_cell_rules(&mut self) {
-        let w = self.grid.width;
-        let h = self.grid.height;
-        let d = self.grid.depth;
+        let dims = self.grid.dims();
+        let w = dims.width;
+        let h = dims.height;
+        let d = dims.depth;
         let guard_idx = self.grid.guard_idx();
         let step_count = self.step_count;
         let topology = &self.topology;
-        let resolve = |x, y, z| resolve_index(topology, w, h, d, guard_idx, x, y, z);
+        let resolve = |x, y, z| resolve_index(topology, dims, guard_idx, x, y, z);
         let cells: &[C] = &self.grid.cells;
 
         for z in 0..d as i32 {
@@ -176,12 +187,13 @@ impl<C: Cell, T: Topology> Solver<C, T> {
         }
 
         let mut pass_read = self.grid.cells_next.clone();
-        let width = self.grid.width;
-        let height = self.grid.height;
-        let depth = self.grid.depth;
+        let dims = self.grid.dims();
+        let width = dims.width;
+        let height = dims.height;
+        let depth = dims.depth;
         let guard_idx = self.grid.guard_idx();
         let topology = &self.topology;
-        let resolve = |x, y, z| resolve_index(topology, width, height, depth, guard_idx, x, y, z);
+        let resolve = |x, y, z| resolve_index(topology, dims, guard_idx, x, y, z);
 
         for pass in &self.world_passes {
             let reader = GridReader::new(&pass_read, width, height, depth, &resolve);
@@ -212,6 +224,10 @@ impl<C: Cell, T: Topology> CaSolver<C> for Solver<C, T> {
         &self.topology
     }
 
+    fn cell_count(&self) -> usize {
+        self.grid.cell_count()
+    }
+
     fn guard_index(&self) -> usize {
         self.grid.guard_idx()
     }
@@ -238,5 +254,76 @@ impl<C: Cell, T: Topology> CaSolver<C> for Solver<C, T> {
 
     fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> {
         self.grid.iter_cells()
+    }
+
+    fn readback(&self) -> GridSnapshot<C> {
+        GridSnapshot::new(
+            self.grid.dims(),
+            self.grid.cells[..self.grid.cell_count()].to_vec(),
+        )
+    }
+
+    fn read_region(&self, region: GridRegion) -> Vec<C> {
+        let dims = self.grid.dims();
+        assert!(
+            dims.contains_region(region),
+            "region must lie within solver dimensions"
+        );
+
+        let [ox, oy, oz] = region.origin;
+        let [sx, sy, sz] = region.size;
+        let width = self.grid.width as usize;
+        let height = self.grid.height as usize;
+        let mut cells = Vec::with_capacity(region.cell_count());
+
+        for z in oz..oz + sz {
+            for y in oy..oy + sy {
+                for x in ox..ox + sx {
+                    let index = (x as usize) + (y as usize) * width + (z as usize) * width * height;
+                    cells.push(self.grid.cells[index]);
+                }
+            }
+        }
+
+        cells
+    }
+
+    fn write_region(&mut self, region: GridRegion, cells: &[C]) {
+        let dims = self.grid.dims();
+        assert!(
+            dims.contains_region(region),
+            "region must lie within solver dimensions"
+        );
+        assert_eq!(
+            cells.len(),
+            region.cell_count(),
+            "region write must provide exactly one cell per destination slot"
+        );
+
+        let [ox, oy, oz] = region.origin;
+        let [sx, sy, sz] = region.size;
+        let width = self.grid.width as usize;
+        let height = self.grid.height as usize;
+        let mut src = 0;
+
+        for z in oz..oz + sz {
+            for y in oy..oy + sy {
+                for x in ox..ox + sx {
+                    let index = (x as usize) + (y as usize) * width + (z as usize) * width * height;
+                    self.grid.cells[index] = cells[src];
+                    src += 1;
+                }
+            }
+        }
+    }
+
+    fn replace_cells(&mut self, cells: &[C]) {
+        let cell_count = self.grid.cell_count();
+        assert_eq!(
+            cells.len(),
+            cell_count,
+            "full-grid replacement must match solver dimensions"
+        );
+        self.grid.cells[..cell_count].copy_from_slice(cells);
     }
 }

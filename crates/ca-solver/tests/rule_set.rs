@@ -1,6 +1,9 @@
 //! Tests for installing grouped rules and world passes.
 
-use hyle_ca_core::{moore, unweighted, Action, CaSolver, Neighborhood, Rng};
+use hyle_ca_core::{
+    moore, unweighted, Action, CaSolver, Neighborhood, NeighborhoodShape, NeighborhoodSpec,
+    NeighborhoodWeight, Rng,
+};
 use hyle_ca_solver::{RuleSet, Solver};
 
 #[test]
@@ -66,6 +69,29 @@ fn rule_set_supports_custom_shape() {
     s.step();
 
     assert_eq!(s.get(1, 1, 1), 2);
+}
+
+#[test]
+fn rule_set_supports_declarative_neighborhood_specs() {
+    let mut s = Solver::<u32>::new(8, 8, 8);
+    s.set(4, 4, 4, 1);
+
+    let spec = NeighborhoodSpec::new(2, NeighborhoodShape::Moore, NeighborhoodWeight::Unweighted);
+    let rules = RuleSet::new("spec")
+        .rule_with_spec(0, spec, |n: &Neighborhood<u32>, _rng: Rng| {
+            if n.count_alive() > 0 {
+                Action::Become(1)
+            } else {
+                Action::Keep
+            }
+        })
+        .rule(1, |_n: &Neighborhood<u32>, _rng: Rng| Action::Keep);
+
+    s.install_rule_set(rules);
+    s.step();
+
+    assert_eq!(s.get(2, 4, 4), 1);
+    assert_eq!(s.get(1, 4, 4), 0);
 }
 
 #[test]

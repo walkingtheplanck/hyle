@@ -4,6 +4,8 @@
 pub mod action;
 pub mod backend;
 pub mod cell;
+/// Declarative, backend-neutral data structures shared across solvers.
+pub mod descriptors;
 pub mod grid;
 pub mod neighborhood;
 pub mod rng;
@@ -13,6 +15,10 @@ pub mod validated;
 pub use action::Action;
 pub use backend::CaSolver;
 pub use cell::Cell;
+pub use descriptors::{
+    AxisTopology, GridDims, GridRegion, GridSnapshot, NeighborhoodShape, NeighborhoodSpec,
+    NeighborhoodWeight, TopologyDescriptor,
+};
 pub use grid::{GridReader, GridWriter};
 pub use neighborhood::{
     inverse_square, moore, spherical, unweighted, von_neumann, Entry, Neighborhood, Offset,

@@ -1,7 +1,8 @@
 //! Named groups of rule and world-pass registrations.
 
 use hyle_ca_core::{
-    moore, unweighted, Action, Cell, GridReader, GridWriter, Neighborhood, Rng, ShapeFn, WeightFn,
+    moore, unweighted, Action, Cell, GridReader, GridWriter, Neighborhood, NeighborhoodSpec, Rng,
+    ShapeFn, WeightFn,
 };
 
 use crate::rules::{BoxedRule, BoxedWorldPass, RegisteredRule};
@@ -23,6 +24,11 @@ enum RuleRegistration<C: Cell> {
         weight: WeightFn,
         rule: BoxedRule<C>,
     },
+    Spec {
+        cell_type: u8,
+        spec: NeighborhoodSpec,
+        rule: BoxedRule<C>,
+    },
 }
 
 impl<C: Cell> RuleRegistration<C> {
@@ -30,7 +36,8 @@ impl<C: Cell> RuleRegistration<C> {
         match self {
             RuleRegistration::Default { cell_type, .. }
             | RuleRegistration::Radius { cell_type, .. }
-            | RuleRegistration::Shape { cell_type, .. } => *cell_type,
+            | RuleRegistration::Shape { cell_type, .. }
+            | RuleRegistration::Spec { cell_type, .. } => *cell_type,
         }
     }
 
@@ -49,6 +56,7 @@ impl<C: Cell> RuleRegistration<C> {
                 rule,
                 ..
             } => RegisteredRule::new(radius, shape, weight, rule),
+            RuleRegistration::Spec { spec, rule, .. } => RegisteredRule::with_spec(spec, rule),
         }
     }
 }
@@ -127,6 +135,22 @@ impl<C: Cell> RuleSet<C> {
             radius,
             shape,
             weight,
+            rule: Box::new(rule),
+        });
+        self
+    }
+
+    /// Add a per-cell rule from a declarative neighborhood specification.
+    pub fn rule_with_spec(
+        mut self,
+        cell_type: u8,
+        spec: NeighborhoodSpec,
+        rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
+    ) -> Self {
+        assert!(spec.radius >= 1, "radius must be >= 1");
+        self.rules.push(RuleRegistration::Spec {
+            cell_type,
+            spec,
             rule: Box::new(rule),
         });
         self
