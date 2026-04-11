@@ -6,18 +6,20 @@
 
 use std::time::Instant;
 
-use hyle_ca_contracts::{neighbors, CaSolver, Hyle};
-use hyle_ca_solver::{Rng, Solver};
+use hyle_ca_contracts::{neighbors, CaSolver, Hyle, Topology};
+use hyle_ca_solver::{DescriptorTopology, Rng, Solver};
 
 use crate::world::{self, SimpleWorld};
 
 const ALIVE: u32 = 1;
 const DEAD: u32 = 0;
 
+type ViewerSolver = Solver<u32, DescriptorTopology>;
+
 pub struct Simulation {
     pub auto_step: bool,
     pub step_interval_ms: f64,
-    ca: Solver<u32>,
+    ca: ViewerSolver,
     last_step: Instant,
 }
 
@@ -31,7 +33,7 @@ impl Simulation {
         }
     }
 
-    fn build_ca() -> Solver<u32> {
+    fn build_ca() -> ViewerSolver {
         let spec = Hyle::builder()
             .cells::<u32>()
             .rules(|rules| {
@@ -53,7 +55,7 @@ impl Simulation {
     }
 
     /// Seed: ~18% random fill in a 16³ region at center.
-    fn seed(ca: &mut Solver<u32>) {
+    fn seed<T: Topology>(ca: &mut Solver<u32, T>) {
         for z in 24u32..40 {
             for y in 24u32..40 {
                 for x in 24u32..40 {
