@@ -9,7 +9,10 @@
 /// For richer automata (fluids, multi-channel state), define your
 /// own struct and implement this trait.
 pub trait Cell: Copy + Default + Send + Sync + 'static {
-    /// Which rule to apply to this cell (indexes into the rule table).
+    /// A compact backend-defined dispatch key for this cell.
+    ///
+    /// Some solvers use exact-state matching and ignore this value entirely;
+    /// others may still use it to bucket rules or choose fast paths.
     fn rule_id(&self) -> u8;
 
     /// Whether this cell counts as "alive" for `Neighborhood::count_alive()`.

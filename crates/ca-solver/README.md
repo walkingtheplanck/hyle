@@ -2,44 +2,32 @@
 
 Default CPU solver for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
-Double-buffered, single-threaded solver with a two-tier rule system: per-cell
-rules (any radius) and world passes (full grid access). Depends on
-[`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts) for traits and descriptors.
+Double-buffered, single-threaded, and driven by portable
+[`AutomatonSpec`](https://docs.rs/hyle-ca-contracts/latest/hyle_ca_contracts/struct.AutomatonSpec.html)
+definitions from [`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts).
 
 ## Quick Start
 
 ```rust
-use hyle_ca_contracts::{Action, CaSolver};
-use hyle_ca_solver::{Neighborhood, Rng, Solver};
+use hyle_ca_contracts::{neighbors, CaSolver, Hyle};
+use hyle_ca_solver::Solver;
 
-const ALIVE: u32 = 1;
-const DEAD: u32 = 0;
+let spec = Hyle::builder()
+    .cells::<u32>()
+    .rules(|rules| {
+        rules.when(0).require(neighbors(1).count().eq(3)).becomes(1);
+        rules.when(1).unless(neighbors(1).count().in_range(2..=3)).becomes(0);
+    })
+    .build()?;
 
-let mut solver = Solver::<u32>::new(64, 64, 64);
-
-// Birth rule: dead cells with exactly 5 alive neighbors come alive
-solver.register_rule(DEAD as u8, |n: &Neighborhood<u32>, _rng: Rng| {
-    match n.count_alive() {
-        5 => Action::Become(ALIVE),
-        _ => Action::Keep,
-    }
-});
-
-// Survival rule: alive cells with 4-5 alive neighbors survive
-solver.register_rule(ALIVE as u8, |n: &Neighborhood<u32>, _rng: Rng| {
-    match n.count_alive() {
-        4..=5 => Action::Keep,
-        _ => Action::Become(DEAD),
-    }
-});
-
-// Advance one step
+let mut solver = Solver::from_spec(64, 64, 64, &spec);
 solver.step();
+# Ok::<(), hyle_ca_contracts::BuildError>(())
 ```
 
 ## Topology
 
-The default solver is bounded, but you can opt into torus wrapping:
+The solver still supports direct construction with built-in topology types:
 
 ```rust
 use hyle_ca_solver::{Solver, TorusTopology};
@@ -47,101 +35,41 @@ use hyle_ca_solver::{Solver, TorusTopology};
 let _solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 ```
 
-With `TorusTopology`, direct `get`/`set`, neighborhood sampling, and world
-passes all wrap across grid edges.
+When you create a solver from an `AutomatonSpec`, the solver uses the
+descriptor declared by that spec.
 
-## Registering Rules
+## Declaring Custom Neighborhoods
 
-Rules are Rust closures registered per cell type (keyed by `Cell::rule_id()`).
-The default radius is 1 (26-cell Moore neighborhood):
-
-```rust
-use hyle_ca_contracts::Action;
-use hyle_ca_solver::{Neighborhood, Rng, Solver};
-
-let mut solver = Solver::<u32>::new(8, 8, 8);
-let cell_type = 0u8;
-
-solver.register_rule(cell_type, |neighborhood, rng| {
-    let _ = (neighborhood, rng);
-    Action::Keep // or Action::Become(new_cell)
-});
-```
-
-For larger neighborhoods, use `register_rule_with_radius`:
+Use named neighborhoods in the spec, then reference them from rules:
 
 ```rust
-use hyle_ca_contracts::Action;
-use hyle_ca_solver::{Neighborhood, Rng, Solver};
-
-let mut solver = Solver::<u32>::new(8, 8, 8);
-let cell_type = 0u8;
-
-// Radius 3 = 342 neighbors
-solver.register_rule_with_radius(cell_type, 3, |n, rng| {
-    let _ = rng;
-    let far_cell = n.get(3, 0, 0);
-    let _ = far_cell;
-    Action::Keep
-});
-```
-
-## Rule Sets
-
-`RuleSet` lets you group related registrations under one name and install them
-onto a solver in one call:
-
-```rust
-use hyle_ca_contracts::Action;
-use hyle_ca_solver::{Neighborhood, Rng, RuleSet, Solver};
-
-let rules = RuleSet::new("life-4555")
-    .rule(1, |n: &Neighborhood<u32>, _rng: Rng| match n.count_alive() {
-        4..=5 => Action::Keep,
-        _ => Action::Become(0),
-    })
-    .rule(0, |n: &Neighborhood<u32>, _rng: Rng| match n.count_alive() {
-        5 => Action::Become(1),
-        _ => Action::Keep,
-    })
-    .world_pass(|grid, out| {
-        let alive = grid.iter().filter(|(_, _, _, c)| *c != 0).count() as u32;
-        out.set(0, 0, 0, alive);
-    });
-
-let mut solver = Solver::<u32>::new(64, 64, 64);
-solver.install_rule_set(rules);
-```
-
-Installing a rule set keeps the existing low-level semantics:
-- later registrations still override earlier rules for the same cell type
-- world passes are appended in order
-
-## World Passes
-
-World passes run after all per-cell rules, in registration order. They receive
-read-only access to the post-rule grid and write-only access to the output:
-
-```rust
+use hyle_ca_contracts::{neighbors, CaSolver, Hyle, NeighborhoodSpec};
 use hyle_ca_solver::Solver;
 
-let mut solver = Solver::<u32>::new(4, 4, 4);
+let spec = Hyle::builder()
+    .cells::<u32>()
+    .neighborhood("far", NeighborhoodSpec::cube(2))
+    .rules(|rules| {
+        rules.when(0)
+            .using("far")
+            .require(neighbors(1).count().at_least(1))
+            .becomes(1);
+    })
+    .build()?;
 
-solver.register_world_pass(|grid, out| {
-    for (x, y, z, cell) in grid.iter() {
-        out.set(x as i32, y as i32, z as i32, cell);
-    }
-});
+let mut solver = Solver::from_spec(8, 8, 8, &spec);
+solver.step();
+# Ok::<(), hyle_ca_contracts::BuildError>(())
 ```
 
 ## How It Works
 
 Each call to `step()`:
 
-1. Copies the current buffer to the next buffer
-2. Evaluates per-cell rules - reads from current, writes to next
-3. Runs world passes sequentially over the next buffer
-4. Swaps buffers and increments the step counter
+1. Copies the current buffer to the next buffer.
+2. Evaluates the ordered automaton rules against the current buffer.
+3. Applies the first matching rule per cell to the next buffer.
+4. Swaps buffers and increments the step counter.
 
-Rules are **order-independent**: the double-buffer design ensures that evaluation
-order never affects the result. Rules can safely be parallelized in the future.
+The double-buffer design keeps rule evaluation order-independent at the cell
+level, which makes the semantics portable to future GPU backends.

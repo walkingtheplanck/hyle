@@ -18,6 +18,38 @@ impl NeighborhoodSpec {
             weight,
         }
     }
+
+    /// Construct the standard adjacent neighborhood: radius-1 Moore, unweighted.
+    pub const fn adjacent() -> Self {
+        Self::new(1, NeighborhoodShape::Moore, NeighborhoodWeight::Unweighted)
+    }
+
+    /// Construct a Moore neighborhood with the given radius.
+    pub const fn cube(radius: u32) -> Self {
+        Self::new(
+            radius,
+            NeighborhoodShape::Moore,
+            NeighborhoodWeight::Unweighted,
+        )
+    }
+
+    /// Construct a Von Neumann neighborhood with the given radius.
+    pub const fn cross(radius: u32) -> Self {
+        Self::new(
+            radius,
+            NeighborhoodShape::VonNeumann,
+            NeighborhoodWeight::Unweighted,
+        )
+    }
+
+    /// Construct a spherical neighborhood with the given radius.
+    pub const fn sphere(radius: u32) -> Self {
+        Self::new(
+            radius,
+            NeighborhoodShape::Spherical,
+            NeighborhoodWeight::Unweighted,
+        )
+    }
 }
 
 /// Declarative neighborhood shape.

@@ -6,8 +6,8 @@
 
 use std::time::Instant;
 
-use hyle_ca_contracts::{Action, CaSolver};
-use hyle_ca_solver::{Neighborhood, Rng, Solver};
+use hyle_ca_contracts::{neighbors, CaSolver, Hyle};
+use hyle_ca_solver::{Rng, Solver};
 
 use crate::world::{self, SimpleWorld};
 
@@ -32,22 +32,21 @@ impl Simulation {
     }
 
     fn build_ca() -> Solver<u32> {
-        let mut ca = Solver::new(64, 64, 64);
-
-        // Life 4555: S4-5 / B5 (26-neighbor Moore neighborhood)
-        ca.register_rule(ALIVE as u8, |n: &Neighborhood<u32>, _rng: Rng| {
-            match n.count_alive() {
-                4..=5 => Action::Keep,
-                _ => Action::Become(DEAD),
-            }
-        });
-
-        ca.register_rule(DEAD as u8, |n: &Neighborhood<u32>, _rng: Rng| {
-            match n.count_alive() {
-                5 => Action::Become(ALIVE),
-                _ => Action::Keep,
-            }
-        });
+        let spec = Hyle::builder()
+            .cells::<u32>()
+            .rules(|rules| {
+                rules
+                    .when(ALIVE)
+                    .unless(neighbors(ALIVE).count().in_range(4..=5))
+                    .becomes(DEAD);
+                rules
+                    .when(DEAD)
+                    .require(neighbors(ALIVE).count().eq(5))
+                    .becomes(ALIVE);
+            })
+            .build()
+            .expect("viewer life spec should build");
+        let mut ca = Solver::from_spec(64, 64, 64, &spec);
 
         Self::seed(&mut ca);
         ca

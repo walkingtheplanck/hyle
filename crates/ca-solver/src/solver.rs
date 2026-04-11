@@ -1,36 +1,26 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
 use hyle_ca_contracts::{
-    Action, CaSolver, Cell, GridRegion, GridSnapshot, NeighborhoodSpec, Topology,
+    AutomatonSpec, CaSolver, Cell, GridRegion, GridSnapshot, RuleEffect, Topology,
 };
 
 use crate::grid::{resolve_index, Grid};
-use crate::rule_set::{install_rule_set, RuleSet};
-use crate::rules::{BoxedWorldPass, RegisteredRule};
-use crate::{
-    moore, unweighted, BoundedTopology, GridReader, GridWriter, Neighborhood, Rng, ShapeFn,
-    WeightFn,
-};
+use crate::program::CompiledProgram;
+use crate::{BoundedTopology, DescriptorTopology};
 
 /// Default 3D cellular automaton solver, generic over cell type `C`.
 ///
-/// Rules are Rust closures - register them with `register_rule()`,
-/// `register_rule_with_radius()`, or `register_rule_with_shape()`.
-/// World passes run after all per-cell rules.
-pub struct Solver<C: Cell = u32, T: Topology = BoundedTopology> {
+/// The solver can run without an attached automaton, in which case `step()`
+/// preserves the current state. Use [`Solver::from_spec`] to construct a
+/// solver from a declarative [`AutomatonSpec`].
+pub struct Solver<C: Cell + Eq = u32, T: Topology = BoundedTopology> {
     grid: Grid<C>,
     topology: T,
-
-    /// Per-cell rules indexed by cell type (0-255).
-    rules: Vec<Option<RegisteredRule<C>>>,
-
-    /// World passes, run in registration order after all per-cell rules.
-    world_passes: Vec<BoxedWorldPass<C>>,
-
+    program: Option<CompiledProgram<C>>,
     step_count: u32,
 }
 
-impl<C: Cell> Solver<C, BoundedTopology> {
+impl<C: Cell + Eq> Solver<C, BoundedTopology> {
     /// Create a new bounded solver filled with `C::default()`.
     pub fn new(width: u32, height: u32, depth: u32) -> Self {
         Self::with_topology(width, height, depth, BoundedTopology)
@@ -43,26 +33,34 @@ impl<C: Cell> Solver<C, BoundedTopology> {
         depth: u32,
         topology: U,
     ) -> Solver<C, U> {
-        let mut rules = Vec::with_capacity(256);
-        rules.resize_with(256, || None);
         Solver {
             grid: Grid::new(width, height, depth),
             topology,
-            rules,
-            world_passes: Vec::new(),
+            program: None,
             step_count: 0,
         }
     }
 }
 
-impl<C: Cell, T: Topology> Solver<C, T> {
+impl<C: Cell + Eq> Solver<C, DescriptorTopology> {
+    /// Create a solver whose topology and rules come from an automaton spec.
+    pub fn from_spec(width: u32, height: u32, depth: u32, spec: &AutomatonSpec<C>) -> Self {
+        Solver {
+            grid: Grid::new(width, height, depth),
+            topology: DescriptorTopology::new(spec.topology()),
+            program: Some(CompiledProgram::from_spec(spec)),
+            step_count: 0,
+        }
+    }
+}
+
+impl<C: Cell + Eq, T: Topology> Solver<C, T> {
     /// Convert the solver to a new topology policy without changing its state.
     pub fn into_topology<U: Topology>(self, topology: U) -> Solver<C, U> {
         Solver {
             grid: self.grid,
             topology,
-            rules: self.rules,
-            world_passes: self.world_passes,
+            program: self.program,
             step_count: self.step_count,
         }
     }
@@ -76,120 +74,15 @@ impl<C: Cell, T: Topology> Solver<C, T> {
     pub fn set_topology<U: Topology>(self, topology: U) -> Solver<C, U> {
         self.into_topology(topology)
     }
+}
 
-    /// Register a per-cell rule with radius 1 and Moore neighborhood (26 neighbors).
-    pub fn register_rule(
-        &mut self,
-        cell_type: u8,
-        rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
-    ) {
-        self.rules[cell_type as usize] =
-            Some(RegisteredRule::with_default_neighborhood(Box::new(rule)));
-    }
+impl<C: Cell + Eq, T: Topology> Solver<C, T> {
+    fn step_program(&mut self) {
+        let program = match &mut self.program {
+            Some(program) => program,
+            None => return,
+        };
 
-    /// Register a per-cell rule with a custom radius and Moore neighborhood.
-    pub fn register_rule_with_radius(
-        &mut self,
-        cell_type: u8,
-        radius: u32,
-        rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
-    ) {
-        self.rules[cell_type as usize] = Some(RegisteredRule::new(
-            radius,
-            moore,
-            unweighted,
-            Box::new(rule),
-        ));
-    }
-
-    /// Register a per-cell rule with a custom radius, shape, and weight.
-    pub fn register_rule_with_shape(
-        &mut self,
-        cell_type: u8,
-        radius: u32,
-        shape: ShapeFn,
-        weight: WeightFn,
-        rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
-    ) {
-        self.rules[cell_type as usize] =
-            Some(RegisteredRule::new(radius, shape, weight, Box::new(rule)));
-    }
-
-    /// Register a per-cell rule from a declarative neighborhood specification.
-    pub fn register_rule_with_spec(
-        &mut self,
-        cell_type: u8,
-        spec: NeighborhoodSpec,
-        rule: impl Fn(&Neighborhood<C>, Rng) -> Action<C> + 'static,
-    ) {
-        self.rules[cell_type as usize] = Some(RegisteredRule::with_spec(spec, Box::new(rule)));
-    }
-
-    /// Register a world pass. Runs after all per-cell rules, in registration order.
-    pub fn register_world_pass(
-        &mut self,
-        pass: impl Fn(&GridReader<C>, &mut GridWriter<C>) + 'static,
-    ) {
-        self.world_passes.push(Box::new(pass));
-    }
-
-    /// Install a named batch of rules and world passes.
-    ///
-    /// Per-cell rules still follow the same semantics as direct registration:
-    /// later registrations override earlier ones for the same `cell_type`.
-    /// World passes are appended and run in installation order.
-    pub fn install_rule_set(&mut self, rule_set: RuleSet<C>) {
-        install_rule_set(&mut self.rules, &mut self.world_passes, rule_set);
-    }
-
-    /// Evaluate per-cell rules.
-    fn step_cell_rules(&mut self) {
-        let dims = self.grid.dims();
-        let w = dims.width;
-        let h = dims.height;
-        let d = dims.depth;
-        let guard_idx = self.grid.guard_idx();
-        let step_count = self.step_count;
-        let topology = &self.topology;
-        let resolve = |x, y, z| resolve_index(topology, dims, guard_idx, x, y, z);
-        let cells: &[C] = &self.grid.cells;
-
-        for z in 0..d as i32 {
-            for y in 0..h as i32 {
-                for x in 0..w as i32 {
-                    let idx = (x as u32 + y as u32 * w + z as u32 * w * h) as usize;
-                    let center = cells[idx];
-                    let cell_type = center.rule_id() as usize;
-
-                    let reg = match &mut self.rules[cell_type] {
-                        Some(r) => r,
-                        None => continue,
-                    };
-
-                    reg.neighborhood.fill(center, [x, y, z], |dx, dy, dz| {
-                        cells[resolve(x + dx, y + dy, z + dz)]
-                    });
-
-                    let action = (reg.rule)(
-                        &reg.neighborhood,
-                        Rng::new(x as u32, y as u32, z as u32, step_count),
-                    );
-
-                    if let Action::Become(c) = action {
-                        self.grid.cells_next[idx] = c;
-                    }
-                }
-            }
-        }
-    }
-
-    /// Run world passes sequentially over cells_next.
-    fn step_world_passes(&mut self) {
-        if self.world_passes.is_empty() {
-            return;
-        }
-
-        let mut pass_read = self.grid.cells_next.clone();
         let dims = self.grid.dims();
         let width = dims.width;
         let height = dims.height;
@@ -197,18 +90,28 @@ impl<C: Cell, T: Topology> Solver<C, T> {
         let guard_idx = self.grid.guard_idx();
         let topology = &self.topology;
         let resolve = |x, y, z| resolve_index(topology, dims, guard_idx, x, y, z);
+        let cells: &[C] = &self.grid.cells;
 
-        for pass in &self.world_passes {
-            let reader = GridReader::new(&pass_read, width, height, depth, &resolve);
-            let mut writer =
-                GridWriter::new(&mut self.grid.cells_next, width, height, depth, &resolve);
-            pass(&reader, &mut writer);
-            pass_read.copy_from_slice(&self.grid.cells_next);
+        for z in 0..depth as i32 {
+            for y in 0..height as i32 {
+                for x in 0..width as i32 {
+                    let idx = (x as u32 + y as u32 * width + z as u32 * width * height) as usize;
+                    let center = cells[idx];
+                    let effect = program.evaluate(center, [x, y, z], |dx, dy, dz| {
+                        cells[resolve(x + dx, y + dy, z + dz)]
+                    });
+
+                    match effect {
+                        Some(RuleEffect::Keep) | None => {}
+                        Some(RuleEffect::Become(cell)) => self.grid.cells_next[idx] = cell,
+                    }
+                }
+            }
         }
     }
 }
 
-impl<C: Cell, T: Topology> CaSolver<C> for Solver<C, T> {
+impl<C: Cell + Eq, T: Topology> CaSolver<C> for Solver<C, T> {
     type Topology = T;
 
     fn width(&self) -> u32 {
@@ -245,8 +148,7 @@ impl<C: Cell, T: Topology> CaSolver<C> for Solver<C, T> {
 
     fn step(&mut self) {
         self.grid.prepare_step();
-        self.step_cell_rules();
-        self.step_world_passes();
+        self.step_program();
         self.grid.swap();
         self.step_count += 1;
     }

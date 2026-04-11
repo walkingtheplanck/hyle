@@ -5,8 +5,8 @@
 
 A 3D cellular automaton framework for Rust.
 
-> Define rules as closures, register them, step the simulation.
-> Supports custom cell types, variable-radius neighborhoods, torus topology, and world passes.
+> Define portable automaton specs, run them on solver backends, and keep the
+> same rule semantics across CPU and GPU implementations.
 
 ---
 
@@ -14,37 +14,28 @@ A 3D cellular automaton framework for Rust.
 
 | Crate | Purpose |
 |-------|---------|
-| [`hyle-ca-contracts`](crates/ca-contracts) | Shared contracts and descriptors - depend on this to implement cells or solver backends |
-| [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver and runtime rule API - depend on this to run automata with closures |
+| [`hyle-ca-contracts`](crates/ca-contracts) | Shared contracts, descriptors, and declarative automaton specs |
+| [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver that executes portable automaton specs |
 
 ---
 
 ## Quick Start
 
 ```rust
-use hyle_ca_contracts::Action;
-use hyle_ca_solver::{Neighborhood, Rng, Solver};
+use hyle_ca_contracts::{neighbors, Hyle};
+use hyle_ca_solver::Solver;
 
-const ALIVE: u32 = 1;
-const DEAD: u32 = 0;
+let spec = Hyle::builder()
+    .cells::<u32>()
+    .rules(|rules| {
+        rules.when(0).require(neighbors(1).count().eq(5)).becomes(1);
+        rules.when(1).unless(neighbors(1).count().in_range(4..=5)).becomes(0);
+    })
+    .build()?;
 
-let mut solver = Solver::<u32>::new(64, 64, 64);
-
-solver.register_rule(DEAD as u8, |n: &Neighborhood<u32>, _rng: Rng| {
-    match n.count_alive() {
-        5 => Action::Become(ALIVE),
-        _ => Action::Keep,
-    }
-});
-
-solver.register_rule(ALIVE as u8, |n: &Neighborhood<u32>, _rng: Rng| {
-    match n.count_alive() {
-        4..=5 => Action::Keep,
-        _ => Action::Become(DEAD),
-    }
-});
-
+let mut solver = Solver::from_spec(64, 64, 64, &spec);
 solver.step();
+# Ok::<(), hyle_ca_contracts::BuildError>(())
 ```
 
 ---
@@ -68,11 +59,19 @@ let solver = Solver::<FluidCell>::new(64, 64, 64);
 ### Variable-Radius Neighborhoods
 
 ```rust
-// Radius 3 = 342 neighbors instead of 26
-solver.register_rule_with_radius(0, 3, |n, rng| {
-    let far_cell = n.get(3, 0, 0);  // within radius
-    Action::Keep
-});
+use hyle_ca_contracts::{neighbors, Hyle, NeighborhoodSpec};
+
+let spec = Hyle::builder()
+    .cells::<u32>()
+    .neighborhood("far", NeighborhoodSpec::cube(3))
+    .rules(|rules| {
+        rules.when(0)
+            .using("far")
+            .require(neighbors(1).count().at_least(1))
+            .becomes(1);
+    })
+    .build()?;
+# Ok::<(), hyle_ca_contracts::BuildError>(())
 ```
 
 ### Torus Topology
@@ -84,17 +83,6 @@ let solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 ```
 
 Reads, writes, rule neighborhoods, and world passes all wrap across grid edges.
-
-### World Passes
-
-```rust
-// Full grid access - runs after all per-cell rules
-solver.register_world_pass(|grid, out| {
-    for (x, y, z, cell) in grid.iter() {
-        out.set(x as i32, y as i32, z as i32, cell);
-    }
-});
-```
 
 ### Debug Contract Validation
 

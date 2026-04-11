@@ -1,7 +1,7 @@
 //! Tests for topology index mapping.
 
 use hyle_ca_contracts::{AxisTopology, GridDims, Topology, TopologyDescriptor};
-use hyle_ca_solver::{BoundedTopology, TorusTopology};
+use hyle_ca_solver::{BoundedTopology, DescriptorTopology, TorusTopology};
 
 #[test]
 fn bounded_maps_out_of_bounds_to_guard_index() {
@@ -58,5 +58,25 @@ fn built_in_topologies_expose_uploadable_descriptors() {
     assert_eq!(
         TorusTopology.descriptor(),
         TopologyDescriptor::uniform(AxisTopology::Wrap)
+    );
+}
+
+#[test]
+fn descriptor_topology_supports_mixed_axis_behavior() {
+    let descriptor = TopologyDescriptor::by_axis(
+        AxisTopology::Wrap,
+        AxisTopology::Bounded,
+        AxisTopology::Wrap,
+    );
+    let topology = DescriptorTopology::new(descriptor);
+    let guard = 4 * 5 * 6;
+
+    assert_eq!(
+        topology.resolve_index(-1, 0, -1, GridDims::new(4, 5, 6), guard),
+        103
+    );
+    assert_eq!(
+        topology.resolve_index(0, 5, 0, GridDims::new(4, 5, 6), guard),
+        guard
     );
 }

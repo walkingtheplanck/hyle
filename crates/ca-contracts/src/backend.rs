@@ -4,8 +4,9 @@ use crate::{cell::Cell, topology::Topology, GridDims, GridRegion, GridSnapshot};
 
 /// The common interface shared by all CA solvers (CPU, GPU, etc.).
 ///
-/// Rule registration is NOT part of this trait - it's solver-specific.
-/// CPU solvers take Rust closures, GPU solvers take WGSL shader source.
+/// Automaton authoring is intentionally kept out of this trait. Backends are
+/// free to consume declarative specs, precompiled programs, or other portable
+/// representations as long as they uphold the runtime contract below.
 ///
 /// Contracts (enforced by `ValidatedSolver` in debug builds):
 /// - `get(x,y,z)` and `set(x,y,z,...)` follow `resolve_index(...)`.

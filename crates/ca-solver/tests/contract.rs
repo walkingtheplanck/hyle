@@ -1,7 +1,7 @@
 //! Contract tests: does the solver API behave as documented?
 
-use hyle_ca_contracts::{CaSolver, GridRegion};
-use hyle_ca_solver::{Solver, TorusTopology};
+use hyle_ca_contracts::{neighbors, CaSolver, GridRegion, Hyle, TopologyDescriptor};
+use hyle_ca_solver::{DescriptorTopology, Solver, TorusTopology};
 
 #[test]
 fn dimensions_match_constructor() {
@@ -162,6 +162,25 @@ fn torus_set_wraps_coordinates() {
     let mut s = Solver::<u32>::with_topology(4, 4, 4, TorusTopology);
     s.set(-1, 0, 0, 11);
     assert_eq!(s.get(3, 0, 0), 11);
+}
+
+#[test]
+fn from_spec_uses_descriptor_topology() {
+    let spec = Hyle::builder()
+        .cells::<u32>()
+        .topology(TopologyDescriptor::wrap())
+        .rules(|rules| {
+            rules.when(0).require(neighbors(1).any()).becomes(1);
+        })
+        .build()
+        .expect("valid spec");
+
+    let solver = Solver::from_spec(4, 4, 4, &spec);
+
+    assert_eq!(
+        solver.topology(),
+        &DescriptorTopology::new(TopologyDescriptor::wrap())
+    );
 }
 
 #[test]

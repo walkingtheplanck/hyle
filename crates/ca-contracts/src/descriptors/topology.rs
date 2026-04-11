@@ -23,6 +23,21 @@ impl TopologyDescriptor {
             z: axis,
         }
     }
+
+    /// Construct a bounded descriptor on all axes.
+    pub const fn bounded() -> Self {
+        Self::uniform(AxisTopology::Bounded)
+    }
+
+    /// Construct a wrapping descriptor on all axes.
+    pub const fn wrap() -> Self {
+        Self::uniform(AxisTopology::Wrap)
+    }
+
+    /// Construct a descriptor with per-axis behavior.
+    pub const fn by_axis(x: AxisTopology, y: AxisTopology, z: AxisTopology) -> Self {
+        Self::new(x, y, z)
+    }
 }
 
 /// Boundary behavior for a single grid axis.
