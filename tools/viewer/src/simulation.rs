@@ -6,15 +6,32 @@
 
 use std::time::Instant;
 
-use hyle_ca_contracts::{neighbors, CaSolver, Hyle, Topology};
+use hyle_ca_contracts::{neighbors, CaSolver, Cell, Hyle, Topology};
 use hyle_ca_solver::{DescriptorTopology, Rng, Solver};
 
 use crate::world::{self, SimpleWorld};
 
-const ALIVE: u32 = 1;
-const DEAD: u32 = 0;
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum LifeCell {
+    #[default]
+    Dead,
+    Alive,
+}
 
-type ViewerSolver = Solver<u32, DescriptorTopology>;
+impl Cell for LifeCell {
+    fn rule_id(&self) -> u8 {
+        match self {
+            Self::Dead => 0,
+            Self::Alive => 1,
+        }
+    }
+
+    fn is_alive(&self) -> bool {
+        matches!(self, Self::Alive)
+    }
+}
+
+type ViewerSolver = Solver<LifeCell, DescriptorTopology>;
 
 pub struct Simulation {
     pub auto_step: bool,
@@ -35,16 +52,16 @@ impl Simulation {
 
     fn build_ca() -> ViewerSolver {
         let spec = Hyle::builder()
-            .cells::<u32>()
+            .cells::<LifeCell>()
             .rules(|rules| {
                 rules
-                    .when(ALIVE)
-                    .unless(neighbors(ALIVE).count().in_range(4..=5))
-                    .becomes(DEAD);
+                    .when(LifeCell::Alive)
+                    .unless(neighbors(LifeCell::Alive).count().in_range(4..=5))
+                    .becomes(LifeCell::Dead);
                 rules
-                    .when(DEAD)
-                    .require(neighbors(ALIVE).count().eq(5))
-                    .becomes(ALIVE);
+                    .when(LifeCell::Dead)
+                    .require(neighbors(LifeCell::Alive).count().eq(5))
+                    .becomes(LifeCell::Alive);
             })
             .build()
             .expect("viewer life spec should build");
@@ -55,12 +72,12 @@ impl Simulation {
     }
 
     /// Seed: ~18% random fill in a 16³ region at center.
-    fn seed<T: Topology>(ca: &mut Solver<u32, T>) {
+    fn seed<T: Topology>(ca: &mut Solver<LifeCell, T>) {
         for z in 24u32..40 {
             for y in 24u32..40 {
                 for x in 24u32..40 {
                     if Rng::new(x, y, z, 0).chance(6) {
-                        ca.set(x as i32, y as i32, z as i32, ALIVE);
+                        ca.set(x as i32, y as i32, z as i32, LifeCell::Alive);
                     }
                 }
             }
@@ -98,7 +115,11 @@ impl Simulation {
                 x as i32,
                 y as i32,
                 z as i32,
-                if cell == ALIVE { 1 } else { world::AIR },
+                if cell == LifeCell::Alive {
+                    1
+                } else {
+                    world::AIR
+                },
             );
         }
     }

@@ -1,13 +1,36 @@
 //! Tests for the declarative automaton builder.
 
-use hyle_ca_contracts::{neighbors, BuildError, Hyle, NeighborhoodSpec, TopologyDescriptor};
+use hyle_ca_contracts::{neighbors, BuildError, Cell, Hyle, NeighborhoodSpec, TopologyDescriptor};
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum LifeCell {
+    #[default]
+    Dead,
+    Alive,
+}
+
+impl Cell for LifeCell {
+    fn rule_id(&self) -> u8 {
+        match self {
+            Self::Dead => 0,
+            Self::Alive => 1,
+        }
+    }
+
+    fn is_alive(&self) -> bool {
+        matches!(self, Self::Alive)
+    }
+}
 
 #[test]
 fn builder_emits_default_adjacent_neighborhood() {
     let spec = Hyle::builder()
-        .cells::<u32>()
+        .cells::<LifeCell>()
         .rules(|rules| {
-            rules.when(0).require(neighbors(1).count().eq(3)).becomes(1);
+            rules
+                .when(LifeCell::Dead)
+                .require(neighbors(LifeCell::Alive).count().eq(3))
+                .becomes(LifeCell::Alive);
         })
         .build()
         .expect("valid spec");
@@ -22,14 +45,14 @@ fn builder_emits_default_adjacent_neighborhood() {
 #[test]
 fn builder_resolves_named_neighborhoods() {
     let spec = Hyle::builder()
-        .cells::<u32>()
+        .cells::<LifeCell>()
         .neighborhood("far", NeighborhoodSpec::cube(2))
         .default_neighborhood("far")
         .rules(|rules| {
             rules
-                .when(0)
-                .require(neighbors(1).count().at_least(1))
-                .becomes(1);
+                .when(LifeCell::Dead)
+                .require(neighbors(LifeCell::Alive).count().at_least(1))
+                .becomes(LifeCell::Alive);
         })
         .build()
         .expect("valid spec");
@@ -41,7 +64,7 @@ fn builder_resolves_named_neighborhoods() {
 #[test]
 fn builder_rejects_duplicate_neighborhood_names() {
     let error = Hyle::builder()
-        .cells::<u32>()
+        .cells::<LifeCell>()
         .neighborhood("adjacent", NeighborhoodSpec::cube(2))
         .build()
         .expect_err("duplicate names must fail");
@@ -55,9 +78,12 @@ fn builder_rejects_duplicate_neighborhood_names() {
 #[test]
 fn builder_rejects_unknown_rule_neighborhoods() {
     let error = Hyle::builder()
-        .cells::<u32>()
+        .cells::<LifeCell>()
         .rules(|rules| {
-            rules.when(0).using("missing").becomes(1);
+            rules
+                .when(LifeCell::Dead)
+                .using("missing")
+                .becomes(LifeCell::Alive);
         })
         .build()
         .expect_err("unknown rule neighborhoods must fail");
