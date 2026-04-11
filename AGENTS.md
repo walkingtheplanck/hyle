@@ -12,6 +12,9 @@ Use this file as the strict operational checklist for working in this repo.
 - Always commit after completing a change.
 - Use conventional commit subject format: `<type>: <lowercase description>`.
 - Every commit must include a body that states what changed and why.
+- When adding or changing functionality, add or update tests to cover it.
+- Run the relevant test suite after each meaningful change set, not only at the end.
+- If tests fail because of your changes, treat that as a regression and fix it before continuing or committing.
 - Do not place code in `mod.rs`, `lib.rs`, or `main.rs`; keep implementation in dedicated module files instead.
 
 For repo context, terminology, docs to read first, testing expectations, and publishing guidance, read [`AI_INSTRUCTIONS.md`](./AI_INSTRUCTIONS.md).
