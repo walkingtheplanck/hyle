@@ -114,15 +114,43 @@ cargo run --release -p hyle-viewer
 
 ---
 
-## Roadmap
+## TODO
 
-- [x] **Neighborhood types** - Moore, Von Neumann, Spherical shapes + configurable weight functions
+### Contracts And Spec
+
+- [x] **Declarative automaton specs** - Portable builder API and canonical spec shared across backends
+- [x] **Named neighborhoods** - Reusable neighborhood definitions referenced by rules
+- [x] **Descriptor-backed topology** - Uploadable topology descriptors with bounded and torus behavior
+- [ ] **State/schema metadata** - Declare the valid state space more explicitly so tools can analyze specs without guessing
+- [ ] **Spec serialization** - Save and load automaton specs and grid patterns in a stable portable format
+- [ ] **Capability checks** - Validate a spec against backend feature limits before runtime
+
+### Analysis And Tooling
+
+- [ ] **Shared analysis crate** - Move spec analysis, diagnostics, and backend compatibility checks into a separate optional crate
+- [ ] **Rule diagnostics** - Detect shadowed rules, unused neighborhoods, and other first-match issues from the spec alone
+- [ ] **Simulation analysis tools** - Population counts, entropy, and other runtime-facing metrics exposed through shared APIs
+- [ ] **Architecture docs** - Document the mental model clearly: builder -> spec -> analysis -> backend runtime
+
+### Backends
+
+- [x] **Default CPU backend** - Execute declarative specs with deterministic first-match semantics
+- [ ] **GPU backend** - Compile the same spec model to a GPU execution path
+- [ ] **Parallel CPU stepping** - Rayon or equivalent, preserving current deterministic semantics
+
+### World And Topology
+
+- [x] **Neighborhood types** - Moore, Von Neumann, Spherical shapes plus configurable weight functions
 - [x] **Global torus topology** - Wrapping boundaries for the whole solver grid
-- [ ] **Regional topology control** - Let wrapping and non-wrapping cells coexist in the same world
-- [ ] **Pattern serialization** - Save/load grid state
-- [ ] **Chunk-based sparse storage** - Skip empty regions, scale to large grids
-- [ ] **Analysis tools** - Population counts, entropy, step statistics
-- [ ] **Parallel stepping** - Rayon for CPU, leveraging the existing double-buffer design
+- [ ] **Explicit portals / stitched regions** - Model nontrivial space connections before reaching for full regional topology
+- [ ] **Regional topology control** - Let different areas of the same world resolve coordinates differently if real use cases justify it
+- [ ] **Chunk-based sparse storage** - Skip empty regions and scale to larger worlds
+
+### Examples And UX
+
+- [ ] **Enum-first examples** - Prefer readable named states over raw numeric literals in docs and examples
+- [ ] **More complete example library** - Include richer examples beyond Life-style rules
+- [ ] **Editor ergonomics** - Reduce type inference friction in the DSL and improve diagnostics for builder usage
 
 ---
 
