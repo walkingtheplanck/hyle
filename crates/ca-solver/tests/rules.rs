@@ -1,6 +1,9 @@
 //! Rule application tests using declarative automaton specs.
 
-use hyle_ca_contracts::{neighbors, CaSolver, Cell, Hyle, NeighborhoodSpec, TopologyDescriptor};
+use hyle_ca_contracts::{
+    neighbors, CaSolver, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
+    TopologyDescriptor,
+};
 use hyle_ca_solver::Solver;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -255,7 +258,10 @@ fn first_matching_rule_wins() {
 fn rule_with_radius_2() {
     let spec = Hyle::builder()
         .cells::<LifeCell>()
-        .neighborhood("radius-two", NeighborhoodSpec::cube(2))
+        .neighborhood(
+            "radius-two",
+            NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
+        )
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)

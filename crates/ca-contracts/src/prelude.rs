@@ -2,6 +2,6 @@
 
 pub use crate::{
     neighbors, AutomatonSpec, AxisTopology, BuildError, Cell, Condition, CountComparison, Hyle,
-    NamedNeighborhood, NeighborhoodShape, NeighborhoodSpec, NeighborhoodWeight, Rule, RuleEffect,
+    NamedNeighborhood, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, Rule, RuleEffect,
     Semantics, TopologyDescriptor,
 };

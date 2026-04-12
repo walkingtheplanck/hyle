@@ -1,0 +1,15 @@
+[package]
+name = "hyle-ca-analysis"
+version = "0.1.0"
+edition = "2021"
+description = "Shared analysis and diagnostics for the Hyle cellular automaton framework."
+readme = "README.md"
+license = "GPL-3.0-only"
+repository = "https://github.com/walkingtheplanck/hyle"
+documentation = "https://docs.rs/hyle-ca-analysis"
+keywords = ["cellular-automata", "analysis", "diagnostics", "automaton"]
+categories = ["game-development", "algorithms"]
+exclude = ["tests/"]
+
+[dependencies]
+hyle-ca-contracts = { path = "../ca-contracts", version = "0.1.0" }

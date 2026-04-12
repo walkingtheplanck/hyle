@@ -1,6 +1,9 @@
 //! Tests for the declarative automaton builder.
 
-use hyle_ca_contracts::{neighbors, BuildError, Cell, Hyle, NeighborhoodSpec, TopologyDescriptor};
+use hyle_ca_contracts::{
+    neighbors, BuildError, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
+    TopologyDescriptor,
+};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum LifeCell {
@@ -39,6 +42,17 @@ fn builder_emits_default_adjacent_neighborhood() {
     assert_eq!(spec.default_neighborhood(), 0);
     assert_eq!(spec.neighborhoods()[0].name, "adjacent");
     assert_eq!(spec.neighborhoods()[0].spec, NeighborhoodSpec::adjacent());
+    assert_eq!(
+        spec.neighborhoods()[0].spec.shape(),
+        NeighborhoodShape::Moore
+    );
+    assert_eq!(spec.neighborhoods()[0].spec.radius(), 1);
+    assert_eq!(
+        spec.neighborhoods()[0].spec.falloff(),
+        NeighborhoodFalloff::Uniform
+    );
+    assert_eq!(spec.neighborhoods()[0].spec.neighbor_count(), 26);
+    assert!(!spec.neighborhoods()[0].spec.is_weighted());
     assert_eq!(spec.rules().len(), 1);
 }
 
@@ -46,7 +60,10 @@ fn builder_emits_default_adjacent_neighborhood() {
 fn builder_resolves_named_neighborhoods() {
     let spec = Hyle::builder()
         .cells::<LifeCell>()
-        .neighborhood("far", NeighborhoodSpec::cube(2))
+        .neighborhood(
+            "far",
+            NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
+        )
         .default_neighborhood("far")
         .rules(|rules| {
             rules
@@ -65,7 +82,10 @@ fn builder_resolves_named_neighborhoods() {
 fn builder_rejects_duplicate_neighborhood_names() {
     let error = Hyle::builder()
         .cells::<LifeCell>()
-        .neighborhood("adjacent", NeighborhoodSpec::cube(2))
+        .neighborhood(
+            "adjacent",
+            NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
+        )
         .build()
         .expect_err("duplicate names must fail");
 

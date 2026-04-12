@@ -1,7 +1,7 @@
 //! Compiled automaton programs derived from declarative specs.
 
 use hyle_ca_contracts::{
-    AutomatonSpec, Cell, Condition, CountComparison, NeighborhoodShape, NeighborhoodWeight,
+    AutomatonSpec, Cell, Condition, CountComparison, NeighborhoodFalloff, NeighborhoodShape,
     RuleEffect,
 };
 
@@ -26,9 +26,9 @@ impl<C: Cell + Eq> CompiledProgram<C> {
                     condition: rule.condition.clone(),
                     effect: rule.effect,
                     neighborhood: Neighborhood::new(
-                        neighborhood.radius,
-                        shape_fn(neighborhood.shape),
-                        weight_fn(neighborhood.weight),
+                        neighborhood.radius(),
+                        shape_fn(neighborhood.shape()),
+                        falloff_fn(neighborhood.falloff()),
                     ),
                 }
             })
@@ -119,9 +119,9 @@ fn shape_fn(shape: NeighborhoodShape) -> ShapeFn {
     }
 }
 
-fn weight_fn(weight: NeighborhoodWeight) -> WeightFn {
-    match weight {
-        NeighborhoodWeight::Unweighted => unweighted,
-        NeighborhoodWeight::InverseSquare => inverse_square,
+fn falloff_fn(falloff: NeighborhoodFalloff) -> WeightFn {
+    match falloff {
+        NeighborhoodFalloff::Uniform => unweighted,
+        NeighborhoodFalloff::InverseSquare => inverse_square,
     }
 }

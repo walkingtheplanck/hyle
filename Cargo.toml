@@ -1,11 +1,13 @@
 [workspace]
 members = [
+    "crates/ca-analysis",
     "crates/ca-contracts",
     "crates/ca-solver",
 
     "tools/viewer",
 ]
 default-members = [
+    "crates/ca-analysis",
     "crates/ca-contracts",
     "crates/ca-solver",
 ]

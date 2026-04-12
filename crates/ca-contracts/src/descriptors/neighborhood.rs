@@ -1,54 +1,49 @@
 /// Declarative description of how a rule samples nearby cells.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NeighborhoodSpec {
-    /// Radius, in cells, around the center cell.
-    pub radius: u32,
-    /// Which offsets are included in the neighborhood.
-    pub shape: NeighborhoodShape,
-    /// How included offsets contribute to aggregate values.
-    pub weight: NeighborhoodWeight,
+    shape: NeighborhoodShape,
+    radius: u32,
+    falloff: NeighborhoodFalloff,
 }
 
 impl NeighborhoodSpec {
     /// Construct a new neighborhood specification.
-    pub const fn new(radius: u32, shape: NeighborhoodShape, weight: NeighborhoodWeight) -> Self {
+    pub const fn new(shape: NeighborhoodShape, radius: u32, falloff: NeighborhoodFalloff) -> Self {
         Self {
-            radius,
             shape,
-            weight,
+            radius,
+            falloff,
         }
     }
 
     /// Construct the standard adjacent neighborhood: radius-1 Moore, unweighted.
     pub const fn adjacent() -> Self {
-        Self::new(1, NeighborhoodShape::Moore, NeighborhoodWeight::Unweighted)
+        Self::new(NeighborhoodShape::Moore, 1, NeighborhoodFalloff::Uniform)
     }
 
-    /// Construct a Moore neighborhood with the given radius.
-    pub const fn cube(radius: u32) -> Self {
-        Self::new(
-            radius,
-            NeighborhoodShape::Moore,
-            NeighborhoodWeight::Unweighted,
-        )
+    /// Return the declared neighborhood shape.
+    pub const fn shape(&self) -> NeighborhoodShape {
+        self.shape
     }
 
-    /// Construct a Von Neumann neighborhood with the given radius.
-    pub const fn cross(radius: u32) -> Self {
-        Self::new(
-            radius,
-            NeighborhoodShape::VonNeumann,
-            NeighborhoodWeight::Unweighted,
-        )
+    /// Return the declared neighborhood radius.
+    pub const fn radius(&self) -> u32 {
+        self.radius
     }
 
-    /// Construct a spherical neighborhood with the given radius.
-    pub const fn sphere(radius: u32) -> Self {
-        Self::new(
-            radius,
-            NeighborhoodShape::Spherical,
-            NeighborhoodWeight::Unweighted,
-        )
+    /// Return the declared neighborhood falloff.
+    pub const fn falloff(&self) -> NeighborhoodFalloff {
+        self.falloff
+    }
+
+    /// Return whether this neighborhood uses a weighted falloff.
+    pub const fn is_weighted(&self) -> bool {
+        !matches!(self.falloff, NeighborhoodFalloff::Uniform)
+    }
+
+    /// Return the number of neighbor positions included by this specification.
+    pub const fn neighbor_count(&self) -> u32 {
+        self.shape.neighbor_count(self.radius)
     }
 }
 
@@ -63,11 +58,53 @@ pub enum NeighborhoodShape {
     Spherical,
 }
 
-/// Declarative neighborhood weighting strategy.
+impl NeighborhoodShape {
+    /// Return whether the offset belongs to this shape at the given radius.
+    pub const fn includes(self, dx: i32, dy: i32, dz: i32, radius: u32) -> bool {
+        if dx == 0 && dy == 0 && dz == 0 {
+            return false;
+        }
+
+        let radius = radius as i32;
+
+        match self {
+            Self::Moore => true,
+            Self::VonNeumann => dx.abs() + dy.abs() + dz.abs() <= radius,
+            Self::Spherical => dx * dx + dy * dy + dz * dz <= radius * radius,
+        }
+    }
+
+    /// Return the number of neighbor positions included by this shape at the given radius.
+    pub const fn neighbor_count(self, radius: u32) -> u32 {
+        let radius = radius as i32;
+        let mut count = 0u32;
+        let mut dz = -radius;
+
+        while dz <= radius {
+            let mut dy = -radius;
+            while dy <= radius {
+                let mut dx = -radius;
+                while dx <= radius {
+                    if self.includes(dx, dy, dz, radius as u32) {
+                        count += 1;
+                    }
+
+                    dx += 1;
+                }
+                dy += 1;
+            }
+            dz += 1;
+        }
+
+        count
+    }
+}
+
+/// Declarative neighborhood falloff strategy.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum NeighborhoodWeight {
-    /// Every included offset has weight 1.0.
-    Unweighted,
+pub enum NeighborhoodFalloff {
+    /// Every included offset has uniform influence.
+    Uniform,
     /// Weight falls off as inverse squared distance.
     InverseSquare,
 }

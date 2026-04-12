@@ -7,6 +7,10 @@ This crate defines the backend-neutral contract layer. Depend on it to:
 - author portable automaton specs with `Hyle::builder()`
 - implement new solver backends against the shared `CaSolver` trait
 
+Derived analysis and diagnostics live in
+[`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis), not in this
+crate.
+
 It has **zero dependencies**.
 
 ## Key Types
@@ -77,13 +81,20 @@ assert_eq!(snapshot.cells.len(), dims.cell_count());
 ## Declarative Neighborhoods
 
 ```rust
-use hyle_ca_contracts::NeighborhoodSpec;
+use hyle_ca_contracts::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 
 let adjacent = NeighborhoodSpec::adjacent();
-let far = NeighborhoodSpec::cube(2);
+let far = NeighborhoodSpec::new(
+    NeighborhoodShape::Moore,
+    2,
+    NeighborhoodFalloff::Uniform,
+);
 
-assert_eq!(adjacent.radius, 1);
-assert_eq!(far.radius, 2);
+assert_eq!(adjacent.radius(), 1);
+assert_eq!(far.radius(), 2);
+assert_eq!(far.shape(), NeighborhoodShape::Moore);
+assert_eq!(far.falloff(), NeighborhoodFalloff::Uniform);
+assert_eq!(far.neighbor_count(), 124);
 ```
 
 ## Topology

@@ -1,6 +1,7 @@
 # Hyle
 
 [![docs.rs: hyle-ca-contracts](https://img.shields.io/docsrs/hyle-ca-contracts?label=hyle-ca-contracts%20docs)](https://docs.rs/hyle-ca-contracts)
+[![docs.rs: hyle-ca-analysis](https://img.shields.io/docsrs/hyle-ca-analysis?label=hyle-ca-analysis%20docs)](https://docs.rs/hyle-ca-analysis)
 [![docs.rs: hyle-ca-solver](https://img.shields.io/docsrs/hyle-ca-solver?label=hyle-ca-solver%20docs)](https://docs.rs/hyle-ca-solver)
 
 A 3D cellular automaton framework for Rust.
@@ -15,6 +16,7 @@ A 3D cellular automaton framework for Rust.
 | Crate | Purpose |
 |-------|---------|
 | [`hyle-ca-contracts`](crates/ca-contracts) | Shared contracts, descriptors, and declarative automaton specs |
+| [`hyle-ca-analysis`](crates/ca-analysis) | Shared spec analysis and diagnostics |
 | [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver that executes portable automaton specs |
 
 ---
@@ -59,11 +61,18 @@ let solver = Solver::<FluidCell>::new(64, 64, 64);
 ### Variable-Radius Neighborhoods
 
 ```rust
-use hyle_ca_contracts::{neighbors, Hyle, NeighborhoodSpec};
+use hyle_ca_contracts::{neighbors, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 
 let spec = Hyle::builder()
     .cells::<u32>()
-    .neighborhood("far", NeighborhoodSpec::cube(3))
+    .neighborhood(
+        "far",
+        NeighborhoodSpec::new(
+            NeighborhoodShape::Moore,
+            3,
+            NeighborhoodFalloff::Uniform,
+        ),
+    )
     .rules(|rules| {
         rules.when(0)
             .using("far")
@@ -123,12 +132,12 @@ cargo run --release -p hyle-viewer
 - [x] **Descriptor-backed topology** - Uploadable topology descriptors with bounded and torus behavior
 - [ ] **State/schema metadata** - Declare the valid state space more explicitly so tools can analyze specs without guessing
 - [ ] **Spec serialization** - Save and load automaton specs and grid patterns in a stable portable format
-- [ ] **Capability checks** - Validate a spec against backend feature limits before runtime
+- [ ] **Backend-specific support checks** - Keep any execution-limit or backend support checks in backend crates instead of the shared analysis layer
 
 ### Analysis And Tooling
 
-- [ ] **Shared analysis crate** - Move spec analysis, diagnostics, and backend compatibility checks into a separate optional crate
-- [ ] **Rule diagnostics** - Detect shadowed rules, unused neighborhoods, and other first-match issues from the spec alone
+- [x] **Shared analysis crate** - Optional crate for spec-derived analysis and diagnostics
+- [x] **Rule diagnostics** - Detect shadowed rules, duplicate rules, and unused neighborhoods from the spec alone
 - [ ] **Simulation analysis tools** - Population counts, entropy, and other runtime-facing metrics exposed through shared APIs
 - [ ] **Architecture docs** - Document the mental model clearly: builder -> spec -> analysis -> backend runtime
 

@@ -21,8 +21,8 @@ pub use automaton::{
 pub use backend::CaSolver;
 pub use cell::Cell;
 pub use descriptors::{
-    AxisTopology, GridDims, GridRegion, GridSnapshot, NeighborhoodShape, NeighborhoodSpec,
-    NeighborhoodWeight, TopologyDescriptor,
+    AxisTopology, GridDims, GridRegion, GridSnapshot, NeighborhoodFalloff, NeighborhoodShape,
+    NeighborhoodSpec, TopologyDescriptor,
 };
 pub use topology::Topology;
 pub use validated::ValidatedSolver;

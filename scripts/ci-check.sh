@@ -9,7 +9,7 @@
 
 set -e
 
-PACKAGES="-p hyle-ca-contracts -p hyle-ca-solver"
+PACKAGES="-p hyle-ca-analysis -p hyle-ca-contracts -p hyle-ca-solver"
 
 run_fmt() {
     echo "[fmt] cargo fmt..."

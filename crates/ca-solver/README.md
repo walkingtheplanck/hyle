@@ -43,12 +43,21 @@ descriptor declared by that spec.
 Use named neighborhoods in the spec, then reference them from rules:
 
 ```rust
-use hyle_ca_contracts::{neighbors, CaSolver, Hyle, NeighborhoodSpec};
+use hyle_ca_contracts::{
+    neighbors, CaSolver, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
+};
 use hyle_ca_solver::Solver;
 
 let spec = Hyle::builder()
     .cells::<u32>()
-    .neighborhood("far", NeighborhoodSpec::cube(2))
+    .neighborhood(
+        "far",
+        NeighborhoodSpec::new(
+            NeighborhoodShape::Moore,
+            2,
+            NeighborhoodFalloff::Uniform,
+        ),
+    )
     .rules(|rules| {
         rules.when(0)
             .using("far")
