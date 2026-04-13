@@ -2,7 +2,7 @@
 
 use eframe::egui;
 
-use crate::camera::Camera;
+use crate::rendering::Camera;
 
 /// Tracks mouse capture state for orbit mode.
 pub struct InputState {

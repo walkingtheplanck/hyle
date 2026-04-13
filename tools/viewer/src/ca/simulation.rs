@@ -9,7 +9,7 @@ use std::time::Instant;
 use hyle_ca_interface::{neighbors, CaSolver, Cell, Hyle, Topology};
 use hyle_ca_solver::{DescriptorTopology, Rng, Solver};
 
-use crate::world::{self, SimpleWorld};
+use crate::ca::{SimpleWorld, AIR};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum LifeCell {
@@ -115,11 +115,7 @@ impl Simulation {
                 x as i32,
                 y as i32,
                 z as i32,
-                if cell == LifeCell::Alive {
-                    1
-                } else {
-                    world::AIR
-                },
+                if cell == LifeCell::Alive { 1 } else { AIR },
             );
         }
     }

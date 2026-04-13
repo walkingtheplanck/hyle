@@ -6,12 +6,9 @@ use std::time::Instant;
 use eframe::egui;
 use glam::Vec3;
 
-use crate::camera::Camera;
-use crate::gpu::GpuRaytracer;
+use crate::ca::{gol_world, Materials, SimpleWorld, Simulation};
 use crate::input::InputState;
-use crate::simulation::Simulation;
-use crate::ui;
-use crate::world::{self, Materials, SimpleWorld};
+use crate::rendering::{draw_toolbar, render, Camera, GpuRaytracer};
 
 pub struct ViewerApp {
     world: SimpleWorld,
@@ -35,7 +32,7 @@ impl ViewerApp {
         let queue = &render_state.queue;
         let mut renderer = render_state.renderer.write();
 
-        let (mut world, materials) = world::gol_world();
+        let (mut world, materials) = gol_world();
         let mut sim = Simulation::new();
         sim.reset(&mut world); // prime initial state
 
@@ -99,7 +96,7 @@ impl eframe::App for ViewerApp {
         );
         let fps = self.fps();
 
-        let (step, reset) = ui::draw_toolbar(
+        let (step, reset) = draw_toolbar(
             ctx,
             &mut self.sim.auto_step,
             &mut self.sim.step_interval_ms,
@@ -123,7 +120,7 @@ impl eframe::App for ViewerApp {
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
             .show(ctx, |ui| {
-                crate::viewport::render(
+                render(
                     ui,
                     &render_state,
                     &mut self.gpu,

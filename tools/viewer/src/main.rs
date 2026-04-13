@@ -11,13 +11,9 @@
 //!   Tab         — toggle mouse capture
 
 mod app;
-mod camera;
-mod gpu;
+mod ca;
 mod input;
-mod simulation;
-mod ui;
-mod viewport;
-mod world;
+mod rendering;
 
 use eframe::egui;
 

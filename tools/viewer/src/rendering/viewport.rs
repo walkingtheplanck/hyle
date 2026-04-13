@@ -2,8 +2,9 @@
 
 use eframe::egui::{self, Sense, Vec2};
 
-use crate::gpu::{GpuRaytracer, VoxelUpload};
-use crate::world::{Materials, SimpleWorld};
+use crate::ca::{Materials, SimpleWorld};
+use crate::input::InputState;
+use crate::rendering::{Camera, GpuRaytracer, VoxelUpload};
 
 /// Upload voxels to the GPU if the world changed.
 fn sync_voxels(
@@ -34,9 +35,9 @@ pub fn render(
     gpu: &mut GpuRaytracer,
     world: &SimpleWorld,
     _materials: &Materials,
-    camera: &mut crate::camera::Camera,
+    camera: &mut Camera,
     world_dirty: &mut bool,
-    input: &mut crate::input::InputState,
+    input: &mut InputState,
 ) {
     let avail = ui.available_size();
     let viewport_w = avail.x.max(1.0) as u32;

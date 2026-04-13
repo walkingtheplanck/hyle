@@ -3,8 +3,8 @@
 use eframe::egui;
 use eframe::egui_wgpu;
 
-use crate::camera::CameraFrame;
-use crate::world::{Aabb, Materials, SimpleWorld};
+use crate::ca::{Aabb, Materials, SimpleWorld};
+use crate::rendering::CameraFrame;
 
 /// GPU-side camera uniforms. Must match WGSL struct layout exactly.
 #[repr(C)]
@@ -77,7 +77,7 @@ impl GpuRaytracer {
         // Shader
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("raycast.wgsl"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("raycast.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../raycast.wgsl").into()),
         });
 
         // Bind group layout
