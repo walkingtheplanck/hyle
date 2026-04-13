@@ -1,8 +1,6 @@
-use hyle_ca_interface::{
-    BlueprintSpec, Cell, NamedNeighborhood as NamedNeighborhoodSpec, Rule, Semantics,
-};
+use crate::{BlueprintSpec, Cell, NamedNeighborhood as NamedNeighborhoodSpec, Rule, Semantics};
 
-use crate::{interpret_topology, Neighborhood, Topology};
+use super::{interpret_topology, Neighborhood, Topology};
 
 /// A named interpreted neighborhood used by a blueprint.
 #[derive(Clone, Debug, PartialEq)]

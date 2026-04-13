@@ -1,7 +1,7 @@
 //! Runtime neighborhood buffers for the CPU solver.
 //!
 //! Neighborhood shape, offsets, and falloff are interpreted by
-//! [`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics).
+//! [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface).
 //! This module only stores sampled runtime values for the CPU solver.
 
 mod buffer;

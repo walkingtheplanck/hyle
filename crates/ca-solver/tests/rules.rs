@@ -1,10 +1,10 @@
 //! Rule application tests using declarative blueprint specs.
 
+use hyle_ca_interface::semantics::interpret_blueprint;
 use hyle_ca_interface::{
     neighbors, BlueprintSpec, CaSolver, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape,
     NeighborhoodSpec, TopologyDescriptor,
 };
-use hyle_ca_semantics::interpret_blueprint;
 use hyle_ca_solver::Solver;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

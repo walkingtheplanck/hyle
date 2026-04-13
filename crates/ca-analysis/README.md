@@ -2,8 +2,7 @@
 
 Shared analysis and diagnostics for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
-This crate builds on [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface) and
-[`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics) and provides
+This crate builds on [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface) and provides
 **derived tooling** over declarative blueprint specs:
 - static spec summaries
 - rule and neighborhood diagnostics
@@ -42,7 +41,6 @@ assert_eq!(analysis.summary.rule_count, 1);
 
 | Crate | Role |
 |------|------|
-| [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface) | Canonical blueprint specs and solver traits |
-| [`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics) | Canonical neighborhood interpretation helpers |
+| [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface) | Contracts, semantics, and shared solver interfaces |
 | [`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis) | Shared spec analysis and diagnostics |
 | [`hyle-ca-solver`](https://crates.io/crates/hyle-ca-solver) | Default CPU solver implementation |

@@ -1,7 +1,7 @@
 //! Compiled solver programs derived from interpreted blueprints.
 
+use hyle_ca_interface::semantics::Blueprint;
 use hyle_ca_interface::{Cell, Condition, CountComparison, RuleEffect};
-use hyle_ca_semantics::Blueprint;
 
 use crate::Neighborhood;
 

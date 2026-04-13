@@ -1,4 +1,4 @@
-use hyle_ca_interface::{AxisTopology, GridDims, TopologyDescriptor};
+use crate::{AxisTopology, GridDims, TopologyDescriptor};
 
 /// Canonical interpreted topology derived from a declarative descriptor.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -1,7 +1,6 @@
 # Hyle
 
 [![docs.rs: hyle-ca-interface](https://img.shields.io/docsrs/hyle-ca-interface?label=hyle-ca-interface%20docs)](https://docs.rs/hyle-ca-interface)
-[![docs.rs: hyle-ca-semantics](https://img.shields.io/docsrs/hyle-ca-semantics?label=hyle-ca-semantics%20docs)](https://docs.rs/hyle-ca-semantics)
 [![docs.rs: hyle-ca-analysis](https://img.shields.io/docsrs/hyle-ca-analysis?label=hyle-ca-analysis%20docs)](https://docs.rs/hyle-ca-analysis)
 [![docs.rs: hyle-ca-solver](https://img.shields.io/docsrs/hyle-ca-solver?label=hyle-ca-solver%20docs)](https://docs.rs/hyle-ca-solver)
 
@@ -16,8 +15,7 @@ A 3D cellular automaton framework for Rust.
 
 | Crate | Purpose |
 |-------|---------|
-| [`hyle-ca-interface`](crates/ca-interface) | Shared contracts, descriptors, and declarative blueprint specs |
-| [`hyle-ca-semantics`](crates/ca-semantics) | Canonical semantic expansion of declarative specs |
+| [`hyle-ca-interface`](crates/ca-interface) | Shared interface crate containing contracts, semantics, and runtime traits |
 | [`hyle-ca-analysis`](crates/ca-analysis) | Shared spec analysis and diagnostics |
 | [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver that executes portable blueprint specs |
 

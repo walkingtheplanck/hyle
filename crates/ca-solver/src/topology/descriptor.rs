@@ -1,5 +1,5 @@
+use hyle_ca_interface::semantics::Topology as SemanticTopology;
 use hyle_ca_interface::{GridDims, Topology, TopologyDescriptor};
-use hyle_ca_semantics::Topology as SemanticTopology;
 
 /// Topology adapter backed by a [`TopologyDescriptor`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -1,7 +1,7 @@
 //! Neighborhood struct - pre-fetched neighbors around a center cell.
 
+use hyle_ca_interface::semantics::NeighborhoodSample;
 use hyle_ca_interface::Cell;
-use hyle_ca_semantics::NeighborhoodSample;
 
 use super::types::Entry;
 
@@ -13,7 +13,7 @@ use super::types::Entry;
 ///
 /// ```rust
 /// use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
-/// use hyle_ca_semantics::expand_neighborhood;
+/// use hyle_ca_interface::semantics::expand_neighborhood;
 /// use hyle_ca_solver::Neighborhood;
 ///
 /// let semantic = expand_neighborhood(NeighborhoodSpec::new(

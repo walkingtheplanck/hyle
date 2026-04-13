@@ -1,6 +1,6 @@
 //! Tests for the deterministic RNG.
 
-use hyle_ca_solver::Rng;
+use hyle_ca_interface::Rng;
 
 #[test]
 fn deterministic_same_input_same_output() {

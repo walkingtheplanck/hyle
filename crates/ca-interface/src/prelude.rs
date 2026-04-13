@@ -6,4 +6,4 @@ pub use crate::contracts::{
     NamedNeighborhood, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, Rule, RuleEffect,
     Semantics, TopologyDescriptor,
 };
-pub use crate::Cell;
+pub use crate::{Cell, Rng};

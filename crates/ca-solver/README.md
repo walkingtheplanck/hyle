@@ -38,9 +38,8 @@ let _solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 When you create a solver from a `BlueprintSpec`, the solver interprets that
 spec into a semantic blueprint and uses the descriptor declared by it.
 
-Custom solver implementations that need canonical neighborhood expansion can layer in
-[`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics) without
-pulling that logic into the contract crate itself.
+Custom solver implementations that need canonical neighborhood expansion can use
+`hyle_ca_interface::semantics` directly without reimplementing contract interpretation.
 
 ## Declaring Custom Neighborhoods
 

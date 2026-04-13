@@ -13,7 +13,7 @@ The `core.hooksPath` command activates the tracked pre-commit and commit-msg hoo
 
 ## Code Organization
 
-These standards apply to the library crates (`ca-interface`, `ca-semantics`, `ca-analysis`, `ca-solver`):
+These standards apply to the library crates (`ca-interface`, `ca-analysis`, `ca-solver`):
 
 - `main.rs`, `lib.rs`, and `mod.rs` are entry points and re-exports only — no logic.
 - Use semantically named files (`shapes.rs`, `weights.rs`, not `utils.rs` or `helpers.rs`).

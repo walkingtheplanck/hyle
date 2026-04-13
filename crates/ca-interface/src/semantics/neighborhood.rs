@@ -1,6 +1,6 @@
-use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+use crate::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 
-use crate::Offset3;
+use super::Offset3;
 
 /// A single interpreted neighborhood sample offset and its weight.
 #[derive(Clone, Copy, Debug, PartialEq)]

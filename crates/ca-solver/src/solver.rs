@@ -1,9 +1,9 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
+use hyle_ca_interface::semantics::{interpret_blueprint, Blueprint};
 use hyle_ca_interface::{
     BlueprintSpec, CaSolver, Cell, GridRegion, GridSnapshot, RuleEffect, Topology,
 };
-use hyle_ca_semantics::{interpret_blueprint, Blueprint};
 
 use crate::grid::{resolve_index, Grid};
 use crate::program::CompiledProgram;

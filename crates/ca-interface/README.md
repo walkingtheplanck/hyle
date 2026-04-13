@@ -8,14 +8,13 @@ This crate defines the shared public interface layer. Depend on it to:
 - implement new solver implementations against the shared `CaSolver` trait
 
 Derived analysis and diagnostics live in
-[`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis), and canonical
-neighborhood semantics live in
-[`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics), not in this
-crate.
+[`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis). Canonical
+interpretation helpers live in this crate under `hyle_ca_interface::semantics`.
 
 It has **zero dependencies** and is split conceptually into:
 - `contracts` for declarative blueprint and descriptor data
-- runtime interfaces such as `Cell`, `Topology`, `CaSolver`, and `ValidatedSolver`
+- `semantics` for interpreted blueprint, neighborhood, and topology meaning
+- runtime interfaces and shared primitives such as `Cell`, `Rng`, `Topology`, `CaSolver`, and `ValidatedSolver`
 
 ## Key Types
 
@@ -26,8 +25,14 @@ It has **zero dependencies** and is split conceptually into:
 | [`CaSolver`] | Trait that all solver implementations implement |
 | [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Solver-neutral grid descriptors and bulk transfer types |
 | [`NeighborhoodSpec`] | Declarative neighborhood description shared across solvers |
+| [`Rng`] | Shared deterministic random-number primitive for seeding and future probabilistic rules |
 | [`Topology`] / [`TopologyDescriptor`] | Boundary behavior traits and descriptors |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
+
+Semantic forms are available under `hyle_ca_interface::semantics`, for example:
+- `hyle_ca_interface::semantics::Blueprint`
+- `hyle_ca_interface::semantics::Neighborhood`
+- `hyle_ca_interface::semantics::Topology`
 
 ## Building a Portable Blueprint
 
@@ -81,6 +86,20 @@ let snapshot = GridSnapshot::new(dims, vec![0u32; dims.cell_count()]);
 assert!(dims.contains_region(region));
 assert_eq!(snapshot.cells.len(), dims.cell_count());
 ```
+
+## Deterministic RNG
+
+```rust
+use hyle_ca_interface::Rng;
+
+let rng = Rng::new(10, 20, 30, 4);
+
+assert!(rng.chance(1));
+assert!(rng.range(8) < 8);
+```
+
+This RNG is deterministic and portable: the same `(x, y, z, step)` input always
+produces the same output across all solvers.
 
 ## Declarative Neighborhoods
 

@@ -1,5 +1,5 @@
+use hyle_ca_interface::semantics::{expand_neighborhood, neighbor_count, offsets, Offset3};
 use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
-use hyle_ca_semantics::{expand_neighborhood, neighbor_count, offsets, Offset3};
 
 #[test]
 fn expands_moore_offsets_in_canonical_order() {
