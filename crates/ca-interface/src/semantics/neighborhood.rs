@@ -2,16 +2,19 @@ use crate::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 
 use super::Offset3;
 
+/// Fixed-point scale used for deterministic neighborhood weights.
+pub const WEIGHT_SCALE: u32 = 1024;
+
 /// A single interpreted neighborhood sample offset and its weight.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct NeighborhoodSample {
     offset: Offset3,
-    weight: f32,
+    weight: u32,
 }
 
 impl NeighborhoodSample {
     /// Construct a new weighted neighborhood sample.
-    pub const fn new(offset: Offset3, weight: f32) -> Self {
+    pub const fn new(offset: Offset3, weight: u32) -> Self {
         Self { offset, weight }
     }
 
@@ -21,7 +24,7 @@ impl NeighborhoodSample {
     }
 
     /// Return the sample weight.
-    pub const fn weight(&self) -> f32 {
+    pub const fn weight(&self) -> u32 {
         self.weight
     }
 }
@@ -117,13 +120,13 @@ fn includes(shape: NeighborhoodShape, dx: i32, dy: i32, dz: i32, radius: u32) ->
     }
 }
 
-fn weight(falloff: NeighborhoodFalloff, offset: Offset3) -> f32 {
+fn weight(falloff: NeighborhoodFalloff, offset: Offset3) -> u32 {
     match falloff {
-        NeighborhoodFalloff::Uniform => 1.0,
+        NeighborhoodFalloff::Uniform => WEIGHT_SCALE,
         NeighborhoodFalloff::InverseSquare => {
             let d_sq =
-                (offset.dx * offset.dx + offset.dy * offset.dy + offset.dz * offset.dz) as f32;
-            1.0 / d_sq
+                (offset.dx * offset.dx + offset.dy * offset.dy + offset.dz * offset.dz) as u32;
+            WEIGHT_SCALE / d_sq
         }
     }
 }

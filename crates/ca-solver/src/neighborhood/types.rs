@@ -10,6 +10,6 @@ pub struct Entry<C: Cell> {
     pub offset: Offset3,
     /// The cell value at this offset.
     pub cell: C,
-    /// Precomputed influence weight for this offset.
-    pub weight: f32,
+    /// Precomputed fixed-point influence weight for this offset.
+    pub weight: u32,
 }

@@ -26,7 +26,7 @@ It has **zero dependencies** and is split conceptually into:
 | [`CaSolver`] | Trait that all solver implementations implement |
 | [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Solver-neutral grid descriptors and bulk transfer types |
 | [`NeighborhoodSpec`] | Declarative neighborhood description shared across solvers |
-| [`Rng`] | Shared deterministic random-number primitive for seeding and future probabilistic rules |
+| [`Rng`] | Shared deterministic random-number primitive parameterized by seed, position, step, and stream |
 | [`Topology`] / [`TopologyDescriptor`] | Boundary behavior traits and descriptors |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 
@@ -120,6 +120,9 @@ assert_eq!(far.radius(), 2);
 assert_eq!(far.shape(), NeighborhoodShape::Moore);
 assert_eq!(far.falloff(), NeighborhoodFalloff::Uniform);
 ```
+
+Neighborhood falloff expands to deterministic fixed-point weights in the semantic layer,
+so CPU and GPU backends can agree on the same values exactly.
 
 ## Topology
 

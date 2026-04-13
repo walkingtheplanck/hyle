@@ -29,7 +29,7 @@ pub struct Neighborhood<C: Cell> {
     radius: u32,
     entries: Vec<Entry<C>>,
     alive_count: u32,
-    weighted_sum: f32,
+    weighted_sum: u64,
 }
 
 impl<C: Cell> Neighborhood<C> {
@@ -60,7 +60,7 @@ impl<C: Cell> Neighborhood<C> {
                 .unwrap_or(0),
             entries,
             alive_count: 0,
-            weighted_sum: 0.0,
+            weighted_sum: 0,
         }
     }
 
@@ -69,12 +69,12 @@ impl<C: Cell> Neighborhood<C> {
         self.center = center;
         self.pos = pos;
         self.alive_count = 0;
-        self.weighted_sum = 0.0;
+        self.weighted_sum = 0;
         for entry in &mut self.entries {
             entry.cell = sample(entry.offset.dx, entry.offset.dy, entry.offset.dz);
             let alive = entry.cell.is_alive() as u32;
             self.alive_count += alive;
-            self.weighted_sum += alive as f32 * entry.weight;
+            self.weighted_sum += alive as u64 * entry.weight as u64;
         }
     }
 
@@ -126,7 +126,7 @@ impl<C: Cell> Neighborhood<C> {
     }
 
     /// Weighted sum of alive neighbors. Precomputed during [`Neighborhood::fill`].
-    pub fn weighted_sum(&self) -> f32 {
+    pub fn weighted_sum(&self) -> u64 {
         self.weighted_sum
     }
 

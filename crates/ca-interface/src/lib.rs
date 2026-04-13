@@ -17,4 +17,4 @@ pub use contracts::{
     TopologyDescriptor,
 };
 pub use models::{CaSolver, Cell, Instance, Topology, ValidatedSolver};
-pub use semantics::Rng;
+pub use semantics::{Rng, WEIGHT_SCALE};

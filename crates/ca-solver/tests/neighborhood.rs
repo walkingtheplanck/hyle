@@ -1,7 +1,7 @@
 //! Tests for Neighborhood struct, shapes, and weights.
 
 use hyle_ca_interface::semantics::expand_neighborhood;
-use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, WEIGHT_SCALE};
 use hyle_ca_solver::Neighborhood;
 
 fn runtime_neighborhood(
@@ -242,7 +242,7 @@ fn spherical_r2_includes_face_and_edge_but_not_corner() {
 fn unweighted_sum_equals_count_alive() {
     let mut n = runtime_neighborhood(NeighborhoodShape::Moore, 1, NeighborhoodFalloff::Uniform);
     n.fill(0, [0, 0, 0], |_, _, _| 1);
-    assert_eq!(n.weighted_sum(), 26.0);
+    assert_eq!(n.weighted_sum(), 26 * WEIGHT_SCALE as u64);
     assert_eq!(n.count_alive(), 26);
 }
 
@@ -254,8 +254,7 @@ fn inverse_square_weighted_sum() {
         NeighborhoodFalloff::InverseSquare,
     );
     n.fill(0, [0, 0, 0], |_, _, _| 1);
-    let w = n.weighted_sum();
-    assert!((w - 14.667).abs() < 0.1);
+    assert_eq!(n.weighted_sum(), 15_016);
 }
 
 #[test]
@@ -266,8 +265,8 @@ fn weighted_sum_excludes_dead_cells() {
         NeighborhoodFalloff::InverseSquare,
     );
     n.fill(0, [0, 0, 0], |dx, _dy, _dz| if dx > 0 { 1 } else { 0 });
-    assert!(n.weighted_sum() < 14.667);
-    assert!(n.weighted_sum() > 0.0);
+    assert!(n.weighted_sum() < 15_016);
+    assert!(n.weighted_sum() > 0);
 }
 
 // ---------------------------------------------------------------------------
