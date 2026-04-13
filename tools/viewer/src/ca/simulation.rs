@@ -6,7 +6,7 @@
 
 use std::time::Instant;
 
-use hyle_ca_interface::{neighbors, CaSolver, Cell, Hyle, Rng, Topology};
+use hyle_ca_interface::{neighbors, CaSolver, Cell, Hyle, Instance, Rng, Topology};
 use hyle_ca_solver::{DescriptorTopology, Solver};
 
 use crate::ca::{SimpleWorld, AIR};
@@ -65,7 +65,7 @@ impl Simulation {
             })
             .build()
             .expect("viewer life spec should build");
-        let mut ca = Solver::from_spec(64, 64, 64, &spec);
+        let mut ca = Solver::from_spec_instance(Instance::new(64, 64, 64).with_seed(1), &spec);
 
         Self::seed(&mut ca);
         ca
@@ -76,7 +76,7 @@ impl Simulation {
         for z in 24u32..40 {
             for y in 24u32..40 {
                 for x in 24u32..40 {
-                    if Rng::new(x, y, z, 0).chance(6) {
+                    if Rng::with_seed(x, y, z, 0, 1).chance(6) {
                         ca.set(x as i32, y as i32, z as i32, LifeCell::Alive);
                     }
                 }

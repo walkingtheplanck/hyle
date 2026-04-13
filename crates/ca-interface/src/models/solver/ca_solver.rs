@@ -36,6 +36,12 @@ pub trait CaSolver<C: Cell> {
     fn dims(&self) -> GridDims {
         GridDims::new(self.width(), self.height(), self.depth())
     }
+
+    /// Deterministic run seed used for semantic randomness.
+    fn seed(&self) -> u64 {
+        0
+    }
+
     /// Topology policy used to resolve coordinates for reads, writes, and steps.
     fn topology(&self) -> &Self::Topology;
 

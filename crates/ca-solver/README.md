@@ -9,7 +9,7 @@ definitions from [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interfac
 ## Quick Start
 
 ```rust
-use hyle_ca_interface::{neighbors, CaSolver, Hyle};
+use hyle_ca_interface::{neighbors, CaSolver, Hyle, Instance};
 use hyle_ca_solver::Solver;
 
 let spec = Hyle::builder()
@@ -20,7 +20,7 @@ let spec = Hyle::builder()
     })
     .build()?;
 
-let mut solver = Solver::from_spec(64, 64, 64, &spec);
+let mut solver = Solver::from_spec_instance(Instance::new(64, 64, 64).with_seed(7), &spec);
 solver.step();
 # Ok::<(), hyle_ca_interface::BuildError>(())
 ```

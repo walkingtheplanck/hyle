@@ -14,13 +14,14 @@ interpretation helpers live in this crate under `hyle_ca_interface::semantics`.
 It has **zero dependencies** and is split conceptually into:
 - `contracts` for declarative blueprint and descriptor data
 - `semantics` for interpreted blueprint, neighborhood, and topology meaning
-- runtime interfaces and shared primitives such as `Cell`, `Rng`, `Topology`, `CaSolver`, and `ValidatedSolver`
+- runtime interfaces and shared primitives such as `Cell`, `Instance`, `Rng`, `Topology`, `CaSolver`, and `ValidatedSolver`
 
 ## Key Types
 
 | Type | Role |
 |------|------|
 | [`Cell`] | Trait for custom cell state |
+| [`Instance`] | Runtime dimensions and deterministic seed for one solver run |
 | [`Hyle`] / [`BlueprintSpec`] | Declarative blueprint builder and canonical spec |
 | [`CaSolver`] | Trait that all solver implementations implement |
 | [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Solver-neutral grid descriptors and bulk transfer types |
@@ -90,16 +91,17 @@ assert_eq!(snapshot.cells.len(), dims.cell_count());
 ## Deterministic RNG
 
 ```rust
-use hyle_ca_interface::Rng;
+use hyle_ca_interface::{Instance, Rng};
 
-let rng = Rng::new(10, 20, 30, 4);
+let instance = Instance::new(64, 64, 64).with_seed(42);
+let rng = Rng::with_seed(10, 20, 30, 4, instance.seed());
 
 assert!(rng.chance(1));
 assert!(rng.range(8) < 8);
 ```
 
-This RNG is deterministic and portable: the same `(x, y, z, step)` input always
-produces the same output across all solvers.
+This RNG is deterministic and portable: the same `(seed, x, y, z, step, stream)`
+input always produces the same output across all solvers.
 
 ## Declarative Neighborhoods
 

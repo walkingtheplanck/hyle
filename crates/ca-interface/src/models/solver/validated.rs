@@ -87,6 +87,10 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
         self.inner.topology()
     }
 
+    fn seed(&self) -> u64 {
+        self.inner.seed()
+    }
+
     fn guard_index(&self) -> usize {
         self.inner.guard_index()
     }

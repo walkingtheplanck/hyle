@@ -2,8 +2,8 @@
 
 use hyle_ca_interface::semantics::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
-    neighbors, rng, BlueprintSpec, CaSolver, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape,
-    NeighborhoodSpec, TopologyDescriptor,
+    neighbors, rng, BlueprintSpec, CaSolver, Cell, Hyle, Instance, NeighborhoodFalloff,
+    NeighborhoodShape, NeighborhoodSpec, TopologyDescriptor,
 };
 use hyle_ca_solver::Solver;
 
@@ -287,8 +287,9 @@ fn random_chance_rules_follow_semantic_rng() {
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(2, 2, 2, &spec);
-    let expected = if cell_rng([0, 0, 0], 0, 3).chance(5) {
+    let instance = Instance::new(2, 2, 2).with_seed(41);
+    let mut solver = Solver::from_spec_instance(instance, &spec);
+    let expected = if cell_rng([0, 0, 0], 0, 3, 41).chance(5) {
         LifeCell::Alive
     } else {
         LifeCell::Dead
@@ -297,6 +298,35 @@ fn random_chance_rules_follow_semantic_rng() {
     solver.step();
 
     assert_eq!(solver.get(0, 0, 0), expected);
+}
+
+#[test]
+fn random_chance_rules_change_with_seed() {
+    let spec = Hyle::builder()
+        .cells::<LifeCell>()
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Dead)
+                .require(rng(3).one_in(5))
+                .becomes(LifeCell::Alive);
+        })
+        .build()
+        .expect("valid spec");
+
+    let first = Instance::new(2, 2, 2).with_seed(1);
+    let second = Instance::new(2, 2, 2).with_seed(2);
+
+    let mut a = Solver::from_spec_instance(first, &spec);
+    let mut b = Solver::from_spec_instance(second, &spec);
+
+    a.step();
+    b.step();
+
+    let expected_a = cell_rng([0, 0, 0], 0, 3, 1).chance(5);
+    let expected_b = cell_rng([0, 0, 0], 0, 3, 2).chance(5);
+
+    assert_eq!(a.get(0, 0, 0) == LifeCell::Alive, expected_a);
+    assert_eq!(b.get(0, 0, 0) == LifeCell::Alive, expected_b);
 }
 
 #[test]

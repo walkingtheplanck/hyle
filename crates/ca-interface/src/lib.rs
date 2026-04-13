@@ -16,5 +16,5 @@ pub use contracts::{
     NeighborhoodSpec, RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder, Semantics,
     TopologyDescriptor,
 };
-pub use models::{CaSolver, Cell, Topology, ValidatedSolver};
+pub use models::{CaSolver, Cell, Instance, Topology, ValidatedSolver};
 pub use semantics::Rng;

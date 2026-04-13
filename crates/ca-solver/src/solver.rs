@@ -2,7 +2,7 @@
 
 use hyle_ca_interface::semantics::{interpret_blueprint, Blueprint};
 use hyle_ca_interface::{
-    BlueprintSpec, CaSolver, Cell, GridRegion, GridSnapshot, RuleEffect, Topology,
+    BlueprintSpec, CaSolver, Cell, GridRegion, GridSnapshot, Instance, RuleEffect, Topology,
 };
 
 use crate::grid::{resolve_index, Grid};
@@ -20,12 +20,13 @@ pub struct Solver<C: Cell + Eq = u32, T: Topology = BoundedTopology> {
     topology: T,
     program: Option<CompiledProgram<C>>,
     step_count: u32,
+    seed: u64,
 }
 
 impl<C: Cell + Eq> Solver<C, BoundedTopology> {
     /// Create a new bounded solver filled with `C::default()`.
     pub fn new(width: u32, height: u32, depth: u32) -> Self {
-        Self::with_topology(width, height, depth, BoundedTopology)
+        Self::with_instance_and_topology(Instance::new(width, height, depth), BoundedTopology)
     }
 
     /// Create a new solver filled with `C::default()` and the given topology.
@@ -35,11 +36,24 @@ impl<C: Cell + Eq> Solver<C, BoundedTopology> {
         depth: u32,
         topology: U,
     ) -> Solver<C, U> {
+        Self::with_instance_and_topology(Instance::new(width, height, depth), topology)
+    }
+
+    /// Create a new solver from a runtime instance and topology policy.
+    pub fn with_instance_and_topology<U: Topology>(
+        instance: Instance,
+        topology: U,
+    ) -> Solver<C, U> {
         Solver {
-            grid: Grid::new(width, height, depth),
+            grid: Grid::new(
+                instance.dims().width,
+                instance.dims().height,
+                instance.dims().depth,
+            ),
             topology,
             program: None,
             step_count: 0,
+            seed: instance.seed(),
         }
     }
 }
@@ -47,11 +61,21 @@ impl<C: Cell + Eq> Solver<C, BoundedTopology> {
 impl<C: Cell + Eq> Solver<C, DescriptorTopology> {
     /// Create a solver whose topology and rules come from an interpreted blueprint.
     pub fn from_blueprint(width: u32, height: u32, depth: u32, blueprint: &Blueprint<C>) -> Self {
+        Self::from_blueprint_instance(Instance::new(width, height, depth), blueprint)
+    }
+
+    /// Create a solver from a runtime instance and interpreted blueprint.
+    pub fn from_blueprint_instance(instance: Instance, blueprint: &Blueprint<C>) -> Self {
         Solver {
-            grid: Grid::new(width, height, depth),
+            grid: Grid::new(
+                instance.dims().width,
+                instance.dims().height,
+                instance.dims().depth,
+            ),
             topology: DescriptorTopology::new(blueprint.topology().descriptor()),
             program: Some(CompiledProgram::from_blueprint(blueprint)),
             step_count: 0,
+            seed: instance.seed(),
         }
     }
 
@@ -60,8 +84,16 @@ impl<C: Cell + Eq> Solver<C, DescriptorTopology> {
     where
         C: Clone,
     {
+        Self::from_spec_instance(Instance::new(width, height, depth), spec)
+    }
+
+    /// Interpret a declarative blueprint spec and create a solver from a runtime instance.
+    pub fn from_spec_instance(instance: Instance, spec: &BlueprintSpec<C>) -> Self
+    where
+        C: Clone,
+    {
         let blueprint = interpret_blueprint(spec);
-        Self::from_blueprint(width, height, depth, &blueprint)
+        Self::from_blueprint_instance(instance, &blueprint)
     }
 }
 
@@ -73,6 +105,7 @@ impl<C: Cell + Eq, T: Topology> Solver<C, T> {
             topology,
             program: self.program,
             step_count: self.step_count,
+            seed: self.seed,
         }
     }
 
@@ -108,10 +141,13 @@ impl<C: Cell + Eq, T: Topology> Solver<C, T> {
                 for x in 0..width as i32 {
                     let idx = (x as u32 + y as u32 * width + z as u32 * width * height) as usize;
                     let center = cells[idx];
-                    let effect =
-                        program.evaluate(center, [x, y, z], self.step_count, |dx, dy, dz| {
-                            cells[resolve(x + dx, y + dy, z + dz)]
-                        });
+                    let effect = program.evaluate(
+                        center,
+                        [x, y, z],
+                        self.step_count,
+                        self.seed,
+                        |dx, dy, dz| cells[resolve(x + dx, y + dy, z + dz)],
+                    );
 
                     match effect {
                         Some(RuleEffect::Keep) | None => {}
@@ -140,6 +176,10 @@ impl<C: Cell + Eq, T: Topology> CaSolver<C> for Solver<C, T> {
 
     fn topology(&self) -> &Self::Topology {
         &self.topology
+    }
+
+    fn seed(&self) -> u64 {
+        self.seed
     }
 
     fn cell_count(&self) -> usize {

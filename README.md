@@ -24,7 +24,7 @@ A 3D cellular automaton framework for Rust.
 ## Quick Start
 
 ```rust
-use hyle_ca_interface::{neighbors, Hyle};
+use hyle_ca_interface::{neighbors, Hyle, Instance};
 use hyle_ca_solver::Solver;
 
 let spec = Hyle::builder()
@@ -35,7 +35,7 @@ let spec = Hyle::builder()
     })
     .build()?;
 
-let mut solver = Solver::from_spec(64, 64, 64, &spec);
+let mut solver = Solver::from_spec_instance(Instance::new(64, 64, 64).with_seed(7), &spec);
 solver.step();
 # Ok::<(), hyle_ca_interface::BuildError>(())
 ```
