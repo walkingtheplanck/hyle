@@ -51,8 +51,6 @@ fn builder_emits_default_adjacent_neighborhood() {
         spec.neighborhoods()[0].spec.falloff(),
         NeighborhoodFalloff::Uniform
     );
-    assert_eq!(spec.neighborhoods()[0].spec.neighbor_count(), 26);
-    assert!(!spec.neighborhoods()[0].spec.is_weighted());
     assert_eq!(spec.rules().len(), 1);
 }
 
@@ -112,21 +110,4 @@ fn builder_rejects_unknown_rule_neighborhoods() {
         error,
         BuildError::UnknownRuleNeighborhood("missing".to_string())
     );
-}
-
-#[test]
-fn neighborhood_counts_use_precomputed_values_and_exact_fallback() {
-    let precomputed = NeighborhoodSpec::new(
-        NeighborhoodShape::Spherical,
-        100,
-        NeighborhoodFalloff::Uniform,
-    );
-    let fallback = NeighborhoodSpec::new(
-        NeighborhoodShape::Spherical,
-        101,
-        NeighborhoodFalloff::Uniform,
-    );
-
-    assert_eq!(precomputed.neighbor_count(), 4_187_856);
-    assert_eq!(fallback.neighbor_count(), 4_314_770);
 }

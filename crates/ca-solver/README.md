@@ -38,6 +38,10 @@ let _solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 When you create a solver from an `AutomatonSpec`, the solver uses the
 descriptor declared by that spec.
 
+Custom backends that need canonical neighborhood expansion can layer in
+[`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics) without
+pulling that logic into the contract crate itself.
+
 ## Declaring Custom Neighborhoods
 
 Use named neighborhoods in the spec, then reference them from rules:

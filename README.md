@@ -1,6 +1,7 @@
 # Hyle
 
 [![docs.rs: hyle-ca-contracts](https://img.shields.io/docsrs/hyle-ca-contracts?label=hyle-ca-contracts%20docs)](https://docs.rs/hyle-ca-contracts)
+[![docs.rs: hyle-ca-semantics](https://img.shields.io/docsrs/hyle-ca-semantics?label=hyle-ca-semantics%20docs)](https://docs.rs/hyle-ca-semantics)
 [![docs.rs: hyle-ca-analysis](https://img.shields.io/docsrs/hyle-ca-analysis?label=hyle-ca-analysis%20docs)](https://docs.rs/hyle-ca-analysis)
 [![docs.rs: hyle-ca-solver](https://img.shields.io/docsrs/hyle-ca-solver?label=hyle-ca-solver%20docs)](https://docs.rs/hyle-ca-solver)
 
@@ -16,6 +17,7 @@ A 3D cellular automaton framework for Rust.
 | Crate | Purpose |
 |-------|---------|
 | [`hyle-ca-contracts`](crates/ca-contracts) | Shared contracts, descriptors, and declarative automaton specs |
+| [`hyle-ca-semantics`](crates/ca-semantics) | Canonical semantic expansion of declarative specs |
 | [`hyle-ca-analysis`](crates/ca-analysis) | Shared spec analysis and diagnostics |
 | [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver that executes portable automaton specs |
 

@@ -13,3 +13,4 @@ exclude = ["tests/"]
 
 [dependencies]
 hyle-ca-contracts = { path = "../ca-contracts", version = "0.1.0" }
+hyle-ca-semantics = { path = "../ca-semantics", version = "0.1.0" }

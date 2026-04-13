@@ -875,11 +875,19 @@ name = "hyle-ca-analysis"
 version = "0.1.0"
 dependencies = [
  "hyle-ca-contracts",
+ "hyle-ca-semantics",
 ]
 
 [[package]]
 name = "hyle-ca-contracts"
 version = "0.1.0"
+
+[[package]]
+name = "hyle-ca-semantics"
+version = "0.1.0"
+dependencies = [
+ "hyle-ca-contracts",
+]
 
 [[package]]
 name = "hyle-ca-solver"

@@ -2,6 +2,7 @@
 members = [
     "crates/ca-analysis",
     "crates/ca-contracts",
+    "crates/ca-semantics",
     "crates/ca-solver",
 
     "tools/viewer",
@@ -9,6 +10,7 @@ members = [
 default-members = [
     "crates/ca-analysis",
     "crates/ca-contracts",
+    "crates/ca-semantics",
     "crates/ca-solver",
 ]
 resolver = "2"

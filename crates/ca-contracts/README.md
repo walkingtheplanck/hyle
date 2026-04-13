@@ -8,7 +8,9 @@ This crate defines the backend-neutral contract layer. Depend on it to:
 - implement new solver backends against the shared `CaSolver` trait
 
 Derived analysis and diagnostics live in
-[`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis), not in this
+[`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis), and canonical
+neighborhood semantics live in
+[`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics), not in this
 crate.
 
 It has **zero dependencies**.
@@ -94,7 +96,6 @@ assert_eq!(adjacent.radius(), 1);
 assert_eq!(far.radius(), 2);
 assert_eq!(far.shape(), NeighborhoodShape::Moore);
 assert_eq!(far.falloff(), NeighborhoodFalloff::Uniform);
-assert_eq!(far.neighbor_count(), 124);
 ```
 
 ## Topology
