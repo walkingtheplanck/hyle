@@ -3,7 +3,7 @@
 Default CPU solver for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
 Double-buffered, single-threaded, and driven by portable
-[`AutomatonSpec`](https://docs.rs/hyle-ca-contracts/latest/hyle_ca_contracts/struct.AutomatonSpec.html)
+[`BlueprintSpec`](https://docs.rs/hyle-ca-contracts/latest/hyle_ca_contracts/struct.BlueprintSpec.html)
 definitions from [`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts).
 
 ## Quick Start
@@ -35,10 +35,10 @@ use hyle_ca_solver::{Solver, TorusTopology};
 let _solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 ```
 
-When you create a solver from an `AutomatonSpec`, the solver uses the
-descriptor declared by that spec.
+When you create a solver from a `BlueprintSpec`, the solver interprets that
+spec into a semantic blueprint and uses the descriptor declared by it.
 
-Custom backends that need canonical neighborhood expansion can layer in
+Custom solver implementations that need canonical neighborhood expansion can layer in
 [`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics) without
 pulling that logic into the contract crate itself.
 
@@ -80,9 +80,9 @@ solver.step();
 Each call to `step()`:
 
 1. Copies the current buffer to the next buffer.
-2. Evaluates the ordered automaton rules against the current buffer.
+2. Evaluates the ordered blueprint rules against the current buffer.
 3. Applies the first matching rule per cell to the next buffer.
 4. Swaps buffers and increments the step counter.
 
 The double-buffer design keeps rule evaluation order-independent at the cell
-level, which makes the semantics portable to future GPU backends.
+level, which makes the semantics portable to future GPU solvers.

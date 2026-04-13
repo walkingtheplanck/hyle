@@ -4,7 +4,7 @@ use hyle_ca_contracts::{Cell, NeighborhoodSpec, RuleEffect, Semantics, TopologyD
 
 use crate::Diagnostic;
 
-/// Top-level summary derived from an automaton spec.
+/// Top-level summary derived from a blueprint spec.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpecSummary {
     /// Declared semantics version.
@@ -55,7 +55,7 @@ pub struct NeighborhoodAnalysis {
     pub used_by_rules: usize,
 }
 
-/// Full analysis result for an automaton spec.
+/// Full analysis result for a blueprint spec.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpecAnalysis<C: Cell> {
     /// High-level summary.

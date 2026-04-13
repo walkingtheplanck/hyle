@@ -9,7 +9,7 @@
 /// For richer automata (fluids, multi-channel state), define your
 /// own struct and implement this trait.
 pub trait Cell: Copy + Default + Send + Sync + 'static {
-    /// A compact backend-defined dispatch key for this cell.
+    /// A compact solver-defined dispatch key for this cell.
     ///
     /// Some solvers use exact-state matching and ignore this value entirely;
     /// others may still use it to bucket rules or choose fast paths.

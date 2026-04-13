@@ -1,10 +1,10 @@
-//! Canonical automaton specification types.
+//! Canonical blueprint specification types.
 
 use crate::{Cell, NeighborhoodSpec, TopologyDescriptor};
 
 use super::Condition;
 
-/// Portable semantics version for an automaton specification.
+/// Portable semantics version for a blueprint specification.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Semantics {
     /// Version 1 semantics: deterministic local rules with first-match wins.
@@ -40,12 +40,12 @@ pub enum RuleEffect<C: Cell> {
     Become(C),
 }
 
-/// One deterministic rule in an [`AutomatonSpec`].
+/// One deterministic rule in a [`BlueprintSpec`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Rule<C: Cell> {
     /// Exact center-cell state that this rule applies to.
     pub when: C,
-    /// Index into [`AutomatonSpec::neighborhoods`].
+    /// Index into [`BlueprintSpec::neighborhoods`].
     pub neighborhood: usize,
     /// Optional condition that must evaluate to `true`.
     pub condition: Option<Condition<C>>,
@@ -53,9 +53,9 @@ pub struct Rule<C: Cell> {
     pub effect: RuleEffect<C>,
 }
 
-/// Immutable, backend-agnostic automaton specification.
+/// Immutable, solver-agnostic blueprint specification.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AutomatonSpec<C: Cell> {
+pub struct BlueprintSpec<C: Cell> {
     semantics: Semantics,
     topology: TopologyDescriptor,
     neighborhoods: Vec<NamedNeighborhood>,
@@ -63,7 +63,7 @@ pub struct AutomatonSpec<C: Cell> {
     rules: Vec<Rule<C>>,
 }
 
-impl<C: Cell> AutomatonSpec<C> {
+impl<C: Cell> BlueprintSpec<C> {
     pub(crate) fn new(
         semantics: Semantics,
         topology: TopologyDescriptor,
@@ -85,7 +85,7 @@ impl<C: Cell> AutomatonSpec<C> {
         self.semantics
     }
 
-    /// The topology descriptor shared across backends.
+    /// The topology descriptor shared across solver implementations.
     pub fn topology(&self) -> TopologyDescriptor {
         self.topology
     }
@@ -105,3 +105,6 @@ impl<C: Cell> AutomatonSpec<C> {
         &self.rules
     }
 }
+
+/// Backward-compatible alias for the blueprint specification type.
+pub type AutomatonSpec<C> = BlueprintSpec<C>;

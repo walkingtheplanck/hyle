@@ -7,7 +7,7 @@
 
 A 3D cellular automaton framework for Rust.
 
-> Define portable automaton specs, run them on solver backends, and keep the
+> Define portable blueprint specs, run them on solver implementations, and keep the
 > same rule semantics across CPU and GPU implementations.
 
 ---
@@ -16,10 +16,10 @@ A 3D cellular automaton framework for Rust.
 
 | Crate | Purpose |
 |-------|---------|
-| [`hyle-ca-contracts`](crates/ca-contracts) | Shared contracts, descriptors, and declarative automaton specs |
+| [`hyle-ca-contracts`](crates/ca-contracts) | Shared contracts, descriptors, and declarative blueprint specs |
 | [`hyle-ca-semantics`](crates/ca-semantics) | Canonical semantic expansion of declarative specs |
 | [`hyle-ca-analysis`](crates/ca-analysis) | Shared spec analysis and diagnostics |
-| [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver that executes portable automaton specs |
+| [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver that executes portable blueprint specs |
 
 ---
 
@@ -129,24 +129,24 @@ cargo run --release -p hyle-viewer
 
 ### Contracts And Spec
 
-- [x] **Declarative automaton specs** - Portable builder API and canonical spec shared across backends
+- [x] **Declarative blueprint specs** - Portable builder API and canonical spec shared across solver implementations
 - [x] **Named neighborhoods** - Reusable neighborhood definitions referenced by rules
 - [x] **Descriptor-backed topology** - Uploadable topology descriptors with bounded and torus behavior
 - [ ] **State/schema metadata** - Declare the valid state space more explicitly so tools can analyze specs without guessing
 - [ ] **Spec serialization** - Save and load automaton specs and grid patterns in a stable portable format
-- [ ] **Backend-specific support checks** - Keep any execution-limit or backend support checks in backend crates instead of the shared analysis layer
+- [ ] **Solver-specific support checks** - Keep any execution-limit or solver support checks in solver crates instead of the shared analysis layer
 
 ### Analysis And Tooling
 
 - [x] **Shared analysis crate** - Optional crate for spec-derived analysis and diagnostics
 - [x] **Rule diagnostics** - Detect shadowed rules, duplicate rules, and unused neighborhoods from the spec alone
 - [ ] **Simulation analysis tools** - Population counts, entropy, and other runtime-facing metrics exposed through shared APIs
-- [ ] **Architecture docs** - Document the mental model clearly: builder -> spec -> analysis -> backend runtime
+- [ ] **Architecture docs** - Document the mental model clearly: builder -> spec -> blueprint -> analysis -> solver runtime
 
 ### Backends
 
-- [x] **Default CPU backend** - Execute declarative specs with deterministic first-match semantics
-- [ ] **GPU backend** - Compile the same spec model to a GPU execution path
+- [x] **Default CPU solver** - Execute declarative specs with deterministic first-match semantics
+- [ ] **GPU solver** - Compile the same spec model to a GPU execution path
 - [ ] **Parallel CPU stepping** - Rayon or equivalent, preserving current deterministic semantics
 
 ### World And Topology

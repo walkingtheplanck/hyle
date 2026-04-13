@@ -1,11 +1,11 @@
 # hyle-ca-contracts
 
-Shared contracts, descriptors, and declarative automaton specs for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
+Shared contracts, descriptors, and declarative blueprint specs for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
-This crate defines the backend-neutral contract layer. Depend on it to:
+This crate defines the solver-neutral contract layer. Depend on it to:
 - define custom cell types
-- author portable automaton specs with `Hyle::builder()`
-- implement new solver backends against the shared `CaSolver` trait
+- author portable blueprint specs with `Hyle::builder()`
+- implement new solver implementations against the shared `CaSolver` trait
 
 Derived analysis and diagnostics live in
 [`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis), and canonical
@@ -20,14 +20,14 @@ It has **zero dependencies**.
 | Type | Role |
 |------|------|
 | [`Cell`] | Trait for custom cell state |
-| [`Hyle`] / [`AutomatonSpec`] | Declarative automaton builder and canonical spec |
-| [`CaSolver`] | Trait that all solver backends implement |
-| [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Backend-neutral grid descriptors and bulk transfer types |
-| [`NeighborhoodSpec`] | Declarative neighborhood description shared across backends |
+| [`Hyle`] / [`BlueprintSpec`] | Declarative blueprint builder and canonical spec |
+| [`CaSolver`] | Trait that all solver implementations implement |
+| [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Solver-neutral grid descriptors and bulk transfer types |
+| [`NeighborhoodSpec`] | Declarative neighborhood description shared across solvers |
 | [`Topology`] / [`TopologyDescriptor`] | Boundary behavior traits and descriptors |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 
-## Building a Portable Automaton
+## Building a Portable Blueprint
 
 ```rust
 use hyle_ca_contracts::{neighbors, Hyle, TopologyDescriptor};
@@ -64,8 +64,8 @@ impl Cell for FluidCell {
 }
 ```
 
-The default solver requires `Eq` so it can match exact cell states from an
-`AutomatonSpec`.
+The default solver requires `Eq` so it can match exact cell states from a
+`BlueprintSpec`.
 
 ## Grid Descriptors
 
@@ -121,6 +121,6 @@ assert_eq!(mixed.y, AxisTopology::Bounded);
 
 ## Implementing a Solver
 
-Implement the [`CaSolver`] trait to create a custom backend (GPU, distributed, etc.).
-Backends are expected to consume a portable representation such as [`AutomatonSpec`]
+Implement the [`CaSolver`] trait to create a custom solver (GPU, distributed, etc.).
+Solvers are expected to consume a portable representation such as [`BlueprintSpec`]
 and uphold the runtime contract documented on the trait.

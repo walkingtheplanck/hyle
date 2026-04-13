@@ -4,9 +4,10 @@ use crate::{cell::Cell, topology::Topology, GridDims, GridRegion, GridSnapshot};
 
 /// The common interface shared by all CA solvers (CPU, GPU, etc.).
 ///
-/// Automaton authoring is intentionally kept out of this trait. Backends are
-/// free to consume declarative specs, precompiled programs, or other portable
-/// representations as long as they uphold the runtime contract below.
+/// Blueprint authoring is intentionally kept out of this trait. Solvers are
+/// free to consume declarative specs, interpreted blueprints, precompiled
+/// programs, or other portable representations as long as they uphold the
+/// runtime contract below.
 ///
 /// Contracts (enforced by `ValidatedSolver` in debug builds):
 /// - `get(x,y,z)` and `set(x,y,z,...)` follow `resolve_index(...)`.
@@ -70,8 +71,8 @@ pub trait CaSolver<C: Cell> {
 
     /// Iterate all cells as `(x, y, z, cell)`.
     ///
-    /// For GPU backends, this may trigger a device-to-host download.
-    /// The returned Vec is owned - no lifetime issues across backends.
+    /// For GPU solvers, this may trigger a device-to-host download.
+    /// The returned Vec is owned - no lifetime issues across solvers.
     fn iter_cells(&self) -> Vec<(u32, u32, u32, C)>;
 
     /// Download the full current solver state as a contiguous snapshot.

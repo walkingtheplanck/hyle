@@ -1,12 +1,12 @@
 //! Rule-derived analysis helpers.
 
-use hyle_ca_contracts::{AutomatonSpec, Cell};
+use hyle_ca_contracts::{BlueprintSpec, Cell};
 
 use crate::{Diagnostic, Subject};
 
 use super::RuleAnalysis;
 
-pub(crate) fn analyze_rules<C: Cell + Eq>(spec: &AutomatonSpec<C>) -> Vec<RuleAnalysis<C>> {
+pub(crate) fn analyze_rules<C: Cell + Eq>(spec: &BlueprintSpec<C>) -> Vec<RuleAnalysis<C>> {
     let rules = spec.rules();
     let mut analyses = Vec::with_capacity(rules.len());
 

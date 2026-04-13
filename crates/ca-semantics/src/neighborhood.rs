@@ -2,14 +2,14 @@ use hyle_ca_contracts::{NeighborhoodShape, NeighborhoodSpec};
 
 use crate::Offset3;
 
-/// A canonical expanded neighborhood derived from a declarative specification.
+/// A canonical interpreted neighborhood derived from a declarative specification.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ExpandedNeighborhood {
+pub struct Neighborhood {
     spec: NeighborhoodSpec,
     offsets: Vec<Offset3>,
 }
 
-impl ExpandedNeighborhood {
+impl Neighborhood {
     /// Return the declarative spec this value was expanded from.
     pub const fn spec(&self) -> NeighborhoodSpec {
         self.spec
@@ -24,14 +24,19 @@ impl ExpandedNeighborhood {
     pub fn neighbor_count(&self) -> u32 {
         self.offsets.len() as u32
     }
+
+    /// Construct an interpreted neighborhood directly from a declarative spec.
+    pub fn from_spec(spec: NeighborhoodSpec) -> Self {
+        Self {
+            spec,
+            offsets: offsets(spec),
+        }
+    }
 }
 
 /// Expand a declarative neighborhood into canonical offsets and metadata.
-pub fn expand_neighborhood(spec: NeighborhoodSpec) -> ExpandedNeighborhood {
-    ExpandedNeighborhood {
-        spec,
-        offsets: offsets(spec),
-    }
+pub fn expand_neighborhood(spec: NeighborhoodSpec) -> Neighborhood {
+    Neighborhood::from_spec(spec)
 }
 
 /// Return the exact number of neighbor positions included by a neighborhood spec.

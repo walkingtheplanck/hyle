@@ -1,9 +1,10 @@
-//! Rule application tests using declarative automaton specs.
+//! Rule application tests using declarative blueprint specs.
 
 use hyle_ca_contracts::{
-    neighbors, CaSolver, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
-    TopologyDescriptor,
+    neighbors, BlueprintSpec, CaSolver, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape,
+    NeighborhoodSpec, TopologyDescriptor,
 };
+use hyle_ca_semantics::interpret_blueprint;
 use hyle_ca_solver::Solver;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -72,7 +73,7 @@ impl Cell for PriorityCell {
     }
 }
 
-fn kill_all_spec() -> hyle_ca_contracts::AutomatonSpec<LifeCell> {
+fn kill_all_spec() -> BlueprintSpec<LifeCell> {
     Hyle::builder()
         .cells::<LifeCell>()
         .rules(|rules| {
@@ -93,6 +94,27 @@ fn rule_kill_all() {
 
     assert_eq!(solver.get(2, 2, 2), LifeCell::Dead);
     assert_eq!(solver.get(1, 1, 1), LifeCell::Dead);
+}
+
+#[test]
+fn solver_from_blueprint_matches_from_spec() {
+    let spec = kill_all_spec();
+    let blueprint = interpret_blueprint(&spec);
+
+    let mut from_spec = Solver::from_spec(4, 4, 4, &spec);
+    let mut from_blueprint = Solver::from_blueprint(4, 4, 4, &blueprint);
+
+    from_spec.set(2, 2, 2, LifeCell::Alive);
+    from_blueprint.set(2, 2, 2, LifeCell::Alive);
+
+    from_spec.step();
+    from_blueprint.step();
+
+    let from_spec_snapshot = from_spec.readback();
+    let from_blueprint_snapshot = from_blueprint.readback();
+
+    assert_eq!(from_spec_snapshot.dims, from_blueprint_snapshot.dims);
+    assert_eq!(from_spec_snapshot.cells, from_blueprint_snapshot.cells);
 }
 
 #[test]
@@ -211,9 +233,7 @@ fn deterministic_across_runs() {
         .build()
         .expect("valid spec");
 
-    fn run_sim(
-        spec: &hyle_ca_contracts::AutomatonSpec<LifeCell>,
-    ) -> Vec<(u32, u32, u32, LifeCell)> {
+    fn run_sim(spec: &BlueprintSpec<LifeCell>) -> Vec<(u32, u32, u32, LifeCell)> {
         let mut solver = Solver::from_spec(8, 8, 8, spec);
         solver.set(4, 4, 4, LifeCell::Alive);
         solver.set(3, 4, 4, LifeCell::Alive);

@@ -9,7 +9,7 @@ pub struct DescriptorTopology {
 }
 
 impl DescriptorTopology {
-    /// Construct a topology from a backend-neutral descriptor.
+    /// Construct a topology from a solver-neutral descriptor.
     pub const fn new(descriptor: TopologyDescriptor) -> Self {
         Self { descriptor }
     }

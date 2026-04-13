@@ -1,4 +1,4 @@
-//! Static analysis over declarative automaton specs.
+//! Static analysis over declarative blueprint specs.
 
 mod analyze;
 mod neighborhoods;

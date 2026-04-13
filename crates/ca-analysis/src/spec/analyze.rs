@@ -1,6 +1,6 @@
 //! Entry points for static spec analysis.
 
-use hyle_ca_contracts::{AutomatonSpec, Cell};
+use hyle_ca_contracts::{BlueprintSpec, Cell};
 
 use crate::{Diagnostic, Subject};
 
@@ -8,8 +8,8 @@ use super::{
     neighborhoods::analyze_neighborhoods, rules::analyze_rules, SpecAnalysis, SpecSummary,
 };
 
-/// Analyze a declarative automaton spec and return shared diagnostics and summaries.
-pub fn analyze_spec<C: Cell + Eq>(spec: &AutomatonSpec<C>) -> SpecAnalysis<C> {
+/// Analyze a declarative blueprint spec and return shared diagnostics and summaries.
+pub fn analyze_spec<C: Cell + Eq>(spec: &BlueprintSpec<C>) -> SpecAnalysis<C> {
     let mut usage_counts = vec![0usize; spec.neighborhoods().len()];
     for rule in spec.rules() {
         if let Some(count) = usage_counts.get_mut(rule.neighborhood) {

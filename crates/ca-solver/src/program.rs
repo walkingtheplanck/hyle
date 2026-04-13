@@ -1,9 +1,9 @@
-//! Compiled automaton programs derived from declarative specs.
+//! Compiled solver programs derived from interpreted blueprints.
 
 use hyle_ca_contracts::{
-    AutomatonSpec, Cell, Condition, CountComparison, NeighborhoodFalloff, NeighborhoodShape,
-    RuleEffect,
+    Cell, Condition, CountComparison, NeighborhoodFalloff, NeighborhoodShape, RuleEffect,
 };
+use hyle_ca_semantics::Blueprint;
 
 use crate::{
     inverse_square, moore, spherical, unweighted, von_neumann, Neighborhood, ShapeFn, WeightFn,
@@ -14,21 +14,21 @@ pub(crate) struct CompiledProgram<C: Cell + Eq> {
 }
 
 impl<C: Cell + Eq> CompiledProgram<C> {
-    pub(crate) fn from_spec(spec: &AutomatonSpec<C>) -> Self {
-        let neighborhoods = spec.neighborhoods();
-        let rules = spec
+    pub(crate) fn from_blueprint(blueprint: &Blueprint<C>) -> Self {
+        let neighborhoods = blueprint.neighborhoods();
+        let rules = blueprint
             .rules()
             .iter()
             .map(|rule| {
-                let neighborhood = neighborhoods[rule.neighborhood].spec;
+                let neighborhood = neighborhoods[rule.neighborhood].neighborhood();
                 CompiledRule {
                     when: rule.when,
                     condition: rule.condition.clone(),
                     effect: rule.effect,
                     neighborhood: Neighborhood::new(
-                        neighborhood.radius(),
-                        shape_fn(neighborhood.shape()),
-                        falloff_fn(neighborhood.falloff()),
+                        neighborhood.spec().radius(),
+                        shape_fn(neighborhood.spec().shape()),
+                        falloff_fn(neighborhood.spec().falloff()),
                     ),
                 }
             })

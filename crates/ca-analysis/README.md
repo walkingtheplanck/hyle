@@ -4,7 +4,7 @@ Shared analysis and diagnostics for the [Hyle](https://github.com/walkingtheplan
 
 This crate builds on [`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts) and
 [`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics) and provides
-**derived tooling** over declarative automaton specs:
+**derived tooling** over declarative blueprint specs:
 - static spec summaries
 - rule and neighborhood diagnostics
 
@@ -42,7 +42,7 @@ assert_eq!(analysis.summary.rule_count, 1);
 
 | Crate | Role |
 |------|------|
-| [`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts) | Canonical specs and solver traits |
+| [`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts) | Canonical blueprint specs and solver traits |
 | [`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics) | Canonical neighborhood interpretation helpers |
 | [`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis) | Shared spec analysis and diagnostics |
-| [`hyle-ca-solver`](https://crates.io/crates/hyle-ca-solver) | Default CPU execution backend |
+| [`hyle-ca-solver`](https://crates.io/crates/hyle-ca-solver) | Default CPU solver implementation |

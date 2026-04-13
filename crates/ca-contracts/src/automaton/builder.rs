@@ -1,11 +1,11 @@
-//! Builder types for authoring portable automaton specifications.
+//! Builder types for authoring portable blueprint specifications.
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 use crate::{Cell, NeighborhoodSpec, TopologyDescriptor};
 
-use super::{AutomatonSpec, Condition, NamedNeighborhood, Rule, RuleEffect, Semantics};
+use super::{BlueprintSpec, Condition, NamedNeighborhood, Rule, RuleEffect, Semantics};
 
 const ADJACENT_NEIGHBORHOOD: &str = "adjacent";
 
@@ -13,7 +13,7 @@ const ADJACENT_NEIGHBORHOOD: &str = "adjacent";
 pub struct Hyle;
 
 impl Hyle {
-    /// Start building a backend-agnostic automaton specification.
+    /// Start building a solver-agnostic blueprint specification.
     pub fn builder() -> HyleBuilder {
         HyleBuilder
     }
@@ -23,13 +23,13 @@ impl Hyle {
 pub struct HyleBuilder;
 
 impl HyleBuilder {
-    /// Select the cell type used by the automaton.
-    pub fn cells<C: Cell + Eq>(self) -> AutomatonBuilder<C> {
-        AutomatonBuilder::new()
+    /// Select the cell type used by the blueprint.
+    pub fn cells<C: Cell + Eq>(self) -> BlueprintBuilder<C> {
+        BlueprintBuilder::new()
     }
 }
 
-/// Errors raised while building an [`AutomatonSpec`].
+/// Errors raised while building a [`BlueprintSpec`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BuildError {
     /// A neighborhood name was registered more than once.
@@ -58,8 +58,8 @@ impl Display for BuildError {
 
 impl Error for BuildError {}
 
-/// Typed automaton builder.
-pub struct AutomatonBuilder<C: Cell + Eq> {
+/// Typed blueprint builder.
+pub struct BlueprintBuilder<C: Cell + Eq> {
     semantics: Semantics,
     topology: TopologyDescriptor,
     neighborhoods: Vec<NamedNeighborhood>,
@@ -67,7 +67,7 @@ pub struct AutomatonBuilder<C: Cell + Eq> {
     rules: Vec<PendingRule<C>>,
 }
 
-impl<C: Cell + Eq> AutomatonBuilder<C> {
+impl<C: Cell + Eq> BlueprintBuilder<C> {
     fn new() -> Self {
         Self {
             semantics: Semantics::V1,
@@ -81,7 +81,7 @@ impl<C: Cell + Eq> AutomatonBuilder<C> {
         }
     }
 
-    /// Override the topology descriptor used by this automaton.
+    /// Override the topology descriptor used by this blueprint.
     pub fn topology(mut self, topology: TopologyDescriptor) -> Self {
         self.topology = topology;
         self
@@ -107,8 +107,8 @@ impl<C: Cell + Eq> AutomatonBuilder<C> {
         self
     }
 
-    /// Validate and build the portable automaton specification.
-    pub fn build(self) -> Result<AutomatonSpec<C>, BuildError> {
+    /// Validate and build the portable blueprint specification.
+    pub fn build(self) -> Result<BlueprintSpec<C>, BuildError> {
         let mut names = Vec::with_capacity(self.neighborhoods.len());
         for neighborhood in &self.neighborhoods {
             if names.iter().any(|name: &String| name == &neighborhood.name) {
@@ -141,7 +141,7 @@ impl<C: Cell + Eq> AutomatonBuilder<C> {
             });
         }
 
-        Ok(AutomatonSpec::new(
+        Ok(BlueprintSpec::new(
             self.semantics,
             self.topology,
             self.neighborhoods,
@@ -150,6 +150,9 @@ impl<C: Cell + Eq> AutomatonBuilder<C> {
         ))
     }
 }
+
+/// Backward-compatible alias for the blueprint builder type.
+pub type AutomatonBuilder<C> = BlueprintBuilder<C>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct PendingRule<C: Cell + Eq> {

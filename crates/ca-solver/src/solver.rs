@@ -1,8 +1,9 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
 use hyle_ca_contracts::{
-    AutomatonSpec, CaSolver, Cell, GridRegion, GridSnapshot, RuleEffect, Topology,
+    BlueprintSpec, CaSolver, Cell, GridRegion, GridSnapshot, RuleEffect, Topology,
 };
+use hyle_ca_semantics::{interpret_blueprint, Blueprint};
 
 use crate::grid::{resolve_index, Grid};
 use crate::program::CompiledProgram;
@@ -10,9 +11,10 @@ use crate::{BoundedTopology, DescriptorTopology};
 
 /// Default 3D cellular automaton solver, generic over cell type `C`.
 ///
-/// The solver can run without an attached automaton, in which case `step()`
-/// preserves the current state. Use [`Solver::from_spec`] to construct a
-/// solver from a declarative [`AutomatonSpec`].
+/// The solver can run without an attached blueprint, in which case `step()`
+/// preserves the current state. Use [`Solver::from_blueprint`] to construct a
+/// solver from an interpreted [`Blueprint`], or [`Solver::from_spec`] to
+/// interpret a declarative [`BlueprintSpec`] and construct one in a single step.
 pub struct Solver<C: Cell + Eq = u32, T: Topology = BoundedTopology> {
     grid: Grid<C>,
     topology: T,
@@ -43,14 +45,23 @@ impl<C: Cell + Eq> Solver<C, BoundedTopology> {
 }
 
 impl<C: Cell + Eq> Solver<C, DescriptorTopology> {
-    /// Create a solver whose topology and rules come from an automaton spec.
-    pub fn from_spec(width: u32, height: u32, depth: u32, spec: &AutomatonSpec<C>) -> Self {
+    /// Create a solver whose topology and rules come from an interpreted blueprint.
+    pub fn from_blueprint(width: u32, height: u32, depth: u32, blueprint: &Blueprint<C>) -> Self {
         Solver {
             grid: Grid::new(width, height, depth),
-            topology: DescriptorTopology::new(spec.topology()),
-            program: Some(CompiledProgram::from_spec(spec)),
+            topology: DescriptorTopology::new(blueprint.topology()),
+            program: Some(CompiledProgram::from_blueprint(blueprint)),
             step_count: 0,
         }
+    }
+
+    /// Interpret a declarative blueprint spec and create a solver from it.
+    pub fn from_spec(width: u32, height: u32, depth: u32, spec: &BlueprintSpec<C>) -> Self
+    where
+        C: Clone,
+    {
+        let blueprint = interpret_blueprint(spec);
+        Self::from_blueprint(width, height, depth, &blueprint)
     }
 }
 
