@@ -1,12 +1,12 @@
 //! Rule-derived analysis helpers.
 
-use hyle_ca_interface::{BlueprintSpec, CellState};
+use hyle_ca_interface::{BlueprintSpec, CellModel};
 
 use crate::{Diagnostic, Subject};
 
 use super::RuleAnalysis;
 
-pub(crate) fn analyze_rules<C: CellState>(spec: &BlueprintSpec<C>) -> Vec<RuleAnalysis<C>> {
+pub(crate) fn analyze_rules<C: CellModel>(spec: &BlueprintSpec<C>) -> Vec<RuleAnalysis<C>> {
     let rules = spec.rules();
     let mut analyses = Vec::with_capacity(rules.len());
 

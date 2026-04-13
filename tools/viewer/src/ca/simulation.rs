@@ -6,7 +6,9 @@
 
 use std::time::Instant;
 
-use hyle_ca_interface::{neighbors, CaSolver, Cell, Hyle, Instance, Rng, Topology};
+use hyle_ca_interface::{
+    neighbors, CaSolver, Cell, CellModel, CellSchema, Hyle, Instance, Rng, StateDef, Topology,
+};
 use hyle_ca_solver::{DescriptorTopology, Solver};
 
 use crate::ca::{SimpleWorld, AIR};
@@ -18,6 +20,8 @@ enum LifeCell {
     Alive,
 }
 
+const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+
 impl Cell for LifeCell {
     fn rule_id(&self) -> u8 {
         match self {
@@ -28,6 +32,12 @@ impl Cell for LifeCell {
 
     fn is_alive(&self) -> bool {
         matches!(self, Self::Alive)
+    }
+}
+
+impl CellModel for LifeCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
     }
 }
 

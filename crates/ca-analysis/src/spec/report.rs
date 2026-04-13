@@ -1,12 +1,16 @@
 //! Public report types returned by spec analysis.
 
-use hyle_ca_interface::{CellState, NeighborhoodSpec, RuleEffect, Semantics, TopologyDescriptor};
+use hyle_ca_interface::{
+    CellModel, CellSchema, NeighborhoodSpec, RuleEffect, Semantics, TopologyDescriptor,
+};
 
 use crate::Diagnostic;
 
 /// Top-level summary derived from a blueprint spec.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpecSummary {
+    /// Declared portable cell schema.
+    pub cell_schema: CellSchema,
     /// Declared semantics version.
     pub semantics: Semantics,
     /// Total number of rules in declaration order.
@@ -21,7 +25,7 @@ pub struct SpecSummary {
 
 /// Derived information about a single rule.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RuleAnalysis<C: CellState> {
+pub struct RuleAnalysis<C: CellModel> {
     /// Zero-based rule index.
     pub index: usize,
     /// State matched by the rule.
@@ -57,7 +61,7 @@ pub struct NeighborhoodAnalysis {
 
 /// Full analysis result for a blueprint spec.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SpecAnalysis<C: CellState> {
+pub struct SpecAnalysis<C: CellModel> {
     /// High-level summary.
     pub summary: SpecSummary,
     /// Per-rule analysis in declaration order.
@@ -68,7 +72,7 @@ pub struct SpecAnalysis<C: CellState> {
     pub diagnostics: Vec<Diagnostic>,
 }
 
-impl<C: CellState> SpecAnalysis<C> {
+impl<C: CellModel> SpecAnalysis<C> {
     /// Iterate all diagnostics, including rule-local ones.
     pub fn all_diagnostics(&self) -> impl Iterator<Item = &Diagnostic> {
         self.diagnostics

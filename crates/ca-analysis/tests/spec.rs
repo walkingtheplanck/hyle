@@ -1,6 +1,7 @@
 use hyle_ca_analysis::analyze_spec;
 use hyle_ca_interface::{
-    neighbors, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
+    neighbors, Cell, CellModel, CellSchema, Hyle, NeighborhoodFalloff, NeighborhoodShape,
+    NeighborhoodSpec, StateDef,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -9,6 +10,8 @@ enum LifeCell {
     Dead,
     Alive,
 }
+
+const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
 
 impl Cell for LifeCell {
     fn rule_id(&self) -> u8 {
@@ -20,6 +23,12 @@ impl Cell for LifeCell {
 
     fn is_alive(&self) -> bool {
         matches!(self, Self::Alive)
+    }
+}
+
+impl CellModel for LifeCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
     }
 }
 
@@ -48,6 +57,7 @@ fn summarizes_rules_and_neighborhoods() {
     let analysis = analyze_spec(&spec);
 
     assert_eq!(analysis.summary.rule_count, 2);
+    assert_eq!(analysis.summary.cell_schema.state_count(), Some(2));
     assert_eq!(analysis.summary.neighborhood_count, 2);
     assert_eq!(analysis.summary.max_radius, 2);
     assert_eq!(analysis.neighborhoods[0].used_by_rules, 1);

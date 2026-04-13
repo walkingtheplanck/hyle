@@ -3,7 +3,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use crate::{CellState, NeighborhoodSpec, TopologyDescriptor};
+use crate::{CellModel, NeighborhoodSpec, TopologyDescriptor};
 
 use super::{BlueprintSpec, Condition, NamedNeighborhood, Rule, RuleEffect, Semantics};
 
@@ -24,7 +24,7 @@ pub struct HyleBuilder;
 
 impl HyleBuilder {
     /// Select the cell type used by the blueprint.
-    pub fn cells<C: CellState>(self) -> BlueprintBuilder<C> {
+    pub fn cells<C: CellModel>(self) -> BlueprintBuilder<C> {
         BlueprintBuilder::new()
     }
 }
@@ -59,7 +59,7 @@ impl Display for BuildError {
 impl Error for BuildError {}
 
 /// Typed blueprint builder.
-pub struct BlueprintBuilder<C: CellState> {
+pub struct BlueprintBuilder<C: CellModel> {
     semantics: Semantics,
     topology: TopologyDescriptor,
     neighborhoods: Vec<NamedNeighborhood>,
@@ -67,7 +67,7 @@ pub struct BlueprintBuilder<C: CellState> {
     rules: Vec<PendingRule<C>>,
 }
 
-impl<C: CellState> BlueprintBuilder<C> {
+impl<C: CellModel> BlueprintBuilder<C> {
     fn new() -> Self {
         Self {
             semantics: Semantics::V1,
@@ -142,6 +142,7 @@ impl<C: CellState> BlueprintBuilder<C> {
         }
 
         Ok(BlueprintSpec::new(
+            C::schema(),
             self.semantics,
             self.topology,
             self.neighborhoods,
@@ -155,7 +156,7 @@ impl<C: CellState> BlueprintBuilder<C> {
 pub type AutomatonBuilder<C> = BlueprintBuilder<C>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct PendingRule<C: CellState> {
+struct PendingRule<C: CellModel> {
     when: C,
     neighborhood: Option<String>,
     condition: Option<Condition<C>>,
@@ -163,11 +164,11 @@ struct PendingRule<C: CellState> {
 }
 
 /// Builder for an ordered list of rules.
-pub struct RulesBuilder<C: CellState> {
+pub struct RulesBuilder<C: CellModel> {
     rules: Vec<PendingRule<C>>,
 }
 
-impl<C: CellState> RulesBuilder<C> {
+impl<C: CellModel> RulesBuilder<C> {
     fn new() -> Self {
         Self { rules: Vec::new() }
     }
@@ -192,14 +193,14 @@ impl<C: CellState> RulesBuilder<C> {
 }
 
 /// Builder for one rule clause.
-pub struct RuleBuilder<'a, C: CellState> {
+pub struct RuleBuilder<'a, C: CellModel> {
     rules: &'a mut RulesBuilder<C>,
     when: C,
     neighborhood: Option<String>,
     condition: Option<Condition<C>>,
 }
 
-impl<'a, C: CellState> RuleBuilder<'a, C> {
+impl<'a, C: CellModel> RuleBuilder<'a, C> {
     /// Override the default neighborhood for this rule.
     pub fn using(mut self, name: impl Into<String>) -> Self {
         self.neighborhood = Some(name.into());

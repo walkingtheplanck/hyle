@@ -8,7 +8,6 @@ pub mod prelude;
 /// Canonical interpretation helpers derived from declarative contracts.
 pub mod semantics;
 
-pub use contracts::CellState;
 pub use contracts::{
     neighbors, rng, AutomatonBuilder, AutomatonSpec, AxisTopology, BlueprintBuilder, BlueprintSpec,
     BuildError, Condition, CountComparison, GridDims, GridRegion, GridSnapshot, Hyle, HyleBuilder,
@@ -16,5 +15,6 @@ pub use contracts::{
     NeighborhoodSpec, RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder, Semantics,
     TopologyDescriptor,
 };
+pub use contracts::{CellModel, CellSchema, CellState, StateDef};
 pub use models::{CaSolver, Cell, Instance, Topology, ValidatedSolver};
 pub use semantics::{Rng, WEIGHT_SCALE};

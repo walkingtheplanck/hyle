@@ -12,7 +12,7 @@ pub use blueprint::{
     Condition, CountComparison, Hyle, HyleBuilder, NamedNeighborhood, NeighborCount,
     NeighborSelector, RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder, Semantics,
 };
-pub use cell::CellState;
+pub use cell::{CellModel, CellSchema, CellState, StateDef};
 pub use descriptors::{
     AxisTopology, GridDims, GridRegion, GridSnapshot, NeighborhoodFalloff, NeighborhoodShape,
     NeighborhoodSpec, TopologyDescriptor,

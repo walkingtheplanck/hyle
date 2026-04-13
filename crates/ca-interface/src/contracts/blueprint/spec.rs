@@ -1,6 +1,6 @@
 //! Canonical blueprint specification types.
 
-use crate::{CellState, NeighborhoodSpec, TopologyDescriptor};
+use crate::{CellModel, CellSchema, CellState, NeighborhoodSpec, TopologyDescriptor};
 
 use super::Condition;
 
@@ -55,7 +55,8 @@ pub struct Rule<C: CellState> {
 
 /// Immutable, solver-agnostic blueprint specification.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BlueprintSpec<C: CellState> {
+pub struct BlueprintSpec<C: CellModel> {
+    cell_schema: CellSchema,
     semantics: Semantics,
     topology: TopologyDescriptor,
     neighborhoods: Vec<NamedNeighborhood>,
@@ -63,8 +64,9 @@ pub struct BlueprintSpec<C: CellState> {
     rules: Vec<Rule<C>>,
 }
 
-impl<C: CellState> BlueprintSpec<C> {
+impl<C: CellModel> BlueprintSpec<C> {
     pub(crate) fn new(
+        cell_schema: CellSchema,
         semantics: Semantics,
         topology: TopologyDescriptor,
         neighborhoods: Vec<NamedNeighborhood>,
@@ -72,12 +74,18 @@ impl<C: CellState> BlueprintSpec<C> {
         rules: Vec<Rule<C>>,
     ) -> Self {
         Self {
+            cell_schema,
             semantics,
             topology,
             neighborhoods,
             default_neighborhood,
             rules,
         }
+    }
+
+    /// Portable schema metadata for the blueprint cell model.
+    pub fn cell_schema(&self) -> CellSchema {
+        self.cell_schema
     }
 
     /// The declared semantics version.

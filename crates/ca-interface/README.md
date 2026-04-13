@@ -57,7 +57,7 @@ If no rule matches, the center cell is kept unchanged.
 ## Defining a Custom Cell
 
 ```rust
-use hyle_ca_interface::Cell;
+use hyle_ca_interface::{Cell, CellModel, CellSchema};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct FluidCell {
@@ -70,10 +70,17 @@ impl Cell for FluidCell {
     fn rule_id(&self) -> u8 { self.material }
     fn is_alive(&self) -> bool { self.density > 0 }
 }
+
+impl CellModel for FluidCell {
+    fn schema() -> CellSchema {
+        CellSchema::opaque("FluidCell")
+    }
+}
 ```
 
-The default solver requires `Eq` so it can match exact cell states from a
-`BlueprintSpec`.
+Blueprint builders require `CellModel` so the spec carries portable schema
+metadata. The default solver requires `Eq` so it can match exact cell states
+from a `BlueprintSpec`.
 
 ## Grid Descriptors
 

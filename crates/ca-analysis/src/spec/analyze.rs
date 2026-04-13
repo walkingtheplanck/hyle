@@ -1,6 +1,6 @@
 //! Entry points for static spec analysis.
 
-use hyle_ca_interface::{BlueprintSpec, CellState};
+use hyle_ca_interface::{BlueprintSpec, CellModel};
 
 use crate::{Diagnostic, Subject};
 
@@ -9,7 +9,7 @@ use super::{
 };
 
 /// Analyze a declarative blueprint spec and return shared diagnostics and summaries.
-pub fn analyze_spec<C: CellState>(spec: &BlueprintSpec<C>) -> SpecAnalysis<C> {
+pub fn analyze_spec<C: CellModel>(spec: &BlueprintSpec<C>) -> SpecAnalysis<C> {
     let mut usage_counts = vec![0usize; spec.neighborhoods().len()];
     for rule in spec.rules() {
         if let Some(count) = usage_counts.get_mut(rule.neighborhood) {
@@ -50,6 +50,7 @@ pub fn analyze_spec<C: CellState>(spec: &BlueprintSpec<C>) -> SpecAnalysis<C> {
 
     SpecAnalysis {
         summary: SpecSummary {
+            cell_schema: spec.cell_schema(),
             semantics: spec.semantics(),
             rule_count: spec.rules().len(),
             neighborhood_count: neighborhoods.len(),

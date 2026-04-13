@@ -2,8 +2,8 @@
 
 use hyle_ca_interface::semantics::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
-    neighbors, rng, BlueprintSpec, CaSolver, Cell, Hyle, Instance, NeighborhoodFalloff,
-    NeighborhoodShape, NeighborhoodSpec, TopologyDescriptor,
+    neighbors, rng, BlueprintSpec, CaSolver, Cell, CellModel, CellSchema, Hyle, Instance,
+    NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor,
 };
 use hyle_ca_solver::Solver;
 
@@ -13,6 +13,8 @@ enum LifeCell {
     Dead,
     Alive,
 }
+
+const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
 
 impl Cell for LifeCell {
     fn rule_id(&self) -> u8 {
@@ -27,6 +29,12 @@ impl Cell for LifeCell {
     }
 }
 
+impl CellModel for LifeCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum MatterCell {
     #[default]
@@ -34,6 +42,12 @@ enum MatterCell {
     Water,
     Ice,
 }
+
+const MATTER_CELL_STATES: [StateDef; 3] = [
+    StateDef::new("Empty"),
+    StateDef::new("Water"),
+    StateDef::new("Ice"),
+];
 
 impl Cell for MatterCell {
     fn rule_id(&self) -> u8 {
@@ -49,6 +63,12 @@ impl Cell for MatterCell {
     }
 }
 
+impl CellModel for MatterCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("MatterCell", &MATTER_CELL_STATES)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum PriorityCell {
     #[default]
@@ -57,6 +77,13 @@ enum PriorityCell {
     FirstChoice,
     SecondChoice,
 }
+
+const PRIORITY_CELL_STATES: [StateDef; 4] = [
+    StateDef::new("Empty"),
+    StateDef::new("Source"),
+    StateDef::new("FirstChoice"),
+    StateDef::new("SecondChoice"),
+];
 
 impl Cell for PriorityCell {
     fn rule_id(&self) -> u8 {
@@ -70,6 +97,12 @@ impl Cell for PriorityCell {
 
     fn is_alive(&self) -> bool {
         !matches!(self, Self::Empty)
+    }
+}
+
+impl CellModel for PriorityCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("PriorityCell", &PRIORITY_CELL_STATES)
     }
 }
 

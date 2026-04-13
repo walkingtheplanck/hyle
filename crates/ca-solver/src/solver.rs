@@ -2,7 +2,8 @@
 
 use hyle_ca_interface::semantics::{interpret_blueprint, Blueprint};
 use hyle_ca_interface::{
-    BlueprintSpec, CaSolver, Cell, GridRegion, GridSnapshot, Instance, RuleEffect, Topology,
+    BlueprintSpec, CaSolver, Cell, CellModel, GridRegion, GridSnapshot, Instance, RuleEffect,
+    Topology,
 };
 
 use crate::grid::{resolve_index, Grid};
@@ -58,7 +59,7 @@ impl<C: Cell + Eq> Solver<C, BoundedTopology> {
     }
 }
 
-impl<C: Cell + Eq> Solver<C, DescriptorTopology> {
+impl<C: Cell + CellModel + Eq> Solver<C, DescriptorTopology> {
     /// Create a solver whose topology and rules come from an interpreted blueprint.
     pub fn from_blueprint(width: u32, height: u32, depth: u32, blueprint: &Blueprint<C>) -> Self {
         Self::from_blueprint_instance(Instance::new(width, height, depth), blueprint)

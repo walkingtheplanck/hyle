@@ -1,8 +1,8 @@
 //! Tests for the declarative blueprint builder.
 
 use hyle_ca_interface::{
-    neighbors, rng, BuildError, Condition, Hyle, NeighborhoodFalloff, NeighborhoodShape,
-    NeighborhoodSpec, TopologyDescriptor,
+    neighbors, rng, BuildError, CellModel, CellSchema, Condition, Hyle, NeighborhoodFalloff,
+    NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -10,6 +10,14 @@ enum LifeCell {
     #[default]
     Dead,
     Alive,
+}
+
+const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+
+impl CellModel for LifeCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    }
 }
 
 #[test]
@@ -39,6 +47,7 @@ fn builder_emits_default_adjacent_neighborhood() {
         NeighborhoodFalloff::Uniform
     );
     assert_eq!(spec.rules().len(), 1);
+    assert_eq!(spec.cell_schema().state_count(), Some(2));
 }
 
 #[test]
