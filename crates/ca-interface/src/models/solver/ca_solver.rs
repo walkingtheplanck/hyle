@@ -63,7 +63,7 @@ pub trait CaSolver<C: Cell> {
     /// Set the cell at (x, y, z) according to `resolve_index(...)`.
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C);
 
-    /// Advance the automaton by one step.
+    /// Advance the blueprint by one step.
     fn step(&mut self);
 
     /// Number of steps completed so far.

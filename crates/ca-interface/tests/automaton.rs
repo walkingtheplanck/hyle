@@ -1,4 +1,4 @@
-//! Tests for the declarative automaton builder.
+//! Tests for the declarative blueprint builder.
 
 use hyle_ca_interface::{
     neighbors, rng, BuildError, Condition, Hyle, NeighborhoodFalloff, NeighborhoodShape,

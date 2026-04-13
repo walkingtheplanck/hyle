@@ -1,4 +1,4 @@
-//! 3D cellular automaton simulation using hyle-ca.
+//! 3D cellular blueprint simulation using hyle-ca.
 //!
 //! Uses "Life 4555" — a classic 3D rule discovered by Carter Bays (1987).
 //! S4-5/B5 with 26-neighbor Moore neighborhood.

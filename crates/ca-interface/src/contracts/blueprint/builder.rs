@@ -9,7 +9,7 @@ use super::{BlueprintSpec, Condition, NamedNeighborhood, Rule, RuleEffect, Seman
 
 const ADJACENT_NEIGHBORHOOD: &str = "adjacent";
 
-/// Branded entrypoint for automaton authoring.
+/// Branded entrypoint for blueprint authoring.
 pub struct Hyle;
 
 impl Hyle {

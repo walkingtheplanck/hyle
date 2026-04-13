@@ -1,4 +1,4 @@
-//! Cellular-automaton state and world data for the viewer.
+//! Cellular-blueprint state and world data for the viewer.
 
 mod simulation;
 mod world;

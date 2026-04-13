@@ -9,7 +9,7 @@ use crate::grid::{resolve_index, Grid};
 use crate::program::CompiledProgram;
 use crate::{BoundedTopology, DescriptorTopology};
 
-/// Default 3D cellular automaton solver, generic over cell type `C`.
+/// Default 3D cellular blueprint solver, generic over cell type `C`.
 ///
 /// The solver can run without an attached blueprint, in which case `step()`
 /// preserves the current state. Use [`Solver::from_blueprint`] to construct a
