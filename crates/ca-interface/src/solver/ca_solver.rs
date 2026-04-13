@@ -1,6 +1,6 @@
 //! Solver trait - the common interface all CA solvers implement.
 
-use crate::{cell::Cell, topology::Topology, GridDims, GridRegion, GridSnapshot};
+use crate::{topology::Topology, Cell, GridDims, GridRegion, GridSnapshot};
 
 /// The common interface shared by all CA solvers (CPU, GPU, etc.).
 ///

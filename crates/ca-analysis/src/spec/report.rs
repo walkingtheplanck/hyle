@@ -1,6 +1,6 @@
 //! Public report types returned by spec analysis.
 
-use hyle_ca_interface::{Cell, NeighborhoodSpec, RuleEffect, Semantics, TopologyDescriptor};
+use hyle_ca_interface::{CellState, NeighborhoodSpec, RuleEffect, Semantics, TopologyDescriptor};
 
 use crate::Diagnostic;
 
@@ -21,7 +21,7 @@ pub struct SpecSummary {
 
 /// Derived information about a single rule.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RuleAnalysis<C: Cell> {
+pub struct RuleAnalysis<C: CellState> {
     /// Zero-based rule index.
     pub index: usize,
     /// State matched by the rule.
@@ -57,7 +57,7 @@ pub struct NeighborhoodAnalysis {
 
 /// Full analysis result for a blueprint spec.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SpecAnalysis<C: Cell> {
+pub struct SpecAnalysis<C: CellState> {
     /// High-level summary.
     pub summary: SpecSummary,
     /// Per-rule analysis in declaration order.
@@ -68,7 +68,7 @@ pub struct SpecAnalysis<C: Cell> {
     pub diagnostics: Vec<Diagnostic>,
 }
 
-impl<C: Cell> SpecAnalysis<C> {
+impl<C: CellState> SpecAnalysis<C> {
     /// Iterate all diagnostics, including rule-local ones.
     pub fn all_diagnostics(&self) -> impl Iterator<Item = &Diagnostic> {
         self.diagnostics

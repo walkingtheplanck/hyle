@@ -108,9 +108,10 @@ impl<C: Cell + Eq, T: Topology> Solver<C, T> {
                 for x in 0..width as i32 {
                     let idx = (x as u32 + y as u32 * width + z as u32 * width * height) as usize;
                     let center = cells[idx];
-                    let effect = program.evaluate(center, [x, y, z], |dx, dy, dz| {
-                        cells[resolve(x + dx, y + dy, z + dz)]
-                    });
+                    let effect =
+                        program.evaluate(center, [x, y, z], self.step_count, |dx, dy, dz| {
+                            cells[resolve(x + dx, y + dy, z + dz)]
+                        });
 
                     match effect {
                         Some(RuleEffect::Keep) | None => {}

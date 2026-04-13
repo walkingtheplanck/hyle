@@ -1,8 +1,8 @@
 //! Tests for the declarative automaton builder.
 
 use hyle_ca_interface::{
-    neighbors, BuildError, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
-    TopologyDescriptor,
+    neighbors, rng, BuildError, Condition, Hyle, NeighborhoodFalloff, NeighborhoodShape,
+    NeighborhoodSpec, TopologyDescriptor,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -10,19 +10,6 @@ enum LifeCell {
     #[default]
     Dead,
     Alive,
-}
-
-impl Cell for LifeCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Dead => 0,
-            Self::Alive => 1,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        matches!(self, Self::Alive)
-    }
 }
 
 #[test]
@@ -109,5 +96,40 @@ fn builder_rejects_unknown_rule_neighborhoods() {
     assert_eq!(
         error,
         BuildError::UnknownRuleNeighborhood("missing".to_string())
+    );
+}
+
+#[test]
+fn builder_accepts_plain_contract_cell_types() {
+    let spec = Hyle::builder()
+        .cells::<LifeCell>()
+        .rules(|rules| {
+            rules.when(LifeCell::Alive).becomes(LifeCell::Dead);
+        })
+        .build()
+        .expect("plain blueprint cell types should build");
+
+    assert_eq!(spec.rules().len(), 1);
+}
+
+#[test]
+fn builder_emits_random_chance_conditions() {
+    let spec = Hyle::builder()
+        .cells::<LifeCell>()
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Dead)
+                .require(rng(7).one_in(3))
+                .becomes(LifeCell::Alive);
+        })
+        .build()
+        .expect("valid spec");
+
+    assert_eq!(
+        spec.rules()[0].condition,
+        Some(Condition::RandomChance {
+            stream: 7,
+            one_in: 3,
+        })
     );
 }

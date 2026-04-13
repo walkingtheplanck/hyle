@@ -2,17 +2,24 @@
 
 use std::ops::RangeInclusive;
 
-use crate::Cell;
+use crate::CellState;
 
 /// A deterministic rule condition.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Condition<C: Cell> {
+pub enum Condition<C: CellState> {
     /// Compare the count of matching neighbors against a predicate.
     NeighborCount {
         /// State that neighbors must equal to be counted.
         state: C,
         /// Count comparison to apply.
         comparison: CountComparison,
+    },
+    /// Deterministic per-cell random gate derived from the step and position.
+    RandomChance {
+        /// Independent random stream identifier.
+        stream: u32,
+        /// True when the derived RNG hits a `1 / n` chance.
+        one_in: u32,
     },
     /// Logical conjunction.
     And(Vec<Condition<C>>),
@@ -22,7 +29,7 @@ pub enum Condition<C: Cell> {
     Not(Box<Condition<C>>),
 }
 
-impl<C: Cell> Condition<C> {
+impl<C: CellState> Condition<C> {
     /// Combine two conditions with logical AND.
     #[must_use]
     pub fn and(self, other: Self) -> Self {
@@ -75,7 +82,10 @@ impl<C: Cell> Condition<C> {
     pub fn state(&self) -> Option<&C> {
         match self {
             Condition::NeighborCount { state, .. } => Some(state),
-            Condition::And(_) | Condition::Or(_) | Condition::Not(_) => None,
+            Condition::RandomChance { .. }
+            | Condition::And(_)
+            | Condition::Or(_)
+            | Condition::Not(_) => None,
         }
     }
 
@@ -83,7 +93,10 @@ impl<C: Cell> Condition<C> {
     pub fn comparison(&self) -> Option<CountComparison> {
         match self {
             Condition::NeighborCount { comparison, .. } => Some(*comparison),
-            Condition::And(_) | Condition::Or(_) | Condition::Not(_) => None,
+            Condition::RandomChance { .. }
+            | Condition::And(_)
+            | Condition::Or(_)
+            | Condition::Not(_) => None,
         }
     }
 }
@@ -115,11 +128,11 @@ pub enum CountComparison {
 
 /// Select neighbors equal to a specific cell state.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct NeighborSelector<C: Cell> {
+pub struct NeighborSelector<C: CellState> {
     state: C,
 }
 
-impl<C: Cell> NeighborSelector<C> {
+impl<C: CellState> NeighborSelector<C> {
     /// Start a count comparison for the selected state.
     pub fn count(self) -> NeighborCount<C> {
         NeighborCount { state: self.state }
@@ -138,11 +151,11 @@ impl<C: Cell> NeighborSelector<C> {
 
 /// A pending numeric comparison on the count of matching neighbors.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct NeighborCount<C: Cell> {
+pub struct NeighborCount<C: CellState> {
     state: C,
 }
 
-impl<C: Cell> NeighborCount<C> {
+impl<C: CellState> NeighborCount<C> {
     /// Require an exact neighbor count.
     pub fn eq(self, count: u32) -> Condition<C> {
         Condition::NeighborCount {
@@ -191,6 +204,27 @@ impl<C: Cell> NeighborCount<C> {
 }
 
 /// Select neighbors equal to `state`.
-pub fn neighbors<C: Cell>(state: C) -> NeighborSelector<C> {
+pub fn neighbors<C: CellState>(state: C) -> NeighborSelector<C> {
     NeighborSelector { state }
+}
+
+/// Select a deterministic random stream for a rule condition.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RandomSource {
+    stream: u32,
+}
+
+impl RandomSource {
+    /// Require a deterministic `1 / n` random hit for this cell, step, and stream.
+    pub fn one_in<C: CellState>(self, n: u32) -> Condition<C> {
+        Condition::RandomChance {
+            stream: self.stream,
+            one_in: n,
+        }
+    }
+}
+
+/// Select a deterministic random stream for rule-visible randomness.
+pub fn rng(stream: u32) -> RandomSource {
+    RandomSource { stream }
 }

@@ -1,6 +1,6 @@
 //! Canonical blueprint specification types.
 
-use crate::{Cell, NeighborhoodSpec, TopologyDescriptor};
+use crate::{CellState, NeighborhoodSpec, TopologyDescriptor};
 
 use super::Condition;
 
@@ -33,7 +33,7 @@ impl NamedNeighborhood {
 
 /// The effect produced by a matching rule.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RuleEffect<C: Cell> {
+pub enum RuleEffect<C: CellState> {
     /// Leave the center cell unchanged and stop evaluating later rules.
     Keep,
     /// Replace the center cell with a new value and stop evaluating later rules.
@@ -42,7 +42,7 @@ pub enum RuleEffect<C: Cell> {
 
 /// One deterministic rule in a [`BlueprintSpec`].
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Rule<C: Cell> {
+pub struct Rule<C: CellState> {
     /// Exact center-cell state that this rule applies to.
     pub when: C,
     /// Index into [`BlueprintSpec::neighborhoods`].
@@ -55,7 +55,7 @@ pub struct Rule<C: Cell> {
 
 /// Immutable, solver-agnostic blueprint specification.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BlueprintSpec<C: Cell> {
+pub struct BlueprintSpec<C: CellState> {
     semantics: Semantics,
     topology: TopologyDescriptor,
     neighborhoods: Vec<NamedNeighborhood>,
@@ -63,7 +63,7 @@ pub struct BlueprintSpec<C: Cell> {
     rules: Vec<Rule<C>>,
 }
 
-impl<C: Cell> BlueprintSpec<C> {
+impl<C: CellState> BlueprintSpec<C> {
     pub(crate) fn new(
         semantics: Semantics,
         topology: TopologyDescriptor,

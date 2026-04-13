@@ -1,8 +1,8 @@
 //! Rule application tests using declarative blueprint specs.
 
-use hyle_ca_interface::semantics::interpret_blueprint;
+use hyle_ca_interface::semantics::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
-    neighbors, BlueprintSpec, CaSolver, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape,
+    neighbors, rng, BlueprintSpec, CaSolver, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape,
     NeighborhoodSpec, TopologyDescriptor,
 };
 use hyle_ca_solver::Solver;
@@ -272,6 +272,31 @@ fn first_matching_rule_wins() {
     solver.step();
 
     assert_eq!(solver.get(1, 1, 1), PriorityCell::FirstChoice);
+}
+
+#[test]
+fn random_chance_rules_follow_semantic_rng() {
+    let spec = Hyle::builder()
+        .cells::<LifeCell>()
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Dead)
+                .require(rng(3).one_in(5))
+                .becomes(LifeCell::Alive);
+        })
+        .build()
+        .expect("valid spec");
+
+    let mut solver = Solver::from_spec(2, 2, 2, &spec);
+    let expected = if cell_rng([0, 0, 0], 0, 3).chance(5) {
+        LifeCell::Alive
+    } else {
+        LifeCell::Dead
+    };
+
+    solver.step();
+
+    assert_eq!(solver.get(0, 0, 0), expected);
 }
 
 #[test]

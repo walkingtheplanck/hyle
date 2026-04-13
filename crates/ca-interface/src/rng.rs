@@ -12,10 +12,17 @@ impl Rng {
     /// Create from position and step count.
     #[inline]
     pub fn new(x: u32, y: u32, z: u32, step: u32) -> Self {
+        Self::with_stream(x, y, z, step, 0)
+    }
+
+    /// Create from position, step count, and an independent stream identifier.
+    #[inline]
+    pub fn with_stream(x: u32, y: u32, z: u32, step: u32, stream: u32) -> Self {
         let mut h = x.wrapping_mul(2654435761)
             ^ y.wrapping_mul(2246822519)
             ^ z.wrapping_mul(3266489917)
-            ^ step.wrapping_mul(668265263);
+            ^ step.wrapping_mul(668265263)
+            ^ stream.wrapping_mul(374761393);
         h = h.wrapping_add(0x9e3779b9);
         h ^= h >> 16;
         h = h.wrapping_mul(0x45d9f3b);

@@ -1,6 +1,6 @@
 //! Compiled solver programs derived from interpreted blueprints.
 
-use hyle_ca_interface::semantics::Blueprint;
+use hyle_ca_interface::semantics::{cell_rng, Blueprint};
 use hyle_ca_interface::{Cell, Condition, CountComparison, RuleEffect};
 
 use crate::Neighborhood;
@@ -33,10 +33,11 @@ impl<C: Cell + Eq> CompiledProgram<C> {
         &mut self,
         center: C,
         pos: [i32; 3],
+        step: u32,
         sample: impl Fn(i32, i32, i32) -> C,
     ) -> Option<RuleEffect<C>> {
         for rule in &mut self.rules {
-            if let Some(effect) = rule.evaluate(center, pos, &sample) {
+            if let Some(effect) = rule.evaluate(center, pos, step, &sample) {
                 return Some(effect);
             }
         }
@@ -57,6 +58,7 @@ impl<C: Cell + Eq> CompiledRule<C> {
         &mut self,
         center: C,
         pos: [i32; 3],
+        step: u32,
         sample: &impl Fn(i32, i32, i32) -> C,
     ) -> Option<RuleEffect<C>> {
         if center != self.when {
@@ -65,7 +67,7 @@ impl<C: Cell + Eq> CompiledRule<C> {
 
         if let Some(condition) = &self.condition {
             self.neighborhood.fill(center, pos, sample);
-            if !evaluate_condition(condition, &self.neighborhood) {
+            if !evaluate_condition(condition, &self.neighborhood, pos, step) {
                 return None;
             }
         }
@@ -77,19 +79,22 @@ impl<C: Cell + Eq> CompiledRule<C> {
 fn evaluate_condition<C: Cell + Eq>(
     condition: &Condition<C>,
     neighborhood: &Neighborhood<C>,
+    pos: [i32; 3],
+    step: u32,
 ) -> bool {
     match condition {
         Condition::NeighborCount { state, comparison } => {
             let count = neighborhood.count(|entry| entry.cell == *state);
             compare_count(count, *comparison)
         }
+        Condition::RandomChance { stream, one_in } => cell_rng(pos, step, *stream).chance(*one_in),
         Condition::And(conditions) => conditions
             .iter()
-            .all(|condition| evaluate_condition(condition, neighborhood)),
+            .all(|condition| evaluate_condition(condition, neighborhood, pos, step)),
         Condition::Or(conditions) => conditions
             .iter()
-            .any(|condition| evaluate_condition(condition, neighborhood)),
-        Condition::Not(condition) => !evaluate_condition(condition, neighborhood),
+            .any(|condition| evaluate_condition(condition, neighborhood, pos, step)),
+        Condition::Not(condition) => !evaluate_condition(condition, neighborhood, pos, step),
     }
 }
 

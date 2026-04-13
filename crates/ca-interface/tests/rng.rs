@@ -28,6 +28,13 @@ fn different_steps_differ() {
 }
 
 #[test]
+fn different_streams_differ() {
+    let a = Rng::with_stream(5, 5, 5, 0, 0);
+    let b = Rng::with_stream(5, 5, 5, 0, 1);
+    assert_ne!(a.raw(), b.raw());
+}
+
+#[test]
 fn chance_1_always_true() {
     // n % 1 == 0 is always true
     for x in 0..100 {

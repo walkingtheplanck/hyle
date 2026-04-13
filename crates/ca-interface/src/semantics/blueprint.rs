@@ -1,4 +1,6 @@
-use crate::{BlueprintSpec, Cell, NamedNeighborhood as NamedNeighborhoodSpec, Rule, Semantics};
+use crate::{
+    BlueprintSpec, CellState, NamedNeighborhood as NamedNeighborhoodSpec, Rule, Semantics,
+};
 
 use super::{interpret_topology, Neighborhood, Topology};
 
@@ -31,7 +33,7 @@ impl NamedNeighborhood {
 
 /// A canonical interpreted blueprint derived from a declarative blueprint spec.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Blueprint<C: Cell> {
+pub struct Blueprint<C: CellState> {
     semantics: Semantics,
     topology: Topology,
     neighborhoods: Vec<NamedNeighborhood>,
@@ -39,7 +41,7 @@ pub struct Blueprint<C: Cell> {
     rules: Vec<Rule<C>>,
 }
 
-impl<C: Cell> Blueprint<C> {
+impl<C: CellState> Blueprint<C> {
     /// Return the declared semantics version.
     pub fn semantics(&self) -> Semantics {
         self.semantics
@@ -67,7 +69,7 @@ impl<C: Cell> Blueprint<C> {
 }
 
 /// Interpret a declarative blueprint spec into its canonical semantic form.
-pub fn interpret_blueprint<C: Cell + Clone>(spec: &BlueprintSpec<C>) -> Blueprint<C> {
+pub fn interpret_blueprint<C: CellState>(spec: &BlueprintSpec<C>) -> Blueprint<C> {
     Blueprint {
         semantics: spec.semantics(),
         topology: interpret_topology(spec.topology()),
