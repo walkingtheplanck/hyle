@@ -113,3 +113,20 @@ fn builder_rejects_unknown_rule_neighborhoods() {
         BuildError::UnknownRuleNeighborhood("missing".to_string())
     );
 }
+
+#[test]
+fn neighborhood_counts_use_precomputed_values_and_exact_fallback() {
+    let precomputed = NeighborhoodSpec::new(
+        NeighborhoodShape::Spherical,
+        100,
+        NeighborhoodFalloff::Uniform,
+    );
+    let fallback = NeighborhoodSpec::new(
+        NeighborhoodShape::Spherical,
+        101,
+        NeighborhoodFalloff::Uniform,
+    );
+
+    assert_eq!(precomputed.neighbor_count(), 4_187_856);
+    assert_eq!(fallback.neighbor_count(), 4_314_770);
+}
