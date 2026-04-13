@@ -874,26 +874,26 @@ checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
 name = "hyle-ca-analysis"
 version = "0.1.0"
 dependencies = [
- "hyle-ca-contracts",
+ "hyle-ca-interface",
  "hyle-ca-semantics",
 ]
 
 [[package]]
-name = "hyle-ca-contracts"
+name = "hyle-ca-interface"
 version = "0.1.0"
 
 [[package]]
 name = "hyle-ca-semantics"
 version = "0.1.0"
 dependencies = [
- "hyle-ca-contracts",
+ "hyle-ca-interface",
 ]
 
 [[package]]
 name = "hyle-ca-solver"
 version = "0.1.0"
 dependencies = [
- "hyle-ca-contracts",
+ "hyle-ca-interface",
  "hyle-ca-semantics",
 ]
 
@@ -904,7 +904,7 @@ dependencies = [
  "bytemuck",
  "eframe",
  "glam",
- "hyle-ca-contracts",
+ "hyle-ca-interface",
  "hyle-ca-solver",
  "wgpu",
 ]

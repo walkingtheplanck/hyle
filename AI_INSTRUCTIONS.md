@@ -5,7 +5,7 @@
 Read these before making changes:
 - `README.md` - project overview
 - `CONTRIBUTING.md` - code style, docs, CI, commit conventions
-- `crates/ca-contracts/README.md` - framework traits and types
+- `crates/ca-interface/README.md` - framework traits and types
 - `crates/ca-solver/README.md` - default solver implementation
 - `.github/workflows/ci.yml` - CI pipeline and checks
 

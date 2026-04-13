@@ -1,6 +1,6 @@
 //! Entry points for static spec analysis.
 
-use hyle_ca_contracts::{BlueprintSpec, Cell};
+use hyle_ca_interface::{BlueprintSpec, Cell};
 
 use crate::{Diagnostic, Subject};
 

@@ -1,6 +1,6 @@
 //! Dense 3D grid - double-buffered cell storage.
 
-use hyle_ca_contracts::{Cell, GridDims, Topology};
+use hyle_ca_interface::{Cell, GridDims, Topology};
 
 /// Dense 3D grid with double buffering for order-independent stepping.
 pub(crate) struct Grid<C: Cell> {

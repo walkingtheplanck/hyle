@@ -6,7 +6,7 @@
 
 use std::time::Instant;
 
-use hyle_ca_contracts::{neighbors, CaSolver, Cell, Hyle, Topology};
+use hyle_ca_interface::{neighbors, CaSolver, Cell, Hyle, Topology};
 use hyle_ca_solver::{DescriptorTopology, Rng, Solver};
 
 use crate::world::{self, SimpleWorld};

@@ -1,12 +1,11 @@
-use hyle_ca_contracts::{
+use hyle_ca_interface::{
     BlueprintSpec, Cell, NamedNeighborhood as NamedNeighborhoodSpec, Rule, Semantics,
-    TopologyDescriptor,
 };
 
-use crate::Neighborhood;
+use crate::{interpret_topology, Neighborhood, Topology};
 
 /// A named interpreted neighborhood used by a blueprint.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NamedNeighborhood {
     name: String,
     neighborhood: Neighborhood,
@@ -33,10 +32,10 @@ impl NamedNeighborhood {
 }
 
 /// A canonical interpreted blueprint derived from a declarative blueprint spec.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Blueprint<C: Cell> {
     semantics: Semantics,
-    topology: TopologyDescriptor,
+    topology: Topology,
     neighborhoods: Vec<NamedNeighborhood>,
     default_neighborhood: usize,
     rules: Vec<Rule<C>>,
@@ -49,8 +48,8 @@ impl<C: Cell> Blueprint<C> {
     }
 
     /// Return the interpreted topology descriptor.
-    pub fn topology(&self) -> TopologyDescriptor {
-        self.topology
+    pub fn topology(&self) -> &Topology {
+        &self.topology
     }
 
     /// Return the interpreted named neighborhoods.
@@ -73,7 +72,7 @@ impl<C: Cell> Blueprint<C> {
 pub fn interpret_blueprint<C: Cell + Clone>(spec: &BlueprintSpec<C>) -> Blueprint<C> {
     Blueprint {
         semantics: spec.semantics(),
-        topology: spec.topology(),
+        topology: interpret_topology(spec.topology()),
         neighborhoods: spec
             .neighborhoods()
             .iter()

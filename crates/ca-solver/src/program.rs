@@ -1,13 +1,9 @@
 //! Compiled solver programs derived from interpreted blueprints.
 
-use hyle_ca_contracts::{
-    Cell, Condition, CountComparison, NeighborhoodFalloff, NeighborhoodShape, RuleEffect,
-};
+use hyle_ca_interface::{Cell, Condition, CountComparison, RuleEffect};
 use hyle_ca_semantics::Blueprint;
 
-use crate::{
-    inverse_square, moore, spherical, unweighted, von_neumann, Neighborhood, ShapeFn, WeightFn,
-};
+use crate::Neighborhood;
 
 pub(crate) struct CompiledProgram<C: Cell + Eq> {
     rules: Vec<CompiledRule<C>>,
@@ -25,11 +21,7 @@ impl<C: Cell + Eq> CompiledProgram<C> {
                     when: rule.when,
                     condition: rule.condition.clone(),
                     effect: rule.effect,
-                    neighborhood: Neighborhood::new(
-                        neighborhood.spec().radius(),
-                        shape_fn(neighborhood.spec().shape()),
-                        falloff_fn(neighborhood.spec().falloff()),
-                    ),
+                    neighborhood: Neighborhood::new(neighborhood.samples()),
                 }
             })
             .collect();
@@ -108,20 +100,5 @@ fn compare_count(count: u32, comparison: CountComparison) -> bool {
         CountComparison::NotInRange { min, max } => !(min..=max).contains(&count),
         CountComparison::AtLeast(expected) => count >= expected,
         CountComparison::AtMost(expected) => count <= expected,
-    }
-}
-
-fn shape_fn(shape: NeighborhoodShape) -> ShapeFn {
-    match shape {
-        NeighborhoodShape::Moore => moore,
-        NeighborhoodShape::VonNeumann => von_neumann,
-        NeighborhoodShape::Spherical => spherical,
-    }
-}
-
-fn falloff_fn(falloff: NeighborhoodFalloff) -> WeightFn {
-    match falloff {
-        NeighborhoodFalloff::Uniform => unweighted,
-        NeighborhoodFalloff::InverseSquare => inverse_square,
     }
 }

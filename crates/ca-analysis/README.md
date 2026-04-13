@@ -2,7 +2,7 @@
 
 Shared analysis and diagnostics for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
-This crate builds on [`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts) and
+This crate builds on [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface) and
 [`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics) and provides
 **derived tooling** over declarative blueprint specs:
 - static spec summaries
@@ -15,7 +15,7 @@ contracts directly; this crate helps inspect them consistently.
 
 ```rust
 use hyle_ca_analysis::analyze_spec;
-use hyle_ca_contracts::{neighbors, Hyle};
+use hyle_ca_interface::{neighbors, Hyle};
 
 let spec = Hyle::builder()
     .cells::<u32>()
@@ -26,7 +26,7 @@ let spec = Hyle::builder()
 
 let analysis = analyze_spec(&spec);
 assert_eq!(analysis.summary.rule_count, 1);
-# Ok::<(), hyle_ca_contracts::BuildError>(())
+# Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
 ## What It Analyzes
@@ -42,7 +42,7 @@ assert_eq!(analysis.summary.rule_count, 1);
 
 | Crate | Role |
 |------|------|
-| [`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts) | Canonical blueprint specs and solver traits |
+| [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface) | Canonical blueprint specs and solver traits |
 | [`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics) | Canonical neighborhood interpretation helpers |
 | [`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis) | Shared spec analysis and diagnostics |
 | [`hyle-ca-solver`](https://crates.io/crates/hyle-ca-solver) | Default CPU solver implementation |

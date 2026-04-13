@@ -1,6 +1,6 @@
 //! Public report types returned by spec analysis.
 
-use hyle_ca_contracts::{Cell, NeighborhoodSpec, RuleEffect, Semantics, TopologyDescriptor};
+use hyle_ca_interface::{Cell, NeighborhoodSpec, RuleEffect, Semantics, TopologyDescriptor};
 
 use crate::Diagnostic;
 

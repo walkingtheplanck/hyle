@@ -1,6 +1,6 @@
 //! Tests for topology index mapping.
 
-use hyle_ca_contracts::{AxisTopology, GridDims, Topology, TopologyDescriptor};
+use hyle_ca_interface::{AxisTopology, GridDims, Topology, TopologyDescriptor};
 use hyle_ca_solver::{BoundedTopology, DescriptorTopology, TorusTopology};
 
 #[test]

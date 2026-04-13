@@ -1,6 +1,6 @@
 //! Rule-derived analysis helpers.
 
-use hyle_ca_contracts::{BlueprintSpec, Cell};
+use hyle_ca_interface::{BlueprintSpec, Cell};
 
 use crate::{Diagnostic, Subject};
 

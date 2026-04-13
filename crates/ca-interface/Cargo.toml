@@ -1,12 +1,12 @@
 [package]
-name = "hyle-ca-contracts"
+name = "hyle-ca-interface"
 version = "0.1.0"
 edition = "2021"
-description = "Shared contracts and descriptors for the Hyle cellular automaton framework."
+description = "Shared interfaces, contracts, and descriptors for the Hyle cellular automaton framework."
 readme = "README.md"
 license = "GPL-3.0-only"
 repository = "https://github.com/walkingtheplanck/hyle"
-documentation = "https://docs.rs/hyle-ca-contracts"
+documentation = "https://docs.rs/hyle-ca-interface"
 keywords = ["cellular-automata", "voxel", "gamedev", "automaton"]
 categories = ["game-development", "algorithms"]
 exclude = ["tests/"]

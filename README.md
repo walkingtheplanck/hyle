@@ -1,6 +1,6 @@
 # Hyle
 
-[![docs.rs: hyle-ca-contracts](https://img.shields.io/docsrs/hyle-ca-contracts?label=hyle-ca-contracts%20docs)](https://docs.rs/hyle-ca-contracts)
+[![docs.rs: hyle-ca-interface](https://img.shields.io/docsrs/hyle-ca-interface?label=hyle-ca-interface%20docs)](https://docs.rs/hyle-ca-interface)
 [![docs.rs: hyle-ca-semantics](https://img.shields.io/docsrs/hyle-ca-semantics?label=hyle-ca-semantics%20docs)](https://docs.rs/hyle-ca-semantics)
 [![docs.rs: hyle-ca-analysis](https://img.shields.io/docsrs/hyle-ca-analysis?label=hyle-ca-analysis%20docs)](https://docs.rs/hyle-ca-analysis)
 [![docs.rs: hyle-ca-solver](https://img.shields.io/docsrs/hyle-ca-solver?label=hyle-ca-solver%20docs)](https://docs.rs/hyle-ca-solver)
@@ -16,7 +16,7 @@ A 3D cellular automaton framework for Rust.
 
 | Crate | Purpose |
 |-------|---------|
-| [`hyle-ca-contracts`](crates/ca-contracts) | Shared contracts, descriptors, and declarative blueprint specs |
+| [`hyle-ca-interface`](crates/ca-interface) | Shared contracts, descriptors, and declarative blueprint specs |
 | [`hyle-ca-semantics`](crates/ca-semantics) | Canonical semantic expansion of declarative specs |
 | [`hyle-ca-analysis`](crates/ca-analysis) | Shared spec analysis and diagnostics |
 | [`hyle-ca-solver`](crates/ca-solver) | Default CPU solver that executes portable blueprint specs |
@@ -26,7 +26,7 @@ A 3D cellular automaton framework for Rust.
 ## Quick Start
 
 ```rust
-use hyle_ca_contracts::{neighbors, Hyle};
+use hyle_ca_interface::{neighbors, Hyle};
 use hyle_ca_solver::Solver;
 
 let spec = Hyle::builder()
@@ -39,7 +39,7 @@ let spec = Hyle::builder()
 
 let mut solver = Solver::from_spec(64, 64, 64, &spec);
 solver.step();
-# Ok::<(), hyle_ca_contracts::BuildError>(())
+# Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
 ---
@@ -63,7 +63,7 @@ let solver = Solver::<FluidCell>::new(64, 64, 64);
 ### Variable-Radius Neighborhoods
 
 ```rust
-use hyle_ca_contracts::{neighbors, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+use hyle_ca_interface::{neighbors, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 
 let spec = Hyle::builder()
     .cells::<u32>()
@@ -82,7 +82,7 @@ let spec = Hyle::builder()
             .becomes(1);
     })
     .build()?;
-# Ok::<(), hyle_ca_contracts::BuildError>(())
+# Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
 ### Torus Topology
@@ -93,12 +93,12 @@ use hyle_ca_solver::TorusTopology;
 let solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
 ```
 
-Reads, writes, rule neighborhoods, and world passes all wrap across grid edges.
+Reads, writes, and rule neighborhoods all wrap across grid edges.
 
 ### Debug Contract Validation
 
 ```rust
-use hyle_ca_contracts::ValidatedSolver;
+use hyle_ca_interface::ValidatedSolver;
 
 // Wraps any solver, asserts contracts on every call (debug builds only)
 let validated = ValidatedSolver::new(solver);

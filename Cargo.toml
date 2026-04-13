@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "crates/ca-analysis",
-    "crates/ca-contracts",
+    "crates/ca-interface",
     "crates/ca-semantics",
     "crates/ca-solver",
 
@@ -9,7 +9,7 @@ members = [
 ]
 default-members = [
     "crates/ca-analysis",
-    "crates/ca-contracts",
+    "crates/ca-interface",
     "crates/ca-semantics",
     "crates/ca-solver",
 ]

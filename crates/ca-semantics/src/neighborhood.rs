@@ -1,12 +1,36 @@
-use hyle_ca_contracts::{NeighborhoodShape, NeighborhoodSpec};
+use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 
 use crate::Offset3;
 
+/// A single interpreted neighborhood sample offset and its weight.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct NeighborhoodSample {
+    offset: Offset3,
+    weight: f32,
+}
+
+impl NeighborhoodSample {
+    /// Construct a new weighted neighborhood sample.
+    pub const fn new(offset: Offset3, weight: f32) -> Self {
+        Self { offset, weight }
+    }
+
+    /// Return the sample offset.
+    pub const fn offset(&self) -> Offset3 {
+        self.offset
+    }
+
+    /// Return the sample weight.
+    pub const fn weight(&self) -> f32 {
+        self.weight
+    }
+}
+
 /// A canonical interpreted neighborhood derived from a declarative specification.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Neighborhood {
     spec: NeighborhoodSpec,
-    offsets: Vec<Offset3>,
+    samples: Vec<NeighborhoodSample>,
 }
 
 impl Neighborhood {
@@ -15,21 +39,26 @@ impl Neighborhood {
         self.spec
     }
 
+    /// Return the canonical weighted samples included by the neighborhood.
+    pub fn samples(&self) -> &[NeighborhoodSample] {
+        &self.samples
+    }
+
     /// Return the canonical offsets included by the neighborhood.
-    pub fn offsets(&self) -> &[Offset3] {
-        &self.offsets
+    pub fn offsets(&self) -> impl Iterator<Item = Offset3> + '_ {
+        self.samples.iter().map(|sample| sample.offset())
     }
 
     /// Return the number of neighbor positions included by the neighborhood.
     pub fn neighbor_count(&self) -> u32 {
-        self.offsets.len() as u32
+        self.samples.len() as u32
     }
 
     /// Construct an interpreted neighborhood directly from a declarative spec.
     pub fn from_spec(spec: NeighborhoodSpec) -> Self {
         Self {
             spec,
-            offsets: offsets(spec),
+            samples: samples(spec),
         }
     }
 }
@@ -44,22 +73,34 @@ pub fn neighbor_count(spec: NeighborhoodSpec) -> u32 {
     shape_neighbor_count(spec.shape(), spec.radius())
 }
 
-/// Return the canonical neighborhood offsets for a declarative spec.
-pub fn offsets(spec: NeighborhoodSpec) -> Vec<Offset3> {
+/// Return the canonical weighted neighborhood samples for a declarative spec.
+pub fn samples(spec: NeighborhoodSpec) -> Vec<NeighborhoodSample> {
     let radius = spec.radius() as i32;
-    let mut offsets = Vec::with_capacity(neighbor_count(spec) as usize);
+    let mut samples = Vec::with_capacity(neighbor_count(spec) as usize);
 
     for dz in -radius..=radius {
         for dy in -radius..=radius {
             for dx in -radius..=radius {
                 if includes(spec.shape(), dx, dy, dz, spec.radius()) {
-                    offsets.push(Offset3::new(dx, dy, dz));
+                    let offset = Offset3::new(dx, dy, dz);
+                    samples.push(NeighborhoodSample::new(
+                        offset,
+                        weight(spec.falloff(), offset),
+                    ));
                 }
             }
         }
     }
 
-    offsets
+    samples
+}
+
+/// Return the canonical neighborhood offsets for a declarative spec.
+pub fn offsets(spec: NeighborhoodSpec) -> Vec<Offset3> {
+    samples(spec)
+        .into_iter()
+        .map(|sample| sample.offset())
+        .collect()
 }
 
 fn includes(shape: NeighborhoodShape, dx: i32, dy: i32, dz: i32, radius: u32) -> bool {
@@ -73,6 +114,17 @@ fn includes(shape: NeighborhoodShape, dx: i32, dy: i32, dz: i32, radius: u32) ->
         NeighborhoodShape::Moore => true,
         NeighborhoodShape::VonNeumann => dx.abs() + dy.abs() + dz.abs() <= radius,
         NeighborhoodShape::Spherical => dx * dx + dy * dy + dz * dz <= radius * radius,
+    }
+}
+
+fn weight(falloff: NeighborhoodFalloff, offset: Offset3) -> f32 {
+    match falloff {
+        NeighborhoodFalloff::Uniform => 1.0,
+        NeighborhoodFalloff::InverseSquare => {
+            let d_sq =
+                (offset.dx * offset.dx + offset.dy * offset.dy + offset.dz * offset.dz) as f32;
+            1.0 / d_sq
+        }
     }
 }
 

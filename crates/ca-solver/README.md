@@ -3,13 +3,13 @@
 Default CPU solver for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
 Double-buffered, single-threaded, and driven by portable
-[`BlueprintSpec`](https://docs.rs/hyle-ca-contracts/latest/hyle_ca_contracts/struct.BlueprintSpec.html)
-definitions from [`hyle-ca-contracts`](https://crates.io/crates/hyle-ca-contracts).
+[`BlueprintSpec`](https://docs.rs/hyle-ca-interface/latest/hyle_ca_interface/struct.BlueprintSpec.html)
+definitions from [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface).
 
 ## Quick Start
 
 ```rust
-use hyle_ca_contracts::{neighbors, CaSolver, Hyle};
+use hyle_ca_interface::{neighbors, CaSolver, Hyle};
 use hyle_ca_solver::Solver;
 
 let spec = Hyle::builder()
@@ -22,7 +22,7 @@ let spec = Hyle::builder()
 
 let mut solver = Solver::from_spec(64, 64, 64, &spec);
 solver.step();
-# Ok::<(), hyle_ca_contracts::BuildError>(())
+# Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
 ## Topology
@@ -47,7 +47,7 @@ pulling that logic into the contract crate itself.
 Use named neighborhoods in the spec, then reference them from rules:
 
 ```rust
-use hyle_ca_contracts::{
+use hyle_ca_interface::{
     neighbors, CaSolver, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
 };
 use hyle_ca_solver::Solver;
@@ -72,7 +72,7 @@ let spec = Hyle::builder()
 
 let mut solver = Solver::from_spec(8, 8, 8, &spec);
 solver.step();
-# Ok::<(), hyle_ca_contracts::BuildError>(())
+# Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
 ## How It Works

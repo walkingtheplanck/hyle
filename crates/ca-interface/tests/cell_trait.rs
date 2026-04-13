@@ -1,6 +1,6 @@
 //! Tests for the Cell trait and built-in u32 implementation.
 
-use hyle_ca_contracts::Cell;
+use hyle_ca_interface::Cell;
 
 #[test]
 fn u32_rule_id_is_low_byte() {

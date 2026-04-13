@@ -1,6 +1,6 @@
 //! Contract tests: does the solver API behave as documented?
 
-use hyle_ca_contracts::{neighbors, CaSolver, GridRegion, Hyle, TopologyDescriptor};
+use hyle_ca_interface::{neighbors, CaSolver, GridRegion, Hyle, TopologyDescriptor};
 use hyle_ca_solver::{DescriptorTopology, Solver, TorusTopology};
 
 #[test]

@@ -1,8 +1,8 @@
-# hyle-ca-contracts
+# hyle-ca-interface
 
-Shared contracts, descriptors, and declarative blueprint specs for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
+Shared interfaces, contracts, and descriptors for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
-This crate defines the solver-neutral contract layer. Depend on it to:
+This crate defines the shared public interface layer. Depend on it to:
 - define custom cell types
 - author portable blueprint specs with `Hyle::builder()`
 - implement new solver implementations against the shared `CaSolver` trait
@@ -13,7 +13,9 @@ neighborhood semantics live in
 [`hyle-ca-semantics`](https://crates.io/crates/hyle-ca-semantics), not in this
 crate.
 
-It has **zero dependencies**.
+It has **zero dependencies** and is split conceptually into:
+- `contracts` for declarative blueprint and descriptor data
+- runtime interfaces such as `Cell`, `Topology`, `CaSolver`, and `ValidatedSolver`
 
 ## Key Types
 
@@ -30,7 +32,7 @@ It has **zero dependencies**.
 ## Building a Portable Blueprint
 
 ```rust
-use hyle_ca_contracts::{neighbors, Hyle, TopologyDescriptor};
+use hyle_ca_interface::{neighbors, Hyle, TopologyDescriptor};
 
 let spec = Hyle::builder()
     .cells::<u32>()
@@ -40,7 +42,7 @@ let spec = Hyle::builder()
         rules.when(1).unless(neighbors(1).count().in_range(2..=3)).becomes(0);
     })
     .build()?;
-# Ok::<(), hyle_ca_contracts::BuildError>(())
+# Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
 Rules are evaluated in declaration order with **first-match wins** semantics.
@@ -49,7 +51,7 @@ If no rule matches, the center cell is kept unchanged.
 ## Defining a Custom Cell
 
 ```rust
-use hyle_ca_contracts::Cell;
+use hyle_ca_interface::Cell;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct FluidCell {
@@ -70,7 +72,7 @@ The default solver requires `Eq` so it can match exact cell states from a
 ## Grid Descriptors
 
 ```rust
-use hyle_ca_contracts::{GridDims, GridRegion, GridSnapshot};
+use hyle_ca_interface::{GridDims, GridRegion, GridSnapshot};
 
 let dims = GridDims::new(8, 8, 8);
 let region = GridRegion::new([2, 2, 2], [2, 2, 2]);
@@ -83,7 +85,7 @@ assert_eq!(snapshot.cells.len(), dims.cell_count());
 ## Declarative Neighborhoods
 
 ```rust
-use hyle_ca_contracts::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 
 let adjacent = NeighborhoodSpec::adjacent();
 let far = NeighborhoodSpec::new(
@@ -106,7 +108,7 @@ Built-in CPU topology implementations live in
 descriptor type lives here:
 
 ```rust
-use hyle_ca_contracts::{AxisTopology, TopologyDescriptor};
+use hyle_ca_interface::{AxisTopology, TopologyDescriptor};
 
 let bounded = TopologyDescriptor::bounded();
 let mixed = TopologyDescriptor::by_axis(

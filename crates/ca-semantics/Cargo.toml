@@ -12,4 +12,4 @@ categories = ["game-development", "algorithms"]
 exclude = ["tests/"]
 
 [dependencies]
-hyle-ca-contracts = { path = "../ca-contracts", version = "0.1.0" }
+hyle-ca-interface = { path = "../ca-interface", version = "0.1.0" }

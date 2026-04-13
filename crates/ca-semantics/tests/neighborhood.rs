@@ -1,4 +1,4 @@
-use hyle_ca_contracts::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 use hyle_ca_semantics::{expand_neighborhood, neighbor_count, offsets, Offset3};
 
 #[test]
@@ -6,10 +6,11 @@ fn expands_moore_offsets_in_canonical_order() {
     let spec = NeighborhoodSpec::new(NeighborhoodShape::Moore, 1, NeighborhoodFalloff::Uniform);
 
     let expanded = expand_neighborhood(spec);
+    let offsets: Vec<_> = expanded.offsets().collect();
 
     assert_eq!(expanded.neighbor_count(), 26);
-    assert_eq!(expanded.offsets().first(), Some(&Offset3::new(-1, -1, -1)));
-    assert_eq!(expanded.offsets().last(), Some(&Offset3::new(1, 1, 1)));
+    assert_eq!(offsets.first(), Some(&Offset3::new(-1, -1, -1)));
+    assert_eq!(offsets.last(), Some(&Offset3::new(1, 1, 1)));
 }
 
 #[test]

@@ -1,19 +1,27 @@
 //! Neighborhood struct - pre-fetched neighbors around a center cell.
 
-use hyle_ca_contracts::Cell;
+use hyle_ca_interface::Cell;
+use hyle_ca_semantics::NeighborhoodSample;
 
-use super::types::{Entry, Offset, ShapeFn, WeightFn};
+use super::types::Entry;
 
 /// A pre-fetched set of neighbors around a center cell.
 ///
-/// Constructed with a shape function and a weight function. The CPU solver
+/// Constructed from interpreted semantic neighborhood samples. The CPU solver
 /// calls [`fill`](Neighborhood::fill) once per cell per step. Rules then read
 /// precomputed values in O(1).
 ///
 /// ```rust
-/// use hyle_ca_solver::{Neighborhood, moore, unweighted};
+/// use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+/// use hyle_ca_semantics::expand_neighborhood;
+/// use hyle_ca_solver::Neighborhood;
 ///
-/// let mut n = Neighborhood::<u32>::new(1, moore, unweighted);
+/// let semantic = expand_neighborhood(NeighborhoodSpec::new(
+///     NeighborhoodShape::Moore,
+///     1,
+///     NeighborhoodFalloff::Uniform,
+/// ));
+/// let mut n = Neighborhood::<u32>::new(semantic.samples());
 /// ```
 pub struct Neighborhood<C: Cell> {
     center: C,
@@ -25,30 +33,31 @@ pub struct Neighborhood<C: Cell> {
 }
 
 impl<C: Cell> Neighborhood<C> {
-    /// Create a new neighborhood for the given radius, shape, and weight.
-    pub fn new(radius: u32, includes: ShapeFn, weight: WeightFn) -> Self {
-        let r = radius as i32;
-        let mut entries = Vec::new();
-        for dz in -r..=r {
-            for dy in -r..=r {
-                for dx in -r..=r {
-                    if dx == 0 && dy == 0 && dz == 0 {
-                        continue;
-                    }
-                    if includes(dx, dy, dz, radius) {
-                        entries.push(Entry {
-                            offset: Offset { dx, dy, dz },
-                            cell: C::default(),
-                            weight: weight(dx, dy, dz),
-                        });
-                    }
-                }
-            }
-        }
+    /// Create a new neighborhood buffer from interpreted semantic samples.
+    pub fn new(samples: &[NeighborhoodSample]) -> Self {
+        let entries = samples
+            .iter()
+            .map(|sample| Entry {
+                offset: sample.offset(),
+                cell: C::default(),
+                weight: sample.weight(),
+            })
+            .collect();
         Neighborhood {
             center: C::default(),
             pos: [0; 3],
-            radius,
+            radius: samples
+                .iter()
+                .map(|sample| {
+                    let offset = sample.offset();
+                    offset
+                        .dx
+                        .unsigned_abs()
+                        .max(offset.dy.unsigned_abs())
+                        .max(offset.dz.unsigned_abs())
+                })
+                .max()
+                .unwrap_or(0),
             entries,
             alive_count: 0,
             weighted_sum: 0.0,

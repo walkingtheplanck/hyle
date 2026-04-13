@@ -1,6 +1,6 @@
 //! Rule application tests using declarative blueprint specs.
 
-use hyle_ca_contracts::{
+use hyle_ca_interface::{
     neighbors, BlueprintSpec, CaSolver, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape,
     NeighborhoodSpec, TopologyDescriptor,
 };

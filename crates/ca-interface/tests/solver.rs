@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-use hyle_ca_contracts::{
+use hyle_ca_interface::{
     AxisTopology, CaSolver, Cell, GridDims, GridRegion, Topology, TopologyDescriptor,
 };
 

@@ -1,6 +1,6 @@
 //! Tests for the declarative automaton builder.
 
-use hyle_ca_contracts::{
+use hyle_ca_interface::{
     neighbors, BuildError, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
     TopologyDescriptor,
 };

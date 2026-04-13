@@ -1,6 +1,6 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
-use hyle_ca_contracts::{
+use hyle_ca_interface::{
     BlueprintSpec, CaSolver, Cell, GridRegion, GridSnapshot, RuleEffect, Topology,
 };
 use hyle_ca_semantics::{interpret_blueprint, Blueprint};
@@ -49,7 +49,7 @@ impl<C: Cell + Eq> Solver<C, DescriptorTopology> {
     pub fn from_blueprint(width: u32, height: u32, depth: u32, blueprint: &Blueprint<C>) -> Self {
         Solver {
             grid: Grid::new(width, height, depth),
-            topology: DescriptorTopology::new(blueprint.topology()),
+            topology: DescriptorTopology::new(blueprint.topology().descriptor()),
             program: Some(CompiledProgram::from_blueprint(blueprint)),
             step_count: 0,
         }

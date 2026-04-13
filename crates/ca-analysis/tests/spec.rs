@@ -1,5 +1,5 @@
 use hyle_ca_analysis::analyze_spec;
-use hyle_ca_contracts::{
+use hyle_ca_interface::{
     neighbors, Cell, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
 };
 
