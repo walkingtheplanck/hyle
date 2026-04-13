@@ -1,75 +1,10 @@
-//! Debug-only wrapper that validates all CaSolver contracts at runtime.
-//!
-//! Wraps any solver and asserts invariants on every call.
-//! Use in debug builds to catch contract violations early, with a stack trace
-//! at the exact call site.
-//!
-//! Zero cost in release builds - just use the inner solver directly.
-//!
-//! ```rust
-//! use std::marker::PhantomData;
-//!
-//! use hyle_ca_interface::{
-//!     AxisTopology, CaSolver, Cell, GridDims, Topology, TopologyDescriptor, ValidatedSolver,
-//! };
-//!
-//! #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-//! struct ExampleTopology;
-//!
-//! struct ExampleSolver<C: Cell> {
-//!     topology: ExampleTopology,
-//!     _marker: PhantomData<C>,
-//! }
-//!
-//! impl Topology for ExampleTopology {
-//!     fn descriptor(&self) -> TopologyDescriptor {
-//!         TopologyDescriptor::uniform(AxisTopology::Bounded)
-//!     }
-//!
-//!     fn resolve_index(
-//!         &self,
-//!         x: i32,
-//!         y: i32,
-//!         z: i32,
-//!         dims: GridDims,
-//!         guard_idx: usize,
-//!     ) -> usize {
-//!         let ux = x as u32;
-//!         let uy = y as u32;
-//!         let uz = z as u32;
-//!         if ux < dims.width && uy < dims.height && uz < dims.depth {
-//!             (ux as usize)
-//!                 + (uy as usize) * (dims.width as usize)
-//!                 + (uz as usize) * (dims.width as usize) * (dims.height as usize)
-//!         } else {
-//!             guard_idx
-//!         }
-//!     }
-//! }
-//!
-//! impl<C: Cell> CaSolver<C> for ExampleSolver<C> {
-//!     type Topology = ExampleTopology;
-//!
-//!     fn width(&self) -> u32 { 8 }
-//!     fn height(&self) -> u32 { 8 }
-//!     fn depth(&self) -> u32 { 8 }
-//!     fn topology(&self) -> &Self::Topology { &self.topology }
-//!     fn get(&self, _x: i32, _y: i32, _z: i32) -> C { C::default() }
-//!     fn set(&mut self, _x: i32, _y: i32, _z: i32, _cell: C) {}
-//!     fn step(&mut self) {}
-//!     fn step_count(&self) -> u32 { 0 }
-//!     fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> { Vec::new() }
-//! }
-//!
-//! let solver = ExampleSolver::<u32> { topology: ExampleTopology, _marker: PhantomData };
-//! let _validated = ValidatedSolver::new(solver);
-//! ```
+//! Debug-only wrapper that validates all `CaSolver` contracts at runtime.
 
 use std::marker::PhantomData;
 
 use crate::{CaSolver, Cell};
 
-/// Wrapper that validates CaSolver contracts on every operation.
+/// Wrapper that validates `CaSolver` contracts on every operation.
 ///
 /// Panics immediately when a contract is violated, with a message
 /// describing which invariant failed and the arguments that triggered it.
@@ -96,7 +31,7 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> ValidatedSolver<C, 
         }
     }
 
-    /// Access the inner solver directly (e.g. for solver-specific methods).
+    /// Access the inner solver directly.
     pub fn inner(&self) -> &S {
         &self.inner
     }
@@ -228,6 +163,18 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
 
     fn step_count(&self) -> u32 {
         self.inner.step_count()
+    }
+
+    fn readback(&self) -> crate::GridSnapshot<C> {
+        self.inner.readback()
+    }
+
+    fn read_region(&self, region: crate::GridRegion) -> Vec<C> {
+        self.inner.read_region(region)
+    }
+
+    fn write_region(&mut self, region: crate::GridRegion, cells: &[C]) {
+        self.inner.write_region(region, cells);
     }
 
     fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> {

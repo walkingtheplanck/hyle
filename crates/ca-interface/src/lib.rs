@@ -5,12 +5,8 @@ pub mod contracts;
 pub mod models;
 /// Convenient imports for the declarative blueprint API.
 pub mod prelude;
-/// Shared deterministic random-number primitives.
-pub mod rng;
 /// Canonical interpretation helpers derived from declarative contracts.
 pub mod semantics;
-pub mod solver;
-pub mod topology;
 
 pub use contracts::CellState;
 pub use contracts::{
@@ -20,8 +16,5 @@ pub use contracts::{
     NeighborhoodSpec, RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder, Semantics,
     TopologyDescriptor,
 };
-pub use models::Cell;
-pub use rng::Rng;
-pub use solver::CaSolver;
-pub use solver::ValidatedSolver;
-pub use topology::Topology;
+pub use models::{CaSolver, Cell, Topology, ValidatedSolver};
+pub use semantics::Rng;

@@ -1,3 +1,5 @@
+//! Runtime topology policy trait.
+
 use crate::{GridDims, TopologyDescriptor};
 
 /// Boundary behavior for solver coordinate access.

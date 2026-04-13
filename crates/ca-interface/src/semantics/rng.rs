@@ -1,10 +1,9 @@
-//! Deterministic per-cell RNG for probabilistic rules.
+//! Canonical deterministic RNG used by rule semantics.
 
 /// Deterministic per-cell random number generator.
 ///
-/// Produced by the solver from the cell's position and step count.
-/// The same (x, y, z, step) always produces the same value —
-/// results are reproducible.
+/// Produced from the cell's position, step count, and stream identifier.
+/// The same inputs always produce the same value on every backend.
 #[derive(Clone, Copy, Debug)]
 pub struct Rng(u32);
 
@@ -31,7 +30,6 @@ impl Rng {
     }
 
     /// Returns `true` with probability `1/n`.
-    /// `rng.chance(7)` is true ~14% of the time.
     #[inline]
     pub fn chance(&self, n: u32) -> bool {
         self.0.is_multiple_of(n)

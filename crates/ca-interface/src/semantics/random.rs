@@ -1,6 +1,6 @@
 //! Canonical rule-visible randomness derived from position, step, and stream.
 
-use crate::Rng;
+use super::Rng;
 
 /// Build the deterministic RNG value for one cell, step, and random stream.
 pub fn cell_rng(pos: [i32; 3], step: u32, stream: u32) -> Rng {
