@@ -2,9 +2,9 @@
 #![deny(missing_docs)]
 
 pub mod contracts;
-pub mod models;
 /// Convenient imports for the declarative blueprint API.
 pub mod prelude;
+pub mod runtime;
 /// Canonical interpretation helpers derived from declarative contracts.
 pub mod semantics;
 
@@ -16,7 +16,7 @@ pub use contracts::{
     TopologyDescriptor,
 };
 pub use contracts::{CellModel, CellSchema, CellState, StateDef};
-pub use models::{
+pub use runtime::{
     CaRuntime, CaSolver, CaSolverProvider, Cell, Instance, Topology, ValidatedSolver,
 };
 pub use semantics::{Rng, WEIGHT_SCALE};

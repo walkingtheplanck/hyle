@@ -15,7 +15,7 @@ interpretation helpers live in this crate under `hyle_ca_interface::semantics`.
 It has **zero dependencies** and is split conceptually into:
 - `contracts` for declarative blueprint and descriptor data
 - `semantics` for interpreted blueprint, neighborhood, and topology meaning
-- runtime interfaces and shared primitives such as `Cell`, `Instance`, `Rng`, `Topology`, `CaSolver`, and `ValidatedSolver`
+- `runtime` for running-simulation interfaces and shared runtime types such as `Cell`, `Instance`, `Topology`, `CaSolver`, `CaRuntime`, `CaSolverProvider`, and `ValidatedSolver`
 
 ## Key Types
 

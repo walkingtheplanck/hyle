@@ -2,7 +2,7 @@
 
 use crate::{BlueprintSpec, Cell, CellModel, Instance};
 
-use super::runtime::CaRuntime;
+use super::ca_runtime::CaRuntime;
 
 /// A factory that builds a runtime from a blueprint specification.
 ///
