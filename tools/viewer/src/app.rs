@@ -5,6 +5,7 @@ use std::time::Instant;
 
 use eframe::egui;
 use glam::Vec3;
+use hyle_ca_solver::CpuSolverProvider;
 
 use crate::ca::{gol_world, Materials, SimpleWorld, Simulation};
 use crate::input::InputState;
@@ -33,7 +34,7 @@ impl ViewerApp {
         let mut renderer = render_state.renderer.write();
 
         let (mut world, materials) = gol_world();
-        let mut sim = Simulation::new();
+        let mut sim = Simulation::new(Box::new(CpuSolverProvider::new()));
         sim.reset(&mut world); // prime initial state
 
         let gpu = GpuRaytracer::new(device, queue, &mut renderer, &world, &materials);

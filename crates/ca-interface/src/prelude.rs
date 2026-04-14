@@ -6,4 +6,4 @@ pub use crate::contracts::{
     Condition, CountComparison, Hyle, NamedNeighborhood, NeighborhoodFalloff, NeighborhoodShape,
     NeighborhoodSpec, Rule, RuleEffect, Semantics, StateDef, TopologyDescriptor,
 };
-pub use crate::{Cell, Instance, Rng};
+pub use crate::{CaRuntime, CaSolverProvider, Cell, Instance, Rng};

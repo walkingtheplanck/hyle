@@ -6,6 +6,14 @@ Double-buffered, single-threaded, and driven by portable
 [`BlueprintSpec`](https://docs.rs/hyle-ca-interface/latest/hyle_ca_interface/struct.BlueprintSpec.html)
 definitions from [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface).
 
+For apps and tools that should not depend on the concrete
+[`Solver`](https://docs.rs/hyle-ca-solver/latest/hyle_ca_solver/struct.Solver.html)
+type directly, this crate also exposes
+[`CpuSolverProvider`](https://docs.rs/hyle-ca-solver/latest/hyle_ca_solver/struct.CpuSolverProvider.html),
+which builds erased
+[`CaRuntime`](https://docs.rs/hyle-ca-interface/latest/hyle_ca_interface/trait.CaRuntime.html)
+instances through the shared `CaSolverProvider` interface.
+
 ## Quick Start
 
 ```rust
@@ -22,6 +30,21 @@ let spec = Hyle::builder()
 
 let mut solver = Solver::from_spec_instance(Instance::new(64, 64, 64).with_seed(7), &spec);
 solver.step();
+# Ok::<(), hyle_ca_interface::BuildError>(())
+```
+
+## Decoupled Consumer Path
+
+```rust
+use hyle_ca_interface::{CaRuntime, CaSolverProvider, Hyle, Instance};
+use hyle_ca_solver::CpuSolverProvider;
+
+let spec = Hyle::builder().cells::<u32>().build()?;
+let provider = CpuSolverProvider::new();
+let mut runtime: Box<dyn CaRuntime<u32>> =
+    provider.build(Instance::new(16, 16, 16), &spec);
+
+runtime.step();
 # Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 

@@ -6,6 +6,7 @@ This crate defines the shared public interface layer. Depend on it to:
 - define custom cell types
 - author portable blueprint specs with `Hyle::builder()`
 - implement new solver implementations against the shared `CaSolver` trait
+- decouple apps and tools from concrete solver types through `CaRuntime` and `CaSolverProvider`
 
 Derived analysis and diagnostics live in
 [`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis). Canonical
@@ -24,6 +25,7 @@ It has **zero dependencies** and is split conceptually into:
 | [`Instance`] | Runtime dimensions and deterministic seed for one solver run |
 | [`Hyle`] / [`BlueprintSpec`] | Declarative blueprint builder and canonical spec |
 | [`CaSolver`] | Trait that all solver implementations implement |
+| [`CaRuntime`] / [`CaSolverProvider`] | Erased runtime and factory interfaces for consumers that should not depend on concrete solvers |
 | [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Solver-neutral grid descriptors and bulk transfer types |
 | [`NeighborhoodSpec`] | Declarative neighborhood description shared across solvers |
 | [`Rng`] | Shared deterministic random-number primitive parameterized by seed, position, step, and stream |
@@ -53,6 +55,25 @@ let spec = Hyle::builder()
 
 Rules are evaluated in declaration order with **first-match wins** semantics.
 If no rule matches, the center cell is kept unchanged.
+
+## Decoupled Runtime Construction
+
+Consumers such as viewers can depend on the centralized runtime/provider seam
+instead of naming a concrete solver type:
+
+```ignore
+use hyle_ca_interface::{CaRuntime, CaSolverProvider, Hyle, Instance};
+use hyle_ca_solver::CpuSolverProvider;
+
+let spec = Hyle::builder().cells::<u32>().build()?;
+let provider = CpuSolverProvider::new();
+let runtime: Box<dyn CaRuntime<u32>> =
+    provider.build(Instance::new(16, 16, 16), &spec);
+
+# Ok::<(), hyle_ca_interface::BuildError>(())
+```
+
+This keeps backend selection localized to one construction site.
 
 ## Defining a Custom Cell
 

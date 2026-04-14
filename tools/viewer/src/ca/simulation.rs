@@ -7,14 +7,14 @@
 use std::time::Instant;
 
 use hyle_ca_interface::{
-    neighbors, CaSolver, Cell, CellModel, CellSchema, Hyle, Instance, Rng, StateDef, Topology,
+    neighbors, BlueprintSpec, CaRuntime, CaSolverProvider, Cell, CellModel, CellSchema, Hyle,
+    Instance, Rng, StateDef,
 };
-use hyle_ca_solver::{DescriptorTopology, Solver};
 
 use crate::ca::{SimpleWorld, AIR};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-enum LifeCell {
+pub(crate) enum LifeCell {
     #[default]
     Dead,
     Alive,
@@ -41,27 +41,30 @@ impl CellModel for LifeCell {
     }
 }
 
-type ViewerSolver = Solver<LifeCell, DescriptorTopology>;
-
 pub struct Simulation {
     pub auto_step: bool,
     pub step_interval_ms: f64,
-    ca: ViewerSolver,
+    solver: Box<dyn CaSolverProvider<LifeCell>>,
+    ca: Box<dyn CaRuntime<LifeCell>>,
     last_step: Instant,
 }
 
 impl Simulation {
-    pub fn new() -> Self {
+    pub fn new(solver: Box<dyn CaSolverProvider<LifeCell>>) -> Self {
+        let mut ca = Self::build_ca(&*solver);
+        Self::seed(&mut *ca);
+
         Self {
             auto_step: true,
             step_interval_ms: 200.0,
-            ca: Self::build_ca(),
+            solver,
+            ca,
             last_step: Instant::now(),
         }
     }
 
-    fn build_ca() -> ViewerSolver {
-        let spec = Hyle::builder()
+    fn spec() -> BlueprintSpec<LifeCell> {
+        Hyle::builder()
             .cells::<LifeCell>()
             .rules(|rules| {
                 rules
@@ -74,15 +77,20 @@ impl Simulation {
                     .becomes(LifeCell::Alive);
             })
             .build()
-            .expect("viewer life spec should build");
-        let mut ca = Solver::from_spec_instance(Instance::new(64, 64, 64).with_seed(1), &spec);
-
-        Self::seed(&mut ca);
-        ca
+            .expect("viewer life spec should build")
     }
 
-    /// Seed: ~18% random fill in a 16³ region at center.
-    fn seed<T: Topology>(ca: &mut Solver<LifeCell, T>) {
+    fn instance() -> Instance {
+        Instance::new(64, 64, 64).with_seed(1)
+    }
+
+    fn build_ca(solver: &dyn CaSolverProvider<LifeCell>) -> Box<dyn CaRuntime<LifeCell>> {
+        let spec = Self::spec();
+        solver.build(Self::instance(), &spec)
+    }
+
+    /// Seed: ~18% random fill in a 16^3 region at center.
+    fn seed(ca: &mut dyn CaRuntime<LifeCell>) {
         for z in 24u32..40 {
             for y in 24u32..40 {
                 for x in 24u32..40 {
@@ -102,7 +110,8 @@ impl Simulation {
     }
 
     pub fn reset(&mut self, world: &mut SimpleWorld) {
-        self.ca = Self::build_ca();
+        self.ca = Self::build_ca(&*self.solver);
+        Self::seed(&mut *self.ca);
         self.sync_to_world(world);
     }
 
@@ -120,7 +129,15 @@ impl Simulation {
     }
 
     fn sync_to_world(&self, world: &mut SimpleWorld) {
-        for (x, y, z, cell) in self.ca.iter_cells() {
+        let snapshot = self.ca.readback();
+        let width = snapshot.dims.width as usize;
+        let height = snapshot.dims.height as usize;
+
+        for (index, cell) in snapshot.cells.into_iter().enumerate() {
+            let x = index % width;
+            let y = (index / width) % height;
+            let z = index / (width * height);
+
             world.set(
                 x as i32,
                 y as i32,
