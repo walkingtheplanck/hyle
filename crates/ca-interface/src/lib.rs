@@ -1,10 +1,10 @@
 #![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
 
-pub mod contracts;
-/// Convenient imports for the declarative blueprint API.
+mod contracts;
+/// Common framework imports for blueprint authoring and runtime setup.
 pub mod prelude;
-pub mod runtime;
+mod runtime;
 /// Canonical interpretation helpers derived from declarative contracts.
 pub mod semantics;
 
@@ -19,4 +19,4 @@ pub use contracts::{CellModel, CellSchema, CellState, StateDef};
 pub use runtime::{
     CaRuntime, CaSolver, CaSolverProvider, Cell, Instance, Topology, ValidatedSolver,
 };
-pub use semantics::{Rng, WEIGHT_SCALE};
+pub use semantics::Rng;

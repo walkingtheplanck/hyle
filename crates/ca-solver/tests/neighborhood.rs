@@ -1,7 +1,8 @@
 //! Tests for Neighborhood struct, shapes, and weights.
 
 use hyle_ca_interface::semantics::expand_neighborhood;
-use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, WEIGHT_SCALE};
+use hyle_ca_interface::semantics::WEIGHT_SCALE;
+use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 use hyle_ca_solver::Neighborhood;
 
 fn runtime_neighborhood(

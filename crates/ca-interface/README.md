@@ -37,6 +37,20 @@ Semantic forms are available under `hyle_ca_interface::semantics`, for example:
 - `hyle_ca_interface::semantics::Neighborhood`
 - `hyle_ca_interface::semantics::Topology`
 
+## Preferred Imports
+
+Use the crate root or the prelude as the main entry points:
+
+- Prefer explicit root imports for application and library code:
+  `use hyle_ca_interface::{Hyle, BlueprintSpec, CaSolverProvider, Instance};`
+- Use `hyle_ca_interface::prelude::*` when you want a compact common import set
+  for blueprint authoring and runtime setup.
+- Treat `hyle_ca_interface::semantics` as an advanced namespace for interpreted
+  forms and semantic helpers.
+
+The internal `contracts` and `runtime` module layout is crate organization, not
+the intended consumer-facing path.
+
 ## Building a Portable Blueprint
 
 ```rust

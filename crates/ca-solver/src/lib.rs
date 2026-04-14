@@ -2,11 +2,11 @@
 #![deny(missing_docs)]
 
 mod grid;
-pub mod neighborhood;
+mod neighborhood;
 mod program;
 mod provider;
 mod solver;
-pub mod topology;
+mod topology;
 
 pub use neighborhood::{Entry, Neighborhood};
 pub use provider::CpuSolverProvider;
