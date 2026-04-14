@@ -53,8 +53,10 @@ pub fn analyze_spec<C: CellModel>(blueprint: &Blueprint<C>) -> SpecAnalysis<C> {
         summary: SpecSummary {
             cell_schema: blueprint.cell_schema(),
             semantics: blueprint.semantics(),
+            attributes: blueprint.attributes().to_vec(),
             rule_count: blueprint.rules().len(),
             neighborhood_count: neighborhoods.len(),
+            attribute_count: blueprint.attributes().len(),
             max_radius,
             topology: blueprint.topology(),
         },

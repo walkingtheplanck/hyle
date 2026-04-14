@@ -1,7 +1,8 @@
 //! Public report types returned by spec analysis.
 
 use hyle_ca_interface::{
-    CellModel, CellSchema, NeighborhoodSpec, RuleEffect, Semantics, TopologyDescriptor,
+    AttributeDef, CellModel, CellSchema, NeighborhoodSpec, RuleEffect, Semantics,
+    TopologyDescriptor,
 };
 
 use crate::Diagnostic;
@@ -13,10 +14,14 @@ pub struct SpecSummary {
     pub cell_schema: CellSchema,
     /// Declared semantics version.
     pub semantics: Semantics,
+    /// Declared attached per-cell attributes.
+    pub attributes: Vec<AttributeDef>,
     /// Total number of rules in declaration order.
     pub rule_count: usize,
     /// Total number of named neighborhoods.
     pub neighborhood_count: usize,
+    /// Total number of named attributes.
+    pub attribute_count: usize,
     /// Maximum neighborhood radius used anywhere in the spec.
     pub max_radius: u32,
     /// Declared topology.

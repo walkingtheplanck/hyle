@@ -1,8 +1,9 @@
 //! Tests for the declarative blueprint builder.
 
 use hyle_ca_interface::{
-    neighbors, rng, Blueprint, BuildError, CellModel, CellSchema, Condition, NeighborhoodFalloff,
-    NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor, Weight, WeightComparison,
+    neighbors, rng, AttributeDef, AttributeType, AttributeValue, Blueprint, BuildError, CellModel,
+    CellSchema, Condition, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef,
+    TopologyDescriptor, Weight, WeightComparison,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -23,6 +24,7 @@ impl CellModel for LifeCell {
 #[test]
 fn builder_emits_default_adjacent_neighborhood() {
     let spec = Blueprint::<LifeCell>::builder()
+        .attribute("heat", AttributeType::U8)
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -33,6 +35,11 @@ fn builder_emits_default_adjacent_neighborhood() {
         .expect("valid spec");
 
     assert_eq!(spec.topology(), TopologyDescriptor::bounded());
+    assert_eq!(spec.attributes().len(), 1);
+    assert_eq!(
+        spec.attributes()[0],
+        AttributeDef::new("heat", AttributeType::U8)
+    );
     assert_eq!(spec.default_neighborhood(), 0);
     assert_eq!(spec.neighborhoods()[0].name, "adjacent");
     assert_eq!(spec.neighborhoods()[0].spec, NeighborhoodSpec::adjacent());
@@ -47,6 +54,44 @@ fn builder_emits_default_adjacent_neighborhood() {
     );
     assert_eq!(spec.rules().len(), 1);
     assert_eq!(spec.cell_schema().state_count(), Some(2));
+}
+
+#[test]
+fn builder_emits_attributes_with_defaults() {
+    let spec = Blueprint::<LifeCell>::builder()
+        .attribute("age", AttributeType::U16)
+        .attribute_with_default("charged", AttributeValue::Bool(true))
+        .build()
+        .expect("valid spec");
+
+    assert_eq!(
+        spec.attributes(),
+        &[
+            AttributeDef::new("age", AttributeType::U16),
+            AttributeDef::with_default("charged", AttributeValue::Bool(true)),
+        ]
+    );
+}
+
+#[test]
+fn builder_rejects_empty_attribute_names() {
+    let error = Blueprint::<LifeCell>::builder()
+        .attribute("", AttributeType::U8)
+        .build()
+        .expect_err("empty names must fail");
+
+    assert_eq!(error, BuildError::EmptyAttributeName);
+}
+
+#[test]
+fn builder_rejects_duplicate_attribute_names() {
+    let error = Blueprint::<LifeCell>::builder()
+        .attribute("heat", AttributeType::U8)
+        .attribute_with_default("heat", AttributeValue::U8(3))
+        .build()
+        .expect_err("duplicate names must fail");
+
+    assert_eq!(error, BuildError::DuplicateAttribute("heat".to_string()));
 }
 
 #[test]

@@ -14,6 +14,6 @@ pub use blueprint::{
 };
 pub use cell::{CellModel, CellSchema, CellState, StateDef};
 pub use descriptors::{
-    AxisTopology, GridDims, GridRegion, GridSnapshot, NeighborhoodFalloff, NeighborhoodShape,
-    NeighborhoodSpec, TopologyDescriptor, WEIGHT_SCALE,
+    AttributeDef, AttributeType, AttributeValue, AxisTopology, GridDims, GridRegion, GridSnapshot,
+    NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, TopologyDescriptor, WEIGHT_SCALE,
 };

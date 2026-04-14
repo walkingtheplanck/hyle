@@ -3,7 +3,9 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use crate::{CellModel, NeighborhoodSpec, TopologyDescriptor};
+use crate::{
+    AttributeDef, AttributeType, AttributeValue, CellModel, NeighborhoodSpec, TopologyDescriptor,
+};
 
 use super::{Blueprint, Condition, NamedNeighborhood, Rule, RuleEffect, Semantics};
 
@@ -12,6 +14,10 @@ const ADJACENT_NEIGHBORHOOD: &str = "adjacent";
 /// Errors raised while building a [`Blueprint`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BuildError {
+    /// An attribute name was empty.
+    EmptyAttributeName,
+    /// An attribute name was registered more than once.
+    DuplicateAttribute(String),
     /// A neighborhood name was empty.
     EmptyNeighborhoodName,
     /// The default neighborhood name was empty.
@@ -36,6 +42,12 @@ pub enum BuildError {
 impl Display for BuildError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            BuildError::EmptyAttributeName => {
+                write!(f, "attribute name must not be empty")
+            }
+            BuildError::DuplicateAttribute(name) => {
+                write!(f, "duplicate attribute name: {name}")
+            }
             BuildError::EmptyNeighborhoodName => {
                 write!(f, "neighborhood name must not be empty")
             }
@@ -68,6 +80,7 @@ impl Error for BuildError {}
 pub struct BlueprintBuilder<C: CellModel> {
     semantics: Semantics,
     topology: TopologyDescriptor,
+    attributes: Vec<AttributeDef>,
     neighborhoods: Vec<NamedNeighborhood>,
     default_neighborhood: String,
     rules: Vec<PendingRule<C>>,
@@ -78,6 +91,7 @@ impl<C: CellModel> BlueprintBuilder<C> {
         Self {
             semantics: Semantics::V1,
             topology: TopologyDescriptor::bounded(),
+            attributes: Vec::new(),
             neighborhoods: vec![NamedNeighborhood::new(
                 ADJACENT_NEIGHBORHOOD,
                 NeighborhoodSpec::adjacent(),
@@ -90,6 +104,29 @@ impl<C: CellModel> BlueprintBuilder<C> {
     /// Override the topology descriptor used by this blueprint.
     pub fn topology(mut self, topology: TopologyDescriptor) -> Self {
         self.topology = topology;
+        self
+    }
+
+    /// Register a reusable attached per-cell attribute with a zero default.
+    pub fn attribute(mut self, name: impl Into<String>, value_type: AttributeType) -> Self {
+        self.attributes.push(AttributeDef::new(name, value_type));
+        self
+    }
+
+    /// Register a reusable attached per-cell attribute with an explicit default.
+    pub fn attribute_with_default(
+        mut self,
+        name: impl Into<String>,
+        default: AttributeValue,
+    ) -> Self {
+        self.attributes
+            .push(AttributeDef::with_default(name, default));
+        self
+    }
+
+    /// Register a reusable attached per-cell attribute descriptor.
+    pub fn attribute_def(mut self, attribute: AttributeDef) -> Self {
+        self.attributes.push(attribute);
         self
     }
 
@@ -117,6 +154,20 @@ impl<C: CellModel> BlueprintBuilder<C> {
     pub fn build(self) -> Result<Blueprint<C>, BuildError> {
         if self.default_neighborhood.is_empty() {
             return Err(BuildError::EmptyDefaultNeighborhood);
+        }
+
+        let mut attribute_names = Vec::with_capacity(self.attributes.len());
+        for attribute in &self.attributes {
+            if attribute.name.is_empty() {
+                return Err(BuildError::EmptyAttributeName);
+            }
+            if attribute_names
+                .iter()
+                .any(|name: &String| name == &attribute.name)
+            {
+                return Err(BuildError::DuplicateAttribute(attribute.name.clone()));
+            }
+            attribute_names.push(attribute.name.clone());
         }
 
         let mut names = Vec::with_capacity(self.neighborhoods.len());
@@ -162,6 +213,7 @@ impl<C: CellModel> BlueprintBuilder<C> {
             C::schema(),
             self.semantics,
             self.topology,
+            self.attributes,
             self.neighborhoods,
             default_neighborhood,
             rules,

@@ -74,6 +74,7 @@ impl CellModel for LifeCell {
 
 let spec = Blueprint::<LifeCell>::builder()
     .topology(TopologyDescriptor::bounded())
+    .attribute("heat", hyle_ca_interface::AttributeType::U8)
     .rules(|rules| {
         rules.when(LifeCell::Dead)
             .require(neighbors(LifeCell::Alive).count().eq(3))
@@ -88,6 +89,33 @@ let spec = Blueprint::<LifeCell>::builder()
 
 Rules are evaluated in declaration order with **first-match wins** semantics.
 If no rule matches, the center cell is kept unchanged.
+
+## Attached Attributes
+
+Blueprints can declare named attached per-cell attributes as portable metadata:
+
+```rust
+use hyle_ca_interface::{AttributeType, AttributeValue, Blueprint, CellModel, CellSchema};
+
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+struct TestCell(u8);
+
+impl CellModel for TestCell {
+    fn schema() -> CellSchema { CellSchema::opaque("TestCell") }
+}
+
+let spec = Blueprint::<TestCell>::builder()
+    .attribute("heat", AttributeType::U8)
+    .attribute_with_default("charged", AttributeValue::Bool(true))
+    .build()?;
+
+assert_eq!(spec.attributes().len(), 2);
+# Ok::<(), hyle_ca_interface::BuildError>(())
+```
+
+These attributes are part of the portable blueprint contract. They describe
+named attached data channels, but the current rule DSL does not read or write
+them yet.
 
 ## Decoupled Runtime Construction
 

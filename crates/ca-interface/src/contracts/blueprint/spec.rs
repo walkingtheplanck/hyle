@@ -1,6 +1,6 @@
 //! Canonical blueprint contract types.
 
-use crate::{CellModel, CellSchema, CellState, NeighborhoodSpec, TopologyDescriptor};
+use crate::{AttributeDef, CellModel, CellSchema, CellState, NeighborhoodSpec, TopologyDescriptor};
 
 use super::{BlueprintBuilder, Condition};
 
@@ -59,6 +59,7 @@ pub struct Blueprint<C: CellModel> {
     cell_schema: CellSchema,
     semantics: Semantics,
     topology: TopologyDescriptor,
+    attributes: Vec<AttributeDef>,
     neighborhoods: Vec<NamedNeighborhood>,
     default_neighborhood: usize,
     rules: Vec<Rule<C>>,
@@ -74,6 +75,7 @@ impl<C: CellModel> Blueprint<C> {
         cell_schema: CellSchema,
         semantics: Semantics,
         topology: TopologyDescriptor,
+        attributes: Vec<AttributeDef>,
         neighborhoods: Vec<NamedNeighborhood>,
         default_neighborhood: usize,
         rules: Vec<Rule<C>>,
@@ -82,6 +84,7 @@ impl<C: CellModel> Blueprint<C> {
             cell_schema,
             semantics,
             topology,
+            attributes,
             neighborhoods,
             default_neighborhood,
             rules,
@@ -101,6 +104,11 @@ impl<C: CellModel> Blueprint<C> {
     /// The topology descriptor shared across solver implementations.
     pub fn topology(&self) -> TopologyDescriptor {
         self.topology
+    }
+
+    /// Declared attached per-cell attributes.
+    pub fn attributes(&self) -> &[AttributeDef] {
+        &self.attributes
     }
 
     /// Reusable named neighborhoods referenced by rules.

@@ -1,7 +1,7 @@
 use hyle_ca_analysis::analyze_spec;
 use hyle_ca_interface::{
-    neighbors, Blueprint, CellModel, CellSchema, NeighborhoodFalloff, NeighborhoodShape,
-    NeighborhoodSpec, StateDef, Weight,
+    neighbors, AttributeDef, AttributeType, AttributeValue, Blueprint, CellModel, CellSchema,
+    NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef, Weight,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -22,6 +22,8 @@ impl CellModel for LifeCell {
 #[test]
 fn summarizes_rules_and_neighborhoods() {
     let spec = Blueprint::<LifeCell>::builder()
+        .attribute("heat", AttributeType::U8)
+        .attribute_with_default("charge", AttributeValue::I16(-1))
         .neighborhood(
             "far",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
@@ -44,6 +46,14 @@ fn summarizes_rules_and_neighborhoods() {
 
     assert_eq!(analysis.summary.rule_count, 2);
     assert_eq!(analysis.summary.cell_schema.state_count(), Some(2));
+    assert_eq!(
+        analysis.summary.attributes,
+        vec![
+            AttributeDef::new("heat", AttributeType::U8),
+            AttributeDef::with_default("charge", AttributeValue::I16(-1)),
+        ]
+    );
+    assert_eq!(analysis.summary.attribute_count, 2);
     assert_eq!(analysis.summary.neighborhood_count, 2);
     assert_eq!(analysis.summary.max_radius, 2);
     assert_eq!(analysis.neighborhoods[0].used_by_rules, 1);
