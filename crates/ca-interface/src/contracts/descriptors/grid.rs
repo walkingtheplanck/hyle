@@ -98,4 +98,39 @@ impl<C: CellState> GridSnapshot<C> {
         );
         Self { dims, cells }
     }
+
+    /// Return the dimensions of the captured grid.
+    pub const fn dims(&self) -> GridDims {
+        self.dims
+    }
+
+    /// Return the flat index for a coordinate, if it lies inside the snapshot.
+    pub fn index_of(&self, coord: [u32; 3]) -> Option<usize> {
+        let [x, y, z] = coord;
+        if x >= self.dims.width || y >= self.dims.height || z >= self.dims.depth {
+            return None;
+        }
+
+        let width = self.dims.width as usize;
+        let height = self.dims.height as usize;
+        Some((x as usize) + (y as usize) * width + (z as usize) * width * height)
+    }
+
+    /// Return the cell at a coordinate, if it lies inside the snapshot.
+    pub fn get(&self, coord: [u32; 3]) -> Option<&C> {
+        self.index_of(coord).map(|index| &self.cells[index])
+    }
+
+    /// Iterate all cells with their coordinates in x-major order.
+    pub fn iter_xyz(&self) -> impl Iterator<Item = (u32, u32, u32, &C)> {
+        let width = self.dims.width as usize;
+        let height = self.dims.height as usize;
+
+        self.cells.iter().enumerate().map(move |(index, cell)| {
+            let x = (index % width) as u32;
+            let y = ((index / width) % height) as u32;
+            let z = (index / (width * height)) as u32;
+            (x, y, z, cell)
+        })
+    }
 }

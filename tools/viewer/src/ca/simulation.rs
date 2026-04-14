@@ -7,8 +7,8 @@
 use std::time::Instant;
 
 use hyle_ca_interface::{
-    neighbors, BlueprintSpec, CaRuntime, CaSolverProvider, Cell, CellModel, CellSchema, Hyle,
-    Instance, Rng, StateDef,
+    neighbors, BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance, Rng,
+    StateDef,
 };
 
 use crate::ca::{SimpleWorld, AIR};
@@ -21,19 +21,6 @@ pub(crate) enum LifeCell {
 }
 
 const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
-
-impl Cell for LifeCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Dead => 0,
-            Self::Alive => 1,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        matches!(self, Self::Alive)
-    }
-}
 
 impl CellModel for LifeCell {
     fn schema() -> CellSchema {
@@ -70,8 +57,7 @@ where
     }
 
     fn spec() -> BlueprintSpec<LifeCell> {
-        Hyle::builder()
-            .cells::<LifeCell>()
+        BlueprintSpec::<LifeCell>::builder()
             .rules(|rules| {
                 rules
                     .when(LifeCell::Alive)
@@ -136,19 +122,12 @@ where
 
     fn sync_to_world(&self, world: &mut SimpleWorld) {
         let snapshot = self.ca.readback();
-        let width = snapshot.dims.width as usize;
-        let height = snapshot.dims.height as usize;
-
-        for (index, cell) in snapshot.cells.into_iter().enumerate() {
-            let x = index % width;
-            let y = (index / width) % height;
-            let z = index / (width * height);
-
+        for (x, y, z, cell) in snapshot.iter_xyz() {
             world.set(
                 x as i32,
                 y as i32,
                 z as i32,
-                if cell == LifeCell::Alive { 1 } else { AIR },
+                if *cell == LifeCell::Alive { 1 } else { AIR },
             );
         }
     }

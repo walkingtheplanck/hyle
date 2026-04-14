@@ -1,5 +1,6 @@
 use hyle_ca_interface::{
-    neighbors, BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance,
+    neighbors, BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, GridRegion,
+    Instance,
 };
 use hyle_ca_solver::CpuSolverProvider;
 
@@ -32,11 +33,18 @@ fn cpu_provider_builds_runtime() {
     let mut runtime = provider.build(Instance::new(4, 4, 4).with_seed(7), &spec);
 
     runtime.set(1, 1, 1, TestCell(1));
+    runtime.write_region(
+        GridRegion::new([0, 0, 0], [2, 1, 1]),
+        &[TestCell(2), TestCell(3)],
+    );
     runtime.step();
 
     let snapshot = runtime.readback();
-    assert_eq!(snapshot.dims.width, 4);
-    assert_eq!(snapshot.dims.height, 4);
-    assert_eq!(snapshot.dims.depth, 4);
+    assert_eq!(runtime.dims().width, 4);
+    assert_eq!(snapshot.get([1, 0, 0]), Some(&TestCell(3)));
+    assert_eq!(
+        runtime.read_region(GridRegion::new([0, 0, 0], [2, 1, 1])),
+        vec![TestCell(2), TestCell(3)]
+    );
     assert_eq!(runtime.step_count(), 1);
 }
