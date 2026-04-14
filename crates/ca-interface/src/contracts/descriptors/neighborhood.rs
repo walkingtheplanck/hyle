@@ -1,3 +1,6 @@
+/// Fixed-point scale used for deterministic neighborhood weights.
+pub const WEIGHT_SCALE: u32 = 1024;
+
 /// Declarative description of how a rule samples nearby cells.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NeighborhoodSpec {

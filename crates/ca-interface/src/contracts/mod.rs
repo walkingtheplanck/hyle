@@ -8,12 +8,12 @@ pub mod cell;
 pub mod descriptors;
 
 pub use blueprint::{
-    neighbors, rng, BlueprintBuilder, BlueprintSpec, BuildError, Condition, CountComparison, Hyle,
-    HyleBuilder, NamedNeighborhood, NeighborCount, NeighborSelector, RandomSource, Rule,
-    RuleBuilder, RuleEffect, RulesBuilder, Semantics,
+    neighbors, rng, BlueprintBuilder, BlueprintSpec, BuildError, Condition, CountComparison,
+    NamedNeighborhood, NeighborCount, NeighborSelector, NeighborWeightedSum, RandomSource, Rule,
+    RuleBuilder, RuleEffect, RulesBuilder, Semantics, Weight, WeightComparison,
 };
 pub use cell::{CellModel, CellSchema, CellState, StateDef};
 pub use descriptors::{
     AxisTopology, GridDims, GridRegion, GridSnapshot, NeighborhoodFalloff, NeighborhoodShape,
-    NeighborhoodSpec, TopologyDescriptor,
+    NeighborhoodSpec, TopologyDescriptor, WEIGHT_SCALE,
 };

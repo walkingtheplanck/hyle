@@ -2,21 +2,11 @@
 
 use hyle_ca_interface::semantics::expand_neighborhood;
 use hyle_ca_interface::semantics::WEIGHT_SCALE;
-use hyle_ca_interface::{Cell, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 use hyle_ca_solver::Neighborhood;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct TestCell(u32);
-
-impl Cell for TestCell {
-    fn rule_id(&self) -> u8 {
-        self.0 as u8
-    }
-
-    fn is_alive(&self) -> bool {
-        self.0 != 0
-    }
-}
 
 fn cell(value: u32) -> TestCell {
     TestCell(value)
@@ -63,7 +53,7 @@ fn moore_get_returns_sampled_values() {
 }
 
 #[test]
-fn moore_count_alive_excludes_zeros() {
+fn moore_count_with_predicate_excludes_zeros() {
     let mut n = runtime_neighborhood(NeighborhoodShape::Moore, 1, NeighborhoodFalloff::Uniform);
     n.fill(
         cell(0),
@@ -76,7 +66,7 @@ fn moore_count_alive_excludes_zeros() {
             }
         },
     );
-    assert_eq!(n.count_alive(), 9);
+    assert_eq!(n.count(|entry| entry.cell != cell(0)), 9);
 }
 
 #[test]
@@ -94,21 +84,21 @@ fn moore_count_with_predicate() {
 fn moore_r1_has_26_neighbors() {
     let mut n = runtime_neighborhood(NeighborhoodShape::Moore, 1, NeighborhoodFalloff::Uniform);
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.count_alive(), 26);
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 26);
 }
 
 #[test]
 fn moore_r2_has_124_neighbors() {
     let mut n = runtime_neighborhood(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform);
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.count_alive(), 124);
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 124);
 }
 
 #[test]
 fn moore_r3_has_342_neighbors() {
     let mut n = runtime_neighborhood(NeighborhoodShape::Moore, 3, NeighborhoodFalloff::Uniform);
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.count_alive(), 342);
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 342);
 }
 
 #[test]
@@ -148,7 +138,7 @@ fn vn_r1_has_6_neighbors() {
         NeighborhoodFalloff::Uniform,
     );
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.count_alive(), 6);
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 6);
 }
 
 #[test]
@@ -159,7 +149,7 @@ fn vn_r2_has_24_neighbors() {
         NeighborhoodFalloff::Uniform,
     );
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.count_alive(), 24);
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 24);
 }
 
 #[test]
@@ -170,7 +160,7 @@ fn vn_r3_has_62_neighbors() {
         NeighborhoodFalloff::Uniform,
     );
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.count_alive(), 62);
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 62);
 }
 
 #[test]
@@ -226,7 +216,7 @@ fn spherical_r1_has_6_neighbors() {
         NeighborhoodFalloff::Uniform,
     );
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.count_alive(), 6);
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 6);
 }
 
 #[test]
@@ -237,7 +227,7 @@ fn spherical_r2_has_32_neighbors() {
         NeighborhoodFalloff::Uniform,
     );
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.count_alive(), 32);
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 32);
 }
 
 #[test]
@@ -248,7 +238,7 @@ fn spherical_r3_has_122_neighbors() {
         NeighborhoodFalloff::Uniform,
     );
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.count_alive(), 122);
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 122);
 }
 
 #[test]
@@ -272,8 +262,11 @@ fn spherical_r2_includes_face_and_edge_but_not_corner() {
 fn unweighted_sum_equals_count_alive() {
     let mut n = runtime_neighborhood(NeighborhoodShape::Moore, 1, NeighborhoodFalloff::Uniform);
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.weighted_sum(), 26 * WEIGHT_SCALE as u64);
-    assert_eq!(n.count_alive(), 26);
+    assert_eq!(
+        n.weighted_sum(|entry| entry.cell == cell(1)),
+        26 * WEIGHT_SCALE as u64
+    );
+    assert_eq!(n.count(|entry| entry.cell == cell(1)), 26);
 }
 
 #[test]
@@ -284,7 +277,7 @@ fn inverse_square_weighted_sum() {
         NeighborhoodFalloff::InverseSquare,
     );
     n.fill(cell(0), [0, 0, 0], |_, _, _| cell(1));
-    assert_eq!(n.weighted_sum(), 15_016);
+    assert_eq!(n.weighted_sum(|entry| entry.cell == cell(1)), 15_016);
 }
 
 #[test]
@@ -305,8 +298,9 @@ fn weighted_sum_excludes_dead_cells() {
             }
         },
     );
-    assert!(n.weighted_sum() < 15_016);
-    assert!(n.weighted_sum() > 0);
+    let sum = n.weighted_sum(|entry| entry.cell == cell(1));
+    assert!(sum < 15_016);
+    assert!(sum > 0);
 }
 
 // ---------------------------------------------------------------------------

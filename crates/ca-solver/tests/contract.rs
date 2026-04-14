@@ -1,22 +1,12 @@
 //! Contract tests: does the solver API behave as documented?
 
 use hyle_ca_interface::{
-    neighbors, CaSolver, Cell, CellModel, CellSchema, GridRegion, Hyle, TopologyDescriptor,
+    neighbors, BlueprintSpec, CaSolver, CellModel, CellSchema, GridRegion, TopologyDescriptor,
 };
 use hyle_ca_solver::{DescriptorTopology, Solver, TorusTopology};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct TestCell(u32);
-
-impl Cell for TestCell {
-    fn rule_id(&self) -> u8 {
-        self.0 as u8
-    }
-
-    fn is_alive(&self) -> bool {
-        self.0 != 0
-    }
-}
 
 impl CellModel for TestCell {
     fn schema() -> CellSchema {
@@ -226,8 +216,7 @@ fn torus_set_wraps_coordinates() {
 
 #[test]
 fn from_spec_uses_descriptor_topology() {
-    let spec = Hyle::builder()
-        .cells::<TestCell>()
+    let spec = BlueprintSpec::<TestCell>::builder()
         .topology(TopologyDescriptor::wrap())
         .rules(|rules| {
             rules

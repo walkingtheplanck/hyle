@@ -2,6 +2,7 @@
 
 use std::ops::RangeInclusive;
 
+use crate::contracts::descriptors::WEIGHT_SCALE;
 use crate::CellState;
 
 /// A deterministic rule condition.
@@ -13,6 +14,13 @@ pub enum Condition<C: CellState> {
         state: C,
         /// Count comparison to apply.
         comparison: CountComparison,
+    },
+    /// Compare the weighted sum of matching neighbors against a predicate.
+    NeighborWeightedSum {
+        /// State that neighbors must equal to be included in the sum.
+        state: C,
+        /// Weighted comparison to apply.
+        comparison: WeightComparison,
     },
     /// Deterministic per-cell random gate derived from the step and position.
     RandomChance {
@@ -81,7 +89,8 @@ impl<C: CellState> Condition<C> {
     /// The matching state used by this condition if it is a direct neighbor count.
     pub fn state(&self) -> Option<&C> {
         match self {
-            Condition::NeighborCount { state, .. } => Some(state),
+            Condition::NeighborCount { state, .. }
+            | Condition::NeighborWeightedSum { state, .. } => Some(state),
             Condition::RandomChance { .. }
             | Condition::And(_)
             | Condition::Or(_)
@@ -93,7 +102,20 @@ impl<C: CellState> Condition<C> {
     pub fn comparison(&self) -> Option<CountComparison> {
         match self {
             Condition::NeighborCount { comparison, .. } => Some(*comparison),
-            Condition::RandomChance { .. }
+            Condition::NeighborWeightedSum { .. }
+            | Condition::RandomChance { .. }
+            | Condition::And(_)
+            | Condition::Or(_)
+            | Condition::Not(_) => None,
+        }
+    }
+
+    /// The weighted comparison used by this condition if it is a direct weighted sum.
+    pub fn weighted_comparison(&self) -> Option<WeightComparison> {
+        match self {
+            Condition::NeighborWeightedSum { comparison, .. } => Some(*comparison),
+            Condition::NeighborCount { .. }
+            | Condition::RandomChance { .. }
             | Condition::And(_)
             | Condition::Or(_)
             | Condition::Not(_) => None,
@@ -126,6 +148,52 @@ pub enum CountComparison {
     AtMost(u32),
 }
 
+/// Weighted comparison used for weighted neighbor sums.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WeightComparison {
+    /// Equal to an exact weight.
+    Eq(Weight),
+    /// Within an inclusive range.
+    InRange {
+        /// Inclusive lower bound.
+        min: Weight,
+        /// Inclusive upper bound.
+        max: Weight,
+    },
+    /// Outside an inclusive range.
+    NotInRange {
+        /// Inclusive lower bound.
+        min: Weight,
+        /// Inclusive upper bound.
+        max: Weight,
+    },
+    /// Greater than or equal to a weight.
+    AtLeast(Weight),
+    /// Less than or equal to a weight.
+    AtMost(Weight),
+}
+
+/// Fixed-point portable weight used by weighted neighborhood predicates.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Weight(u64);
+
+impl Weight {
+    /// Construct a weight from raw fixed-point units.
+    pub const fn raw(units: u64) -> Self {
+        Self(units)
+    }
+
+    /// Construct the weight corresponding to `cells` uniform neighbors.
+    pub const fn cells(cells: u32) -> Self {
+        Self(cells as u64 * WEIGHT_SCALE as u64)
+    }
+
+    /// Return the raw fixed-point value.
+    pub const fn units(self) -> u64 {
+        self.0
+    }
+}
+
 /// Select neighbors equal to a specific cell state.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NeighborSelector<C: CellState> {
@@ -136,6 +204,11 @@ impl<C: CellState> NeighborSelector<C> {
     /// Start a count comparison for the selected state.
     pub fn count(self) -> NeighborCount<C> {
         NeighborCount { state: self.state }
+    }
+
+    /// Start a weighted-sum comparison for the selected state.
+    pub fn weighted_sum(self) -> NeighborWeightedSum<C> {
+        NeighborWeightedSum { state: self.state }
     }
 
     /// Require at least one matching neighbor.
@@ -199,6 +272,60 @@ impl<C: CellState> NeighborCount<C> {
         Condition::NeighborCount {
             state: self.state,
             comparison: CountComparison::AtMost(count),
+        }
+    }
+}
+
+/// A pending weighted comparison on the weighted sum of matching neighbors.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NeighborWeightedSum<C: CellState> {
+    state: C,
+}
+
+impl<C: CellState> NeighborWeightedSum<C> {
+    /// Require an exact weighted sum.
+    pub fn eq(self, weight: Weight) -> Condition<C> {
+        Condition::NeighborWeightedSum {
+            state: self.state,
+            comparison: WeightComparison::Eq(weight),
+        }
+    }
+
+    /// Require the weighted sum to fall inside an inclusive range.
+    pub fn in_range(self, range: RangeInclusive<Weight>) -> Condition<C> {
+        Condition::NeighborWeightedSum {
+            state: self.state,
+            comparison: WeightComparison::InRange {
+                min: *range.start(),
+                max: *range.end(),
+            },
+        }
+    }
+
+    /// Require the weighted sum to fall outside an inclusive range.
+    pub fn not_in(self, range: RangeInclusive<Weight>) -> Condition<C> {
+        Condition::NeighborWeightedSum {
+            state: self.state,
+            comparison: WeightComparison::NotInRange {
+                min: *range.start(),
+                max: *range.end(),
+            },
+        }
+    }
+
+    /// Require the weighted sum to be at least the given value.
+    pub fn at_least(self, weight: Weight) -> Condition<C> {
+        Condition::NeighborWeightedSum {
+            state: self.state,
+            comparison: WeightComparison::AtLeast(weight),
+        }
+    }
+
+    /// Require the weighted sum to be at most the given value.
+    pub fn at_most(self, weight: Weight) -> Condition<C> {
+        Condition::NeighborWeightedSum {
+            state: self.state,
+            comparison: WeightComparison::AtMost(weight),
         }
     }
 }

@@ -2,8 +2,8 @@
 
 use hyle_ca_interface::semantics::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
-    neighbors, rng, BlueprintSpec, CaSolver, Cell, CellModel, CellSchema, Hyle, Instance,
-    NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor,
+    neighbors, rng, BlueprintSpec, CaSolver, CellModel, CellSchema, Instance, NeighborhoodFalloff,
+    NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor, Weight,
 };
 use hyle_ca_solver::Solver;
 
@@ -15,19 +15,6 @@ enum LifeCell {
 }
 
 const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
-
-impl Cell for LifeCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Dead => 0,
-            Self::Alive => 1,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        matches!(self, Self::Alive)
-    }
-}
 
 impl CellModel for LifeCell {
     fn schema() -> CellSchema {
@@ -48,20 +35,6 @@ const MATTER_CELL_STATES: [StateDef; 3] = [
     StateDef::new("Water"),
     StateDef::new("Ice"),
 ];
-
-impl Cell for MatterCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Empty => 0,
-            Self::Water => 1,
-            Self::Ice => 2,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        !matches!(self, Self::Empty)
-    }
-}
 
 impl CellModel for MatterCell {
     fn schema() -> CellSchema {
@@ -85,21 +58,6 @@ const PRIORITY_CELL_STATES: [StateDef; 4] = [
     StateDef::new("SecondChoice"),
 ];
 
-impl Cell for PriorityCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Empty => 0,
-            Self::Source => 1,
-            Self::FirstChoice => 2,
-            Self::SecondChoice => 3,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        !matches!(self, Self::Empty)
-    }
-}
-
 impl CellModel for PriorityCell {
     fn schema() -> CellSchema {
         CellSchema::enumeration("PriorityCell", &PRIORITY_CELL_STATES)
@@ -107,8 +65,7 @@ impl CellModel for PriorityCell {
 }
 
 fn kill_all_spec() -> BlueprintSpec<LifeCell> {
-    Hyle::builder()
-        .cells::<LifeCell>()
+    BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules.when(LifeCell::Alive).becomes(LifeCell::Dead);
         })
@@ -152,8 +109,7 @@ fn solver_from_blueprint_matches_from_spec() {
 
 #[test]
 fn rule_spread_to_neighbors() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -177,8 +133,7 @@ fn rule_spread_to_neighbors() {
 
 #[test]
 fn rule_threshold_birth() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -199,8 +154,7 @@ fn rule_threshold_birth() {
 
 #[test]
 fn rule_threshold_no_birth() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -220,8 +174,7 @@ fn rule_threshold_no_birth() {
 
 #[test]
 fn rule_type_interaction() {
-    let spec = Hyle::builder()
-        .cells::<MatterCell>()
+    let spec = BlueprintSpec::<MatterCell>::builder()
         .rules(|rules| {
             rules
                 .when(MatterCell::Water)
@@ -251,8 +204,7 @@ fn rule_type_interaction() {
 
 #[test]
 fn deterministic_across_runs() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -286,8 +238,7 @@ fn deterministic_across_runs() {
 
 #[test]
 fn first_matching_rule_wins() {
-    let spec = Hyle::builder()
-        .cells::<PriorityCell>()
+    let spec = BlueprintSpec::<PriorityCell>::builder()
         .rules(|rules| {
             rules
                 .when(PriorityCell::Source)
@@ -309,8 +260,7 @@ fn first_matching_rule_wins() {
 
 #[test]
 fn random_chance_rules_follow_semantic_rng() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -335,8 +285,7 @@ fn random_chance_rules_follow_semantic_rng() {
 
 #[test]
 fn random_chance_rules_change_with_seed() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -364,8 +313,7 @@ fn random_chance_rules_change_with_seed() {
 
 #[test]
 fn rule_with_radius_2() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .neighborhood(
             "radius-two",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
@@ -392,8 +340,7 @@ fn rule_with_radius_2() {
 
 #[test]
 fn rule_respects_torus_topology_from_spec() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .topology(TopologyDescriptor::wrap())
         .rules(|rules| {
             rules
@@ -410,4 +357,33 @@ fn rule_respects_torus_topology_from_spec() {
     solver.step();
 
     assert_eq!(solver.get(0, 0, 0), LifeCell::Alive);
+}
+
+#[test]
+fn weighted_sum_rules_follow_portable_weights() {
+    let spec = BlueprintSpec::<LifeCell>::builder()
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Dead)
+                .require(
+                    neighbors(LifeCell::Alive)
+                        .weighted_sum()
+                        .at_least(Weight::cells(6)),
+                )
+                .becomes(LifeCell::Alive);
+        })
+        .build()
+        .expect("valid spec");
+
+    let mut solver = Solver::from_spec(3, 3, 3, &spec);
+    solver.set(0, 1, 1, LifeCell::Alive);
+    solver.set(2, 1, 1, LifeCell::Alive);
+    solver.set(1, 0, 1, LifeCell::Alive);
+    solver.set(1, 2, 1, LifeCell::Alive);
+    solver.set(1, 1, 0, LifeCell::Alive);
+    solver.set(1, 1, 2, LifeCell::Alive);
+
+    solver.step();
+
+    assert_eq!(solver.get(1, 1, 1), LifeCell::Alive);
 }

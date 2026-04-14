@@ -3,7 +3,7 @@ use crate::{
     Semantics,
 };
 
-use super::{interpret_topology, Neighborhood, Topology};
+use super::{interpret_topology, Neighborhood, ResolvedTopology};
 
 /// A named interpreted neighborhood used by a blueprint.
 #[derive(Clone, Debug, PartialEq)]
@@ -37,7 +37,7 @@ impl NamedNeighborhood {
 pub struct Blueprint<C: CellModel> {
     cell_schema: CellSchema,
     semantics: Semantics,
-    topology: Topology,
+    topology: ResolvedTopology,
     neighborhoods: Vec<NamedNeighborhood>,
     default_neighborhood: usize,
     rules: Vec<Rule<C>>,
@@ -55,7 +55,7 @@ impl<C: CellModel> Blueprint<C> {
     }
 
     /// Return the interpreted topology descriptor.
-    pub fn topology(&self) -> &Topology {
+    pub fn topology(&self) -> &ResolvedTopology {
         &self.topology
     }
 

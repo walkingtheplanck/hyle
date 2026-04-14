@@ -1,7 +1,7 @@
 use hyle_ca_analysis::analyze_spec;
 use hyle_ca_interface::{
-    neighbors, Cell, CellModel, CellSchema, Hyle, NeighborhoodFalloff, NeighborhoodShape,
-    NeighborhoodSpec, StateDef,
+    neighbors, BlueprintSpec, CellModel, CellSchema, NeighborhoodFalloff, NeighborhoodShape,
+    NeighborhoodSpec, StateDef, Weight,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -13,19 +13,6 @@ enum LifeCell {
 
 const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
 
-impl Cell for LifeCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Dead => 0,
-            Self::Alive => 1,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        matches!(self, Self::Alive)
-    }
-}
-
 impl CellModel for LifeCell {
     fn schema() -> CellSchema {
         CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
@@ -34,8 +21,7 @@ impl CellModel for LifeCell {
 
 #[test]
 fn summarizes_rules_and_neighborhoods() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .neighborhood(
             "far",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
@@ -68,8 +54,7 @@ fn summarizes_rules_and_neighborhoods() {
 
 #[test]
 fn detects_shadowed_and_duplicate_rules() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules.when(LifeCell::Alive).keep();
             rules.when(LifeCell::Alive).keep();
@@ -98,8 +83,7 @@ fn detects_shadowed_and_duplicate_rules() {
 
 #[test]
 fn warns_about_unused_named_neighborhoods() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .neighborhood(
             "unused",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 3, NeighborhoodFalloff::Uniform),
@@ -116,4 +100,48 @@ fn warns_about_unused_named_neighborhoods() {
         .diagnostics
         .iter()
         .any(|diagnostic| diagnostic.code == "unused_neighborhood"));
+}
+
+#[test]
+fn warns_about_impossible_weighted_sum_conditions() {
+    let spec = BlueprintSpec::<LifeCell>::builder()
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Dead)
+                .require(
+                    neighbors(LifeCell::Alive)
+                        .weighted_sum()
+                        .at_least(Weight::cells(27)),
+                )
+                .becomes(LifeCell::Alive);
+        })
+        .build()
+        .expect("valid spec");
+
+    let analysis = analyze_spec(&spec);
+
+    assert!(analysis.rules[0]
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.code == "impossible_weighted_sum"));
+}
+
+#[test]
+fn warns_about_impossible_neighbor_count_conditions() {
+    let spec = BlueprintSpec::<LifeCell>::builder()
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Dead)
+                .require(neighbors(LifeCell::Alive).count().eq(27))
+                .becomes(LifeCell::Alive);
+        })
+        .build()
+        .expect("valid spec");
+
+    let analysis = analyze_spec(&spec);
+
+    assert!(analysis.rules[0]
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.code == "impossible_neighbor_count"));
 }

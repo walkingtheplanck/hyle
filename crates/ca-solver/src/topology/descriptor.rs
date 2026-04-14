@@ -1,17 +1,17 @@
-use hyle_ca_interface::semantics::Topology as SemanticTopology;
+use hyle_ca_interface::semantics::ResolvedTopology;
 use hyle_ca_interface::{GridDims, Topology, TopologyDescriptor};
 
 /// Topology adapter backed by a [`TopologyDescriptor`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DescriptorTopology {
-    topology: SemanticTopology,
+    topology: ResolvedTopology,
 }
 
 impl DescriptorTopology {
     /// Construct a topology from a solver-neutral descriptor.
     pub const fn new(descriptor: TopologyDescriptor) -> Self {
         Self {
-            topology: SemanticTopology::from_descriptor(descriptor),
+            topology: ResolvedTopology::from_descriptor(descriptor),
         }
     }
 }

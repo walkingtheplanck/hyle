@@ -2,7 +2,7 @@
 
 use crate::{CellModel, CellSchema, CellState, NeighborhoodSpec, TopologyDescriptor};
 
-use super::Condition;
+use super::{BlueprintBuilder, Condition};
 
 /// Portable semantics version for a blueprint specification.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -65,6 +65,11 @@ pub struct BlueprintSpec<C: CellModel> {
 }
 
 impl<C: CellModel> BlueprintSpec<C> {
+    /// Start building a solver-agnostic blueprint specification.
+    pub fn builder() -> BlueprintBuilder<C> {
+        BlueprintBuilder::new()
+    }
+
     pub(crate) fn new(
         cell_schema: CellSchema,
         semantics: Semantics,

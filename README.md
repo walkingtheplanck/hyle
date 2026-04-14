@@ -24,7 +24,7 @@ A 3D cellular automaton framework for Rust.
 ## Quick Start
 
 ```rust
-use hyle_ca_interface::{neighbors, Cell, CellModel, CellSchema, Hyle, Instance, StateDef};
+use hyle_ca_interface::{neighbors, BlueprintSpec, CellModel, CellSchema, Instance, StateDef};
 use hyle_ca_solver::Solver;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -36,27 +36,13 @@ enum LifeCell {
 
 const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
 
-impl Cell for LifeCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Dead => 0,
-            Self::Alive => 1,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        matches!(self, Self::Alive)
-    }
-}
-
 impl CellModel for LifeCell {
     fn schema() -> CellSchema {
         CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
     }
 }
 
-let spec = Hyle::builder()
-    .cells::<LifeCell>()
+let spec = BlueprintSpec::<LifeCell>::builder()
     .rules(|rules| {
         rules.when(LifeCell::Dead)
             .require(neighbors(LifeCell::Alive).count().eq(5))
@@ -79,13 +65,8 @@ solver.step();
 ### Custom Cell Types
 
 ```rust
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct FluidCell { density: u8, velocity: [i8; 6], material: u8 }
-
-impl Cell for FluidCell {
-    fn rule_id(&self) -> u8 { self.material }
-    fn is_alive(&self) -> bool { self.density > 0 }
-}
 
 let solver = Solver::<FluidCell>::new(64, 64, 64);
 ```
@@ -93,8 +74,8 @@ let solver = Solver::<FluidCell>::new(64, 64, 64);
 ### Variable-Radius Neighborhoods
 
 ```rust
-use hyle_ca_interface::{neighbors, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
-use hyle_ca_interface::{Cell, CellModel, CellSchema, StateDef};
+use hyle_ca_interface::{neighbors, BlueprintSpec, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+use hyle_ca_interface::{CellModel, CellSchema, StateDef};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 enum LifeCell {
@@ -105,27 +86,13 @@ enum LifeCell {
 
 const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
 
-impl Cell for LifeCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Dead => 0,
-            Self::Alive => 1,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        matches!(self, Self::Alive)
-    }
-}
-
 impl CellModel for LifeCell {
     fn schema() -> CellSchema {
         CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
     }
 }
 
-let spec = Hyle::builder()
-    .cells::<LifeCell>()
+let spec = BlueprintSpec::<LifeCell>::builder()
     .neighborhood(
         "far",
         NeighborhoodSpec::new(
@@ -147,16 +114,10 @@ let spec = Hyle::builder()
 ### Torus Topology
 
 ```rust
-use hyle_ca_interface::Cell;
 use hyle_ca_solver::TorusTopology;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct TestCell(u32);
-
-impl Cell for TestCell {
-    fn rule_id(&self) -> u8 { self.0 as u8 }
-    fn is_alive(&self) -> bool { self.0 != 0 }
-}
 
 let solver = Solver::<TestCell>::with_topology(64, 64, 64, TorusTopology);
 ```
@@ -202,6 +163,7 @@ cargo run --release -p hyle-viewer
 - [x] **Descriptor-backed topology** - Uploadable topology descriptors with bounded and torus behavior
 - [ ] **State/schema metadata** - Declare the valid state space more explicitly so tools can analyze specs without guessing
 - [ ] **Spec serialization** - Save and load automaton specs and grid patterns in a stable portable format
+- [ ] **Stricter validation** - Catch invalid random gates, impossible thresholds, and other malformed specs earlier
 - [ ] **Solver-specific support checks** - Keep any execution-limit or solver support checks in solver crates instead of the shared analysis layer
 
 ### Analysis And Tooling

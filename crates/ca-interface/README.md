@@ -4,9 +4,9 @@ Shared interfaces, contracts, and descriptors for the [Hyle](https://github.com/
 
 This crate defines the shared public interface layer. Depend on it to:
 - define custom cell types
-- author portable blueprint specs with `Hyle::builder()`
+- author portable blueprint specs with `BlueprintSpec::<C>::builder()`
 - implement new solver implementations against the shared `CaSolver` trait
-- decouple apps and tools from concrete solver types through `CaRuntime` and `CaSolverProvider`
+- centralize backend construction through `CaRuntime` and `CaSolverProvider`
 
 Derived analysis and diagnostics live in
 [`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis). Canonical
@@ -21,13 +21,14 @@ It has **zero dependencies** and is split conceptually into:
 
 | Type | Role |
 |------|------|
-| [`Cell`] | Trait for custom cell state |
+| [`Cell`] | Marker trait for runtime cell state |
 | [`Instance`] | Runtime dimensions and deterministic seed for one solver run |
-| [`Hyle`] / [`BlueprintSpec`] | Declarative blueprint builder and canonical spec |
+| [`BlueprintSpec`] | Declarative blueprint builder and canonical spec |
 | [`CaSolver`] | Trait that all solver implementations implement |
-| [`CaRuntime`] / [`CaSolverProvider`] | Erased runtime and factory interfaces for consumers that should not depend on concrete solvers |
+| [`CaRuntime`] / [`CaSolverProvider`] | Concrete runtime and factory interfaces that keep backend selection localized |
 | [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Solver-neutral grid descriptors and bulk transfer types |
 | [`NeighborhoodSpec`] | Declarative neighborhood description shared across solvers |
+| [`Weight`] | Fixed-point weight threshold used by weighted neighborhood predicates |
 | [`Rng`] | Shared deterministic random-number primitive parameterized by seed, position, step, and stream |
 | [`Topology`] / [`TopologyDescriptor`] | Boundary behavior traits and descriptors |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
@@ -35,14 +36,14 @@ It has **zero dependencies** and is split conceptually into:
 Semantic forms are available under `hyle_ca_interface::semantics`, for example:
 - `hyle_ca_interface::semantics::Blueprint`
 - `hyle_ca_interface::semantics::Neighborhood`
-- `hyle_ca_interface::semantics::Topology`
+- `hyle_ca_interface::semantics::ResolvedTopology`
 
 ## Preferred Imports
 
 Use the crate root or the prelude as the main entry points:
 
 - Prefer explicit root imports for application and library code:
-  `use hyle_ca_interface::{Hyle, BlueprintSpec, CaSolverProvider, Instance};`
+  `use hyle_ca_interface::{BlueprintSpec, CaSolverProvider, Instance};`
 - Use `hyle_ca_interface::prelude::*` when you want a compact common import set
   for blueprint authoring and runtime setup.
 - Treat `hyle_ca_interface::semantics` as an advanced namespace for interpreted
@@ -54,7 +55,7 @@ the intended consumer-facing path.
 ## Building a Portable Blueprint
 
 ```rust
-use hyle_ca_interface::{neighbors, CellModel, CellSchema, Hyle, StateDef, TopologyDescriptor};
+use hyle_ca_interface::{neighbors, BlueprintSpec, CellModel, CellSchema, StateDef, TopologyDescriptor};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 enum LifeCell {
@@ -71,8 +72,7 @@ impl CellModel for LifeCell {
     }
 }
 
-let spec = Hyle::builder()
-    .cells::<LifeCell>()
+let spec = BlueprintSpec::<LifeCell>::builder()
     .topology(TopologyDescriptor::bounded())
     .rules(|rules| {
         rules.when(LifeCell::Dead)
@@ -92,48 +92,38 @@ If no rule matches, the center cell is kept unchanged.
 ## Decoupled Runtime Construction
 
 Consumers such as viewers can depend on the centralized runtime/provider seam
-instead of naming a concrete solver type:
+instead of naming a concrete solver type directly:
 
 ```ignore
-use hyle_ca_interface::{CaRuntime, CaSolverProvider, Cell, CellModel, CellSchema, Hyle, Instance};
+use hyle_ca_interface::{BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance};
 use hyle_ca_solver::CpuSolverProvider;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct TestCell(u32);
 
-impl Cell for TestCell {
-    fn rule_id(&self) -> u8 { self.0 as u8 }
-    fn is_alive(&self) -> bool { self.0 != 0 }
-}
-
 impl CellModel for TestCell {
     fn schema() -> CellSchema { CellSchema::opaque("TestCell") }
 }
 
-let spec = Hyle::builder().cells::<TestCell>().build()?;
+let spec = BlueprintSpec::<TestCell>::builder().build()?;
 let provider = CpuSolverProvider::new();
 let runtime = provider.build(Instance::new(16, 16, 16), &spec);
 
 # Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
-This keeps backend selection localized to one construction site.
+This keeps backend selection localized to one construction site while preserving static dispatch.
 
 ## Defining a Custom Cell
 
 ```rust
-use hyle_ca_interface::{Cell, CellModel, CellSchema};
+use hyle_ca_interface::{CellModel, CellSchema};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct FluidCell {
     density: u8,
     velocity: [i8; 6],
     material: u8,
-}
-
-impl Cell for FluidCell {
-    fn rule_id(&self) -> u8 { self.material }
-    fn is_alive(&self) -> bool { self.density > 0 }
 }
 
 impl CellModel for FluidCell {
@@ -143,6 +133,7 @@ impl CellModel for FluidCell {
 }
 ```
 
+Any `CellState` automatically implements the runtime `Cell` marker trait.
 Blueprint builders require `CellModel` so the spec carries portable schema
 metadata. The default solver requires `Eq` so it can match exact cell states
 from a `BlueprintSpec`.
@@ -195,6 +186,14 @@ assert_eq!(far.falloff(), NeighborhoodFalloff::Uniform);
 
 Neighborhood falloff expands to deterministic fixed-point weights in the semantic layer,
 so CPU and GPU backends can agree on the same values exactly.
+
+Weighted predicates use the same portable units:
+
+```rust
+use hyle_ca_interface::{neighbors, Weight};
+
+let condition = neighbors(1u8).weighted_sum().at_least(Weight::cells(2));
+```
 
 ## Topology
 

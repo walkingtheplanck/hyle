@@ -9,40 +9,42 @@ use super::{BlueprintSpec, Condition, NamedNeighborhood, Rule, RuleEffect, Seman
 
 const ADJACENT_NEIGHBORHOOD: &str = "adjacent";
 
-/// Branded entrypoint for blueprint authoring.
-pub struct Hyle;
-
-impl Hyle {
-    /// Start building a solver-agnostic blueprint specification.
-    pub fn builder() -> HyleBuilder {
-        HyleBuilder
-    }
-}
-
-/// Untyped entry builder returned by [`Hyle::builder`].
-pub struct HyleBuilder;
-
-impl HyleBuilder {
-    /// Select the cell type used by the blueprint.
-    pub fn cells<C: CellModel>(self) -> BlueprintBuilder<C> {
-        BlueprintBuilder::new()
-    }
-}
-
 /// Errors raised while building a [`BlueprintSpec`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BuildError {
+    /// A neighborhood name was empty.
+    EmptyNeighborhoodName,
+    /// The default neighborhood name was empty.
+    EmptyDefaultNeighborhood,
+    /// A rule referenced an empty neighborhood name.
+    EmptyRuleNeighborhood,
     /// A neighborhood name was registered more than once.
     DuplicateNeighborhood(String),
     /// The default neighborhood name does not exist.
     UnknownDefaultNeighborhood(String),
     /// A rule references a neighborhood name that does not exist.
     UnknownRuleNeighborhood(String),
+    /// A random condition requested an invalid denominator.
+    InvalidRandomChance {
+        /// Random stream identifier used by the invalid condition.
+        stream: u32,
+        /// Requested `1 / n` denominator.
+        one_in: u32,
+    },
 }
 
 impl Display for BuildError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            BuildError::EmptyNeighborhoodName => {
+                write!(f, "neighborhood name must not be empty")
+            }
+            BuildError::EmptyDefaultNeighborhood => {
+                write!(f, "default neighborhood name must not be empty")
+            }
+            BuildError::EmptyRuleNeighborhood => {
+                write!(f, "rule neighborhood name must not be empty")
+            }
             BuildError::DuplicateNeighborhood(name) => {
                 write!(f, "duplicate neighborhood name: {name}")
             }
@@ -52,6 +54,10 @@ impl Display for BuildError {
             BuildError::UnknownRuleNeighborhood(name) => {
                 write!(f, "rule references unknown neighborhood: {name}")
             }
+            BuildError::InvalidRandomChance { stream, one_in } => write!(
+                f,
+                "random condition on stream {stream} must use a non-zero denominator, got {one_in}"
+            ),
         }
     }
 }
@@ -68,7 +74,7 @@ pub struct BlueprintBuilder<C: CellModel> {
 }
 
 impl<C: CellModel> BlueprintBuilder<C> {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             semantics: Semantics::V1,
             topology: TopologyDescriptor::bounded(),
@@ -109,8 +115,15 @@ impl<C: CellModel> BlueprintBuilder<C> {
 
     /// Validate and build the portable blueprint specification.
     pub fn build(self) -> Result<BlueprintSpec<C>, BuildError> {
+        if self.default_neighborhood.is_empty() {
+            return Err(BuildError::EmptyDefaultNeighborhood);
+        }
+
         let mut names = Vec::with_capacity(self.neighborhoods.len());
         for neighborhood in &self.neighborhoods {
+            if neighborhood.name.is_empty() {
+                return Err(BuildError::EmptyNeighborhoodName);
+            }
             if names.iter().any(|name: &String| name == &neighborhood.name) {
                 return Err(BuildError::DuplicateNeighborhood(neighborhood.name.clone()));
             }
@@ -126,9 +139,13 @@ impl<C: CellModel> BlueprintBuilder<C> {
 
         let mut rules = Vec::with_capacity(self.rules.len());
         for rule in self.rules {
+            validate_condition(rule.condition.as_ref())?;
             let neighborhood_name = rule
                 .neighborhood
                 .unwrap_or_else(|| self.default_neighborhood.clone());
+            if neighborhood_name.is_empty() {
+                return Err(BuildError::EmptyRuleNeighborhood);
+            }
             let neighborhood = names
                 .iter()
                 .position(|name| name == &neighborhood_name)
@@ -149,6 +166,33 @@ impl<C: CellModel> BlueprintBuilder<C> {
             default_neighborhood,
             rules,
         ))
+    }
+}
+
+fn validate_condition<C: CellModel>(condition: Option<&Condition<C>>) -> Result<(), BuildError> {
+    let Some(condition) = condition else {
+        return Ok(());
+    };
+
+    match condition {
+        Condition::NeighborCount { .. } | Condition::NeighborWeightedSum { .. } => Ok(()),
+        Condition::RandomChance { stream, one_in } => {
+            if *one_in == 0 {
+                Err(BuildError::InvalidRandomChance {
+                    stream: *stream,
+                    one_in: *one_in,
+                })
+            } else {
+                Ok(())
+            }
+        }
+        Condition::And(conditions) | Condition::Or(conditions) => {
+            for condition in conditions {
+                validate_condition(Some(condition))?;
+            }
+            Ok(())
+        }
+        Condition::Not(condition) => validate_condition(Some(condition)),
     }
 }
 
@@ -178,10 +222,6 @@ impl<C: CellModel> RulesBuilder<C> {
             neighborhood: None,
             condition: None,
         }
-    }
-
-    fn push(&mut self, rule: PendingRule<C>) {
-        self.rules.push(rule);
     }
 
     fn finish(self) -> Vec<PendingRule<C>> {
@@ -229,7 +269,7 @@ impl<'a, C: CellModel> RuleBuilder<'a, C> {
     }
 
     fn finish(self, effect: RuleEffect<C>) -> &'a mut RulesBuilder<C> {
-        self.rules.push(PendingRule {
+        self.rules.rules.push(PendingRule {
             when: self.when,
             neighborhood: self.neighborhood,
             condition: self.condition,

@@ -14,7 +14,7 @@ contracts directly; this crate helps inspect them consistently.
 
 ```rust
 use hyle_ca_analysis::analyze_spec;
-use hyle_ca_interface::{neighbors, CellModel, CellSchema, Hyle, StateDef};
+use hyle_ca_interface::{neighbors, BlueprintSpec, CellModel, CellSchema, StateDef};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 enum LifeCell {
@@ -31,8 +31,7 @@ impl CellModel for LifeCell {
     }
 }
 
-let spec = Hyle::builder()
-    .cells::<LifeCell>()
+let spec = BlueprintSpec::<LifeCell>::builder()
     .rules(|rules| {
         rules.when(LifeCell::Dead)
             .require(neighbors(LifeCell::Alive).count().eq(3))

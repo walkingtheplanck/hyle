@@ -10,14 +10,14 @@ For apps and tools that should not depend on the concrete
 [`Solver`](https://docs.rs/hyle-ca-solver/latest/hyle_ca_solver/struct.Solver.html)
 type directly, this crate also exposes
 [`CpuSolverProvider`](https://docs.rs/hyle-ca-solver/latest/hyle_ca_solver/struct.CpuSolverProvider.html),
-which builds erased
+which builds concrete
 [`CaRuntime`](https://docs.rs/hyle-ca-interface/latest/hyle_ca_interface/trait.CaRuntime.html)
 instances through the shared `CaSolverProvider` interface.
 
 ## Quick Start
 
 ```rust
-use hyle_ca_interface::{neighbors, CaSolver, Cell, CellModel, CellSchema, Hyle, Instance, StateDef};
+use hyle_ca_interface::{neighbors, BlueprintSpec, CaSolver, CellModel, CellSchema, Instance, StateDef};
 use hyle_ca_solver::Solver;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -29,27 +29,13 @@ enum LifeCell {
 
 const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
 
-impl Cell for LifeCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Dead => 0,
-            Self::Alive => 1,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        matches!(self, Self::Alive)
-    }
-}
-
 impl CellModel for LifeCell {
     fn schema() -> CellSchema {
         CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
     }
 }
 
-let spec = Hyle::builder()
-    .cells::<LifeCell>()
+let spec = BlueprintSpec::<LifeCell>::builder()
     .rules(|rules| {
         rules.when(LifeCell::Dead)
             .require(neighbors(LifeCell::Alive).count().eq(3))
@@ -68,22 +54,17 @@ solver.step();
 ## Decoupled Consumer Path
 
 ```rust
-use hyle_ca_interface::{CaRuntime, CaSolverProvider, Cell, CellModel, CellSchema, Hyle, Instance};
+use hyle_ca_interface::{BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance};
 use hyle_ca_solver::CpuSolverProvider;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct TestCell(u32);
 
-impl Cell for TestCell {
-    fn rule_id(&self) -> u8 { self.0 as u8 }
-    fn is_alive(&self) -> bool { self.0 != 0 }
-}
-
 impl CellModel for TestCell {
     fn schema() -> CellSchema { CellSchema::opaque("TestCell") }
 }
 
-let spec = Hyle::builder().cells::<TestCell>().build()?;
+let spec = BlueprintSpec::<TestCell>::builder().build()?;
 let provider = CpuSolverProvider::new();
 let mut runtime = provider.build(Instance::new(16, 16, 16), &spec);
 
@@ -96,16 +77,10 @@ runtime.step();
 The solver still supports direct construction with built-in topology types:
 
 ```rust
-use hyle_ca_interface::Cell;
 use hyle_ca_solver::{Solver, TorusTopology};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct TestCell(u32);
-
-impl Cell for TestCell {
-    fn rule_id(&self) -> u8 { self.0 as u8 }
-    fn is_alive(&self) -> bool { self.0 != 0 }
-}
 
 let _solver = Solver::<TestCell>::with_topology(64, 64, 64, TorusTopology);
 ```
@@ -122,7 +97,8 @@ Use named neighborhoods in the spec, then reference them from rules:
 
 ```rust
 use hyle_ca_interface::{
-    neighbors, CaSolver, Cell, CellModel, CellSchema, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef,
+    neighbors, BlueprintSpec, CaSolver, CellModel, CellSchema, NeighborhoodFalloff,
+    NeighborhoodShape, NeighborhoodSpec, StateDef,
 };
 use hyle_ca_solver::Solver;
 
@@ -135,27 +111,13 @@ enum LifeCell {
 
 const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
 
-impl Cell for LifeCell {
-    fn rule_id(&self) -> u8 {
-        match self {
-            Self::Dead => 0,
-            Self::Alive => 1,
-        }
-    }
-
-    fn is_alive(&self) -> bool {
-        matches!(self, Self::Alive)
-    }
-}
-
 impl CellModel for LifeCell {
     fn schema() -> CellSchema {
         CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
     }
 }
 
-let spec = Hyle::builder()
-    .cells::<LifeCell>()
+let spec = BlueprintSpec::<LifeCell>::builder()
     .neighborhood(
         "far",
         NeighborhoodSpec::new(

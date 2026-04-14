@@ -1,9 +1,7 @@
 use crate::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 
 use super::Offset3;
-
-/// Fixed-point scale used for deterministic neighborhood weights.
-pub const WEIGHT_SCALE: u32 = 1024;
+use crate::WEIGHT_SCALE;
 
 /// A single interpreted neighborhood sample offset and its weight.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -74,6 +72,14 @@ pub fn expand_neighborhood(spec: NeighborhoodSpec) -> Neighborhood {
 /// Return the exact number of neighbor positions included by a neighborhood spec.
 pub fn neighbor_count(spec: NeighborhoodSpec) -> u32 {
     shape_neighbor_count(spec.shape(), spec.radius())
+}
+
+/// Return the maximum weighted sum for a fully matching neighborhood spec.
+pub fn max_weighted_sum(spec: NeighborhoodSpec) -> u64 {
+    samples(spec)
+        .into_iter()
+        .map(|sample| sample.weight() as u64)
+        .sum()
 }
 
 /// Return the canonical weighted neighborhood samples for a declarative spec.

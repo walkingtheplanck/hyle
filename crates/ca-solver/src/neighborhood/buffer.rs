@@ -19,16 +19,6 @@ use super::types::Entry;
 /// #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 /// struct TestCell(u32);
 ///
-/// impl Cell for TestCell {
-///     fn rule_id(&self) -> u8 {
-///         self.0 as u8
-///     }
-///
-///     fn is_alive(&self) -> bool {
-///         self.0 != 0
-///     }
-/// }
-///
 /// let semantic = expand_neighborhood(NeighborhoodSpec::new(
 ///     NeighborhoodShape::Moore,
 ///     1,
@@ -41,8 +31,6 @@ pub struct Neighborhood<C: Cell> {
     pos: [i32; 3],
     radius: u32,
     entries: Vec<Entry<C>>,
-    alive_count: u32,
-    weighted_sum: u64,
 }
 
 impl<C: Cell> Neighborhood<C> {
@@ -72,8 +60,6 @@ impl<C: Cell> Neighborhood<C> {
                 .max()
                 .unwrap_or(0),
             entries,
-            alive_count: 0,
-            weighted_sum: 0,
         }
     }
 
@@ -81,13 +67,8 @@ impl<C: Cell> Neighborhood<C> {
     pub fn fill(&mut self, center: C, pos: [i32; 3], sample: impl Fn(i32, i32, i32) -> C) {
         self.center = center;
         self.pos = pos;
-        self.alive_count = 0;
-        self.weighted_sum = 0;
         for entry in &mut self.entries {
             entry.cell = sample(entry.offset.dx, entry.offset.dy, entry.offset.dz);
-            let alive = entry.cell.is_alive() as u32;
-            self.alive_count += alive;
-            self.weighted_sum += alive as u64 * entry.weight as u64;
         }
     }
 
@@ -133,18 +114,17 @@ impl<C: Cell> Neighborhood<C> {
         self.entries.len() as u32
     }
 
-    /// Number of alive neighbors. Precomputed during [`Neighborhood::fill`].
-    pub fn count_alive(&self) -> u32 {
-        self.alive_count
-    }
-
-    /// Weighted sum of alive neighbors. Precomputed during [`Neighborhood::fill`].
-    pub fn weighted_sum(&self) -> u64 {
-        self.weighted_sum
-    }
-
     /// Count neighbors satisfying a predicate.
     pub fn count(&self, pred: impl Fn(&Entry<C>) -> bool) -> u32 {
         self.entries.iter().filter(|e| pred(e)).count() as u32
+    }
+
+    /// Weighted sum of neighbors satisfying a predicate.
+    pub fn weighted_sum(&self, pred: impl Fn(&Entry<C>) -> bool) -> u64 {
+        self.entries
+            .iter()
+            .filter(|entry| pred(entry))
+            .map(|entry| entry.weight as u64)
+            .sum()
     }
 }

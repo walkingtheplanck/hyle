@@ -9,16 +9,6 @@ use hyle_ca_interface::{
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct TestCell(u32);
 
-impl Cell for TestCell {
-    fn rule_id(&self) -> u8 {
-        self.0 as u8
-    }
-
-    fn is_alive(&self) -> bool {
-        self.0 != 0
-    }
-}
-
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct BoundedLikeTopology;
 

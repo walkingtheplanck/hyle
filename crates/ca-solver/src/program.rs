@@ -1,7 +1,9 @@
 //! Compiled solver programs derived from interpreted blueprints.
 
 use hyle_ca_interface::semantics::{cell_rng, Blueprint};
-use hyle_ca_interface::{Cell, CellModel, Condition, CountComparison, RuleEffect};
+use hyle_ca_interface::{
+    Cell, CellModel, Condition, CountComparison, RuleEffect, WeightComparison,
+};
 
 use crate::Neighborhood;
 
@@ -93,6 +95,10 @@ fn evaluate_condition<C: Cell + Eq>(
             let count = neighborhood.count(|entry| entry.cell == *state);
             compare_count(count, *comparison)
         }
+        Condition::NeighborWeightedSum { state, comparison } => {
+            let weight = neighborhood.weighted_sum(|entry| entry.cell == *state);
+            compare_weight(weight, *comparison)
+        }
         Condition::RandomChance { stream, one_in } => {
             cell_rng(pos, step, *stream, seed).chance(*one_in)
         }
@@ -113,5 +119,15 @@ fn compare_count(count: u32, comparison: CountComparison) -> bool {
         CountComparison::NotInRange { min, max } => !(min..=max).contains(&count),
         CountComparison::AtLeast(expected) => count >= expected,
         CountComparison::AtMost(expected) => count <= expected,
+    }
+}
+
+fn compare_weight(weight: u64, comparison: WeightComparison) -> bool {
+    match comparison {
+        WeightComparison::Eq(expected) => weight == expected.units(),
+        WeightComparison::InRange { min, max } => (min.units()..=max.units()).contains(&weight),
+        WeightComparison::NotInRange { min, max } => !(min.units()..=max.units()).contains(&weight),
+        WeightComparison::AtLeast(expected) => weight >= expected.units(),
+        WeightComparison::AtMost(expected) => weight <= expected.units(),
     }
 }

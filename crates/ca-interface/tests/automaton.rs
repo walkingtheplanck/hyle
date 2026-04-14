@@ -1,8 +1,9 @@
 //! Tests for the declarative blueprint builder.
 
 use hyle_ca_interface::{
-    neighbors, rng, BuildError, CellModel, CellSchema, Condition, Hyle, NeighborhoodFalloff,
-    NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor,
+    neighbors, rng, BlueprintSpec, BuildError, CellModel, CellSchema, Condition,
+    NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor, Weight,
+    WeightComparison,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -22,8 +23,7 @@ impl CellModel for LifeCell {
 
 #[test]
 fn builder_emits_default_adjacent_neighborhood() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -52,8 +52,7 @@ fn builder_emits_default_adjacent_neighborhood() {
 
 #[test]
 fn builder_resolves_named_neighborhoods() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .neighborhood(
             "far",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
@@ -74,8 +73,7 @@ fn builder_resolves_named_neighborhoods() {
 
 #[test]
 fn builder_rejects_duplicate_neighborhood_names() {
-    let error = Hyle::builder()
-        .cells::<LifeCell>()
+    let error = BlueprintSpec::<LifeCell>::builder()
         .neighborhood(
             "adjacent",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
@@ -90,9 +88,18 @@ fn builder_rejects_duplicate_neighborhood_names() {
 }
 
 #[test]
+fn builder_rejects_empty_neighborhood_names() {
+    let error = BlueprintSpec::<LifeCell>::builder()
+        .neighborhood("", NeighborhoodSpec::adjacent())
+        .build()
+        .expect_err("empty names must fail");
+
+    assert_eq!(error, BuildError::EmptyNeighborhoodName);
+}
+
+#[test]
 fn builder_rejects_unknown_rule_neighborhoods() {
-    let error = Hyle::builder()
-        .cells::<LifeCell>()
+    let error = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -110,8 +117,7 @@ fn builder_rejects_unknown_rule_neighborhoods() {
 
 #[test]
 fn builder_accepts_plain_contract_cell_types() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules.when(LifeCell::Alive).becomes(LifeCell::Dead);
         })
@@ -123,8 +129,7 @@ fn builder_accepts_plain_contract_cell_types() {
 
 #[test]
 fn builder_emits_random_chance_conditions() {
-    let spec = Hyle::builder()
-        .cells::<LifeCell>()
+    let spec = BlueprintSpec::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -140,5 +145,51 @@ fn builder_emits_random_chance_conditions() {
             stream: 7,
             one_in: 3,
         })
+    );
+}
+
+#[test]
+fn builder_emits_weighted_sum_conditions() {
+    let spec = BlueprintSpec::<LifeCell>::builder()
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Dead)
+                .require(
+                    neighbors(LifeCell::Alive)
+                        .weighted_sum()
+                        .at_least(Weight::cells(2)),
+                )
+                .becomes(LifeCell::Alive);
+        })
+        .build()
+        .expect("valid spec");
+
+    assert_eq!(
+        spec.rules()[0].condition,
+        Some(Condition::NeighborWeightedSum {
+            state: LifeCell::Alive,
+            comparison: WeightComparison::AtLeast(Weight::cells(2)),
+        })
+    );
+}
+
+#[test]
+fn builder_rejects_zero_random_denominator() {
+    let error = BlueprintSpec::<LifeCell>::builder()
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Dead)
+                .require(rng(2).one_in(0))
+                .becomes(LifeCell::Alive);
+        })
+        .build()
+        .expect_err("zero denominator must fail");
+
+    assert_eq!(
+        error,
+        BuildError::InvalidRandomChance {
+            stream: 2,
+            one_in: 0
+        }
     );
 }

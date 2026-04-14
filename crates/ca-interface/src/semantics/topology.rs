@@ -2,11 +2,11 @@ use crate::{AxisTopology, GridDims, TopologyDescriptor};
 
 /// Canonical interpreted topology derived from a declarative descriptor.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Topology {
+pub struct ResolvedTopology {
     descriptor: TopologyDescriptor,
 }
 
-impl Topology {
+impl ResolvedTopology {
     /// Construct an interpreted topology from a declarative descriptor.
     pub const fn from_descriptor(descriptor: TopologyDescriptor) -> Self {
         Self { descriptor }
@@ -31,8 +31,8 @@ impl Topology {
 }
 
 /// Interpret a declarative topology descriptor into its canonical semantic form.
-pub const fn interpret_topology(descriptor: TopologyDescriptor) -> Topology {
-    Topology::from_descriptor(descriptor)
+pub const fn interpret_topology(descriptor: TopologyDescriptor) -> ResolvedTopology {
+    ResolvedTopology::from_descriptor(descriptor)
 }
 
 fn resolve_axis(coord: i32, size: u32, topology: AxisTopology) -> Option<u32> {

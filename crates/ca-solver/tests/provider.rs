@@ -1,20 +1,10 @@
 use hyle_ca_interface::{
-    neighbors, CaRuntime, CaSolverProvider, Cell, CellModel, CellSchema, Hyle, Instance,
+    neighbors, BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance,
 };
 use hyle_ca_solver::CpuSolverProvider;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct TestCell(u32);
-
-impl Cell for TestCell {
-    fn rule_id(&self) -> u8 {
-        self.0 as u8
-    }
-
-    fn is_alive(&self) -> bool {
-        self.0 != 0
-    }
-}
 
 impl CellModel for TestCell {
     fn schema() -> CellSchema {
@@ -24,8 +14,7 @@ impl CellModel for TestCell {
 
 #[test]
 fn cpu_provider_builds_runtime() {
-    let spec = Hyle::builder()
-        .cells::<TestCell>()
+    let spec = BlueprintSpec::<TestCell>::builder()
         .rules(|rules| {
             rules
                 .when(TestCell(0))
