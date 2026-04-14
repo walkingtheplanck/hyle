@@ -64,6 +64,7 @@ pub struct GpuRaytracer {
     width: u32,
     height: u32,
     bind_group: wgpu::BindGroup,
+    palette_bytes_len: u64,
 }
 
 impl GpuRaytracer {
@@ -252,6 +253,7 @@ impl GpuRaytracer {
             width: init_w,
             height: init_h,
             bind_group,
+            palette_bytes_len: palette_bytes.len().max(16) as u64,
         }
     }
 
@@ -398,6 +400,37 @@ impl GpuRaytracer {
             .voxel_texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
+        self.bind_group = Self::make_bind_group(
+            device,
+            &self.bind_group_layout,
+            &self.camera_buffer,
+            &self.voxel_view,
+            &self.palette_buffer,
+            &self.output_view,
+        );
+    }
+
+    pub fn upload_palette(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        materials: &Materials,
+    ) {
+        let palette_data = materials.export_palette();
+        let palette_bytes: &[u8] = bytemuck::cast_slice(&palette_data);
+        let required_size = palette_bytes.len().max(16) as u64;
+
+        if required_size > self.palette_bytes_len {
+            self.palette_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("palette"),
+                size: required_size,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+            self.palette_bytes_len = required_size;
+        }
+
+        queue.write_buffer(&self.palette_buffer, 0, palette_bytes);
         self.bind_group = Self::make_bind_group(
             device,
             &self.bind_group_layout,

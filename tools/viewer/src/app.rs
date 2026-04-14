@@ -7,13 +7,13 @@ use eframe::egui;
 use glam::Vec3;
 use hyle_ca_interface::CaSolverProvider;
 
-use crate::ca::{gol_world, LifeCell, Materials, SimpleWorld, Simulation};
+use crate::ca::{viewer_world, Materials, Scenario, SimpleWorld, Simulation, ViewerCell};
 use crate::input::InputState;
 use crate::rendering::{draw_toolbar, render, Camera, GpuRaytracer};
 
 pub struct ViewerApp<P>
 where
-    P: CaSolverProvider<LifeCell>,
+    P: CaSolverProvider<ViewerCell>,
 {
     world: SimpleWorld,
     materials: Materials,
@@ -28,7 +28,7 @@ where
 
 impl<P> ViewerApp<P>
 where
-    P: CaSolverProvider<LifeCell>,
+    P: CaSolverProvider<ViewerCell>,
 {
     pub fn new(cc: &eframe::CreationContext, provider: P) -> Self {
         let render_state = cc
@@ -39,9 +39,10 @@ where
         let queue = &render_state.queue;
         let mut renderer = render_state.renderer.write();
 
-        let (mut world, materials) = gol_world();
+        let mut world = viewer_world();
         let mut sim = Simulation::new(provider);
-        sim.reset(&mut world); // prime initial state
+        sim.reset(&mut world);
+        let materials = sim.materials();
 
         let gpu = GpuRaytracer::new(device, queue, &mut renderer, &world, &materials);
         drop(renderer);
@@ -77,7 +78,7 @@ where
 
 impl<P> eframe::App for ViewerApp<P>
 where
-    P: CaSolverProvider<LifeCell>,
+    P: CaSolverProvider<ViewerCell>,
 {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let dt_ms = self.last_frame.elapsed().as_secs_f64() * 1000.0;
@@ -106,27 +107,33 @@ where
         );
         let fps = self.fps();
 
-        let (step, reset) = draw_toolbar(
+        let toolbar = draw_toolbar(
             ctx,
+            self.sim.scenario(),
             &mut self.sim.auto_step,
             &mut self.sim.step_interval_ms,
             fps,
             approx_vp,
         );
 
-        if step {
-            self.sim.step(&mut self.world);
-            self.world_dirty = true;
-        }
-        if reset {
-            self.sim.reset(&mut self.world);
-            self.world_dirty = true;
-        }
-
         let render_state = frame
             .wgpu_render_state()
             .expect("wgpu render state")
             .clone();
+
+        if let Some(scenario) = toolbar.scenario_selected {
+            self.apply_scenario(&render_state, scenario);
+        }
+
+        if toolbar.step_requested {
+            self.sim.step(&mut self.world);
+            self.world_dirty = true;
+        }
+        if toolbar.reset_requested {
+            self.sim.reset(&mut self.world);
+            self.world_dirty = true;
+        }
+
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
             .show(ctx, |ui| {
@@ -141,5 +148,25 @@ where
                     &mut self.input,
                 );
             });
+    }
+}
+
+impl<P> ViewerApp<P>
+where
+    P: CaSolverProvider<ViewerCell>,
+{
+    fn apply_scenario(
+        &mut self,
+        render_state: &eframe::egui_wgpu::RenderState,
+        scenario: Scenario,
+    ) {
+        if !self.sim.set_scenario(scenario, &mut self.world) {
+            return;
+        }
+
+        self.materials = self.sim.materials();
+        self.gpu
+            .upload_palette(&render_state.device, &render_state.queue, &self.materials);
+        self.world_dirty = true;
     }
 }

@@ -1,4 +1,4 @@
-//! Hyle Viewer — 3D Conway's Game of Life using the hyle-ca framework.
+//! Hyle Viewer — multi-scenario 3D cellular automata using the hyle-ca framework.
 //!
 //! `cargo run --release -p hyle-viewer`
 //!
@@ -22,7 +22,7 @@ fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([960.0, 640.0])
-            .with_title("Hyle — 3D Conway's Game of Life"),
+            .with_title("Hyle — CA Scenario Viewer"),
         ..Default::default()
     };
 

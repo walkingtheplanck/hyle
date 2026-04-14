@@ -1,7 +1,4 @@
-//! Minimal voxel world for the CA viewer.
-//!
-//! Dense 3D array backed by a flat `Vec<u16>`. Two materials only:
-//!   0 = AIR, 1 = ALIVE (used by the 3D GoL simulation).
+//! Minimal voxel world and material palette support for the viewer.
 
 // -- Voxel --------------------------------------------------------------------
 
@@ -12,11 +9,41 @@ pub const AIR: Voxel = 0;
 
 // -- Material -----------------------------------------------------------------
 
-/// Minimal material definition — just what the renderer needs.
+#[derive(Clone, Copy, Debug)]
 pub struct Material {
     pub base_color: [f32; 4],     // linear RGBA
     pub emission_color: [f32; 3], // linear RGB
     pub emission_intensity: f32,
+}
+
+impl Material {
+    pub const fn air() -> Self {
+        Self {
+            base_color: [0.0, 0.0, 0.0, 0.0],
+            emission_color: [0.0, 0.0, 0.0],
+            emission_intensity: 0.0,
+        }
+    }
+
+    pub const fn solid(base_color: [f32; 4]) -> Self {
+        Self {
+            base_color,
+            emission_color: [0.0, 0.0, 0.0],
+            emission_intensity: 0.0,
+        }
+    }
+
+    pub const fn glow(
+        base_color: [f32; 4],
+        emission_color: [f32; 3],
+        emission_intensity: f32,
+    ) -> Self {
+        Self {
+            base_color,
+            emission_color,
+            emission_intensity,
+        }
+    }
 }
 
 /// Material palette. Index by voxel value.
@@ -25,23 +52,18 @@ pub struct Materials {
 }
 
 impl Materials {
-    pub fn new() -> Self {
+    pub fn blank(count: usize) -> Self {
         Self {
-            defs: vec![
-                // 0: AIR
-                Material {
-                    base_color: [0.0, 0.0, 0.0, 0.0],
-                    emission_color: [0.0, 0.0, 0.0],
-                    emission_intensity: 0.0,
-                },
-                // 1: ALIVE — warm orange, glows slightly
-                Material {
-                    base_color: [1.0, 0.6, 0.15, 1.0],
-                    emission_color: [1.0, 0.4, 0.05],
-                    emission_intensity: 0.3,
-                },
-            ],
+            defs: vec![Material::air(); count.max(1)],
         }
+    }
+
+    pub fn set(&mut self, voxel: Voxel, material: Material) {
+        let index = voxel as usize;
+        if index >= self.defs.len() {
+            self.defs.resize(index + 1, Material::air());
+        }
+        self.defs[index] = material;
     }
 
     /// Export as flat [f32; 8] palette for GPU buffer.
@@ -147,8 +169,8 @@ impl SimpleWorld {
 
 // -- World factory ------------------------------------------------------------
 
-/// Create a 64×64×64 empty world ready for GoL simulation.
-pub fn gol_world() -> (SimpleWorld, Materials) {
+/// Create a 64×64×64 empty world ready for viewer scenarios.
+pub fn viewer_world() -> SimpleWorld {
     let size = 64i32;
     let bounds = Aabb {
         min_x: 0,
@@ -158,5 +180,5 @@ pub fn gol_world() -> (SimpleWorld, Materials) {
         max_y: size,
         max_z: size,
     };
-    (SimpleWorld::new(bounds), Materials::new())
+    SimpleWorld::new(bounds)
 }

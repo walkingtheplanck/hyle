@@ -1,20 +1,39 @@
-//! Minimal UI — just a top toolbar with auto-step controls and FPS.
+//! Minimal UI — top toolbar with scene selection, sim controls, and FPS.
 
 use eframe::egui;
 
-/// Draw the top toolbar. Returns (step_requested, reset_requested).
+use crate::ca::Scenario;
+
+pub struct ToolbarActions {
+    pub step_requested: bool,
+    pub reset_requested: bool,
+    pub scenario_selected: Option<Scenario>,
+}
+
 pub fn draw_toolbar(
     ctx: &egui::Context,
+    current_scenario: Scenario,
     auto_step: &mut bool,
     step_interval_ms: &mut f64,
     fps: f64,
     viewport_size: (u32, u32),
-) -> (bool, bool) {
-    let mut step = false;
-    let mut reset = false;
+) -> ToolbarActions {
+    let mut actions = ToolbarActions {
+        step_requested: false,
+        reset_requested: false,
+        scenario_selected: None,
+    };
 
     egui::TopBottomPanel::top("toolbar").show(ctx, |ui| {
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
+            for scenario in Scenario::ALL {
+                let selected = scenario == current_scenario;
+                if ui.selectable_label(selected, scenario.label()).clicked() && !selected {
+                    actions.scenario_selected = Some(scenario);
+                }
+            }
+
+            ui.separator();
             ui.checkbox(auto_step, "Auto");
 
             if *auto_step {
@@ -30,11 +49,14 @@ pub fn draw_toolbar(
             ui.separator();
 
             if ui.button("Step").clicked() {
-                step = true;
+                actions.step_requested = true;
             }
             if ui.button("Reset").clicked() {
-                reset = true;
+                actions.reset_requested = true;
             }
+
+            ui.separator();
+            ui.label(current_scenario.description());
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 ui.label(format!(
@@ -45,5 +67,5 @@ pub fn draw_toolbar(
         });
     });
 
-    (step, reset)
+    actions
 }
