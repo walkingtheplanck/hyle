@@ -14,12 +14,29 @@ contracts directly; this crate helps inspect them consistently.
 
 ```rust
 use hyle_ca_analysis::analyze_spec;
-use hyle_ca_interface::{neighbors, Hyle};
+use hyle_ca_interface::{neighbors, CellModel, CellSchema, Hyle, StateDef};
+
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+enum LifeCell {
+    #[default]
+    Dead,
+    Alive,
+}
+
+const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+
+impl CellModel for LifeCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    }
+}
 
 let spec = Hyle::builder()
-    .cells::<u32>()
+    .cells::<LifeCell>()
     .rules(|rules| {
-        rules.when(0).require(neighbors(1).count().eq(3)).becomes(1);
+        rules.when(LifeCell::Dead)
+            .require(neighbors(LifeCell::Alive).count().eq(3))
+            .becomes(LifeCell::Alive);
     })
     .build()?;
 

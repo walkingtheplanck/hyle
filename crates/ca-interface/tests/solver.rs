@@ -7,6 +7,19 @@ use hyle_ca_interface::{
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct TestCell(u32);
+
+impl Cell for TestCell {
+    fn rule_id(&self) -> u8 {
+        self.0 as u8
+    }
+
+    fn is_alive(&self) -> bool {
+        self.0 != 0
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct BoundedLikeTopology;
 
 impl Topology for BoundedLikeTopology {
@@ -128,7 +141,7 @@ impl<C: Cell> CaSolver<C> for DummySolver<C> {
 
 #[test]
 fn default_resolve_index_rejects_negative_and_large_values() {
-    let solver = DummySolver::<u32>::new(4, 5, 6);
+    let solver = DummySolver::<TestCell>::new(4, 5, 6);
     let guard = solver.guard_index();
     assert_eq!(solver.resolve_index(-1, 0, 0), guard);
     assert_eq!(solver.resolve_index(4, 0, 0), guard);
@@ -138,13 +151,13 @@ fn default_resolve_index_rejects_negative_and_large_values() {
 
 #[test]
 fn default_resolve_index_accepts_in_bounds_values() {
-    let solver = DummySolver::<u32>::new(4, 5, 6);
+    let solver = DummySolver::<TestCell>::new(4, 5, 6);
     assert_eq!(solver.resolve_index(3, 4, 5), 119);
 }
 
 #[test]
 fn default_resolve_index_rejects_oversized_dimensions() {
-    let solver = DummySolver::<u32>::new(i32::MAX as u32 + 1, 5, 6);
+    let solver = DummySolver::<TestCell>::new(i32::MAX as u32 + 1, 5, 6);
     let guard = solver.guard_index();
     assert_eq!(solver.resolve_index(0, 0, 0), guard);
     assert_eq!(solver.resolve_index(-1, 0, 0), guard);
@@ -152,33 +165,72 @@ fn default_resolve_index_rejects_oversized_dimensions() {
 
 #[test]
 fn default_readback_returns_x_major_snapshot() {
-    let mut solver = DummySolver::<u32>::new(2, 2, 2);
-    solver.set(1, 0, 0, 5);
-    solver.set(0, 1, 1, 9);
+    let mut solver = DummySolver::<TestCell>::new(2, 2, 2);
+    solver.set(1, 0, 0, TestCell(5));
+    solver.set(0, 1, 1, TestCell(9));
 
     let snapshot = solver.readback();
 
     assert_eq!(snapshot.dims, solver.dims());
-    assert_eq!(snapshot.cells, vec![0, 5, 0, 0, 0, 0, 9, 0]);
+    assert_eq!(
+        snapshot.cells,
+        vec![
+            TestCell(0),
+            TestCell(5),
+            TestCell(0),
+            TestCell(0),
+            TestCell(0),
+            TestCell(0),
+            TestCell(9),
+            TestCell(0),
+        ]
+    );
 }
 
 #[test]
 fn default_read_and_write_region_follow_x_major_order() {
-    let mut solver = DummySolver::<u32>::new(3, 3, 2);
+    let mut solver = DummySolver::<TestCell>::new(3, 3, 2);
     let region = GridRegion::new([1, 1, 0], [2, 2, 1]);
-    solver.write_region(region, &[1, 2, 3, 4]);
+    solver.write_region(
+        region,
+        &[TestCell(1), TestCell(2), TestCell(3), TestCell(4)],
+    );
 
-    assert_eq!(solver.get(1, 1, 0), 1);
-    assert_eq!(solver.get(2, 1, 0), 2);
-    assert_eq!(solver.get(1, 2, 0), 3);
-    assert_eq!(solver.get(2, 2, 0), 4);
-    assert_eq!(solver.read_region(region), vec![1, 2, 3, 4]);
+    assert_eq!(solver.get(1, 1, 0), TestCell(1));
+    assert_eq!(solver.get(2, 1, 0), TestCell(2));
+    assert_eq!(solver.get(1, 2, 0), TestCell(3));
+    assert_eq!(solver.get(2, 2, 0), TestCell(4));
+    assert_eq!(
+        solver.read_region(region),
+        vec![TestCell(1), TestCell(2), TestCell(3), TestCell(4)]
+    );
 }
 
 #[test]
 fn default_replace_cells_overwrites_the_full_grid() {
-    let mut solver = DummySolver::<u32>::new(2, 2, 2);
-    solver.replace_cells(&[1, 2, 3, 4, 5, 6, 7, 8]);
+    let mut solver = DummySolver::<TestCell>::new(2, 2, 2);
+    solver.replace_cells(&[
+        TestCell(1),
+        TestCell(2),
+        TestCell(3),
+        TestCell(4),
+        TestCell(5),
+        TestCell(6),
+        TestCell(7),
+        TestCell(8),
+    ]);
 
-    assert_eq!(solver.readback().cells, vec![1, 2, 3, 4, 5, 6, 7, 8]);
+    assert_eq!(
+        solver.readback().cells,
+        vec![
+            TestCell(1),
+            TestCell(2),
+            TestCell(3),
+            TestCell(4),
+            TestCell(5),
+            TestCell(6),
+            TestCell(7),
+            TestCell(8),
+        ]
+    );
 }

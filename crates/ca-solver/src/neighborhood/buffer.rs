@@ -12,16 +12,29 @@ use super::types::Entry;
 /// precomputed values in O(1).
 ///
 /// ```rust
-/// use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+/// use hyle_ca_interface::{Cell, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 /// use hyle_ca_interface::semantics::expand_neighborhood;
 /// use hyle_ca_solver::Neighborhood;
+///
+/// #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+/// struct TestCell(u32);
+///
+/// impl Cell for TestCell {
+///     fn rule_id(&self) -> u8 {
+///         self.0 as u8
+///     }
+///
+///     fn is_alive(&self) -> bool {
+///         self.0 != 0
+///     }
+/// }
 ///
 /// let semantic = expand_neighborhood(NeighborhoodSpec::new(
 ///     NeighborhoodShape::Moore,
 ///     1,
 ///     NeighborhoodFalloff::Uniform,
 /// ));
-/// let mut n = Neighborhood::<u32>::new(semantic.samples());
+/// let mut n = Neighborhood::<TestCell>::new(semantic.samples());
 /// ```
 pub struct Neighborhood<C: Cell> {
     center: C,

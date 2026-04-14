@@ -16,7 +16,7 @@ use crate::{BoundedTopology, DescriptorTopology};
 /// preserves the current state. Use [`Solver::from_blueprint`] to construct a
 /// solver from an interpreted [`Blueprint`], or [`Solver::from_spec`] to
 /// interpret a declarative [`BlueprintSpec`] and construct one in a single step.
-pub struct Solver<C: Cell + Eq = u32, T: Topology = BoundedTopology> {
+pub struct Solver<C: Cell + Eq, T: Topology = BoundedTopology> {
     grid: Grid<C>,
     topology: T,
     program: Option<CompiledProgram<C>>,

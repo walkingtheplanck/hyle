@@ -54,14 +54,33 @@ the intended consumer-facing path.
 ## Building a Portable Blueprint
 
 ```rust
-use hyle_ca_interface::{neighbors, Hyle, TopologyDescriptor};
+use hyle_ca_interface::{neighbors, CellModel, CellSchema, Hyle, StateDef, TopologyDescriptor};
+
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+enum LifeCell {
+    #[default]
+    Dead,
+    Alive,
+}
+
+const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+
+impl CellModel for LifeCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    }
+}
 
 let spec = Hyle::builder()
-    .cells::<u32>()
+    .cells::<LifeCell>()
     .topology(TopologyDescriptor::bounded())
     .rules(|rules| {
-        rules.when(0).require(neighbors(1).count().eq(3)).becomes(1);
-        rules.when(1).unless(neighbors(1).count().in_range(2..=3)).becomes(0);
+        rules.when(LifeCell::Dead)
+            .require(neighbors(LifeCell::Alive).count().eq(3))
+            .becomes(LifeCell::Alive);
+        rules.when(LifeCell::Alive)
+            .unless(neighbors(LifeCell::Alive).count().in_range(2..=3))
+            .becomes(LifeCell::Dead);
     })
     .build()?;
 # Ok::<(), hyle_ca_interface::BuildError>(())
@@ -76,12 +95,24 @@ Consumers such as viewers can depend on the centralized runtime/provider seam
 instead of naming a concrete solver type:
 
 ```ignore
-use hyle_ca_interface::{CaRuntime, CaSolverProvider, Hyle, Instance};
+use hyle_ca_interface::{CaRuntime, CaSolverProvider, Cell, CellModel, CellSchema, Hyle, Instance};
 use hyle_ca_solver::CpuSolverProvider;
 
-let spec = Hyle::builder().cells::<u32>().build()?;
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+struct TestCell(u32);
+
+impl Cell for TestCell {
+    fn rule_id(&self) -> u8 { self.0 as u8 }
+    fn is_alive(&self) -> bool { self.0 != 0 }
+}
+
+impl CellModel for TestCell {
+    fn schema() -> CellSchema { CellSchema::opaque("TestCell") }
+}
+
+let spec = Hyle::builder().cells::<TestCell>().build()?;
 let provider = CpuSolverProvider::new();
-let runtime: Box<dyn CaRuntime<u32>> =
+let runtime: Box<dyn CaRuntime<TestCell>> =
     provider.build(Instance::new(16, 16, 16), &spec);
 
 # Ok::<(), hyle_ca_interface::BuildError>(())

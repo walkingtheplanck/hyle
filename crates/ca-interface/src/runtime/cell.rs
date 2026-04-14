@@ -16,18 +16,3 @@ pub trait Cell: CellState {
     /// Whether this cell counts as "alive" for solver neighborhood helpers.
     fn is_alive(&self) -> bool;
 }
-
-/// Default runtime cell implementation for `u32`.
-///
-/// Low byte = `rule_id`, non-zero = alive.
-impl Cell for u32 {
-    #[inline]
-    fn rule_id(&self) -> u8 {
-        (*self & 0xFF) as u8
-    }
-
-    #[inline]
-    fn is_alive(&self) -> bool {
-        *self != 0
-    }
-}

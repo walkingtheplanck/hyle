@@ -24,14 +24,46 @@ A 3D cellular automaton framework for Rust.
 ## Quick Start
 
 ```rust
-use hyle_ca_interface::{neighbors, Hyle, Instance};
+use hyle_ca_interface::{neighbors, Cell, CellModel, CellSchema, Hyle, Instance, StateDef};
 use hyle_ca_solver::Solver;
 
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+enum LifeCell {
+    #[default]
+    Dead,
+    Alive,
+}
+
+const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+
+impl Cell for LifeCell {
+    fn rule_id(&self) -> u8 {
+        match self {
+            Self::Dead => 0,
+            Self::Alive => 1,
+        }
+    }
+
+    fn is_alive(&self) -> bool {
+        matches!(self, Self::Alive)
+    }
+}
+
+impl CellModel for LifeCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    }
+}
+
 let spec = Hyle::builder()
-    .cells::<u32>()
+    .cells::<LifeCell>()
     .rules(|rules| {
-        rules.when(0).require(neighbors(1).count().eq(5)).becomes(1);
-        rules.when(1).unless(neighbors(1).count().in_range(4..=5)).becomes(0);
+        rules.when(LifeCell::Dead)
+            .require(neighbors(LifeCell::Alive).count().eq(5))
+            .becomes(LifeCell::Alive);
+        rules.when(LifeCell::Alive)
+            .unless(neighbors(LifeCell::Alive).count().in_range(4..=5))
+            .becomes(LifeCell::Dead);
     })
     .build()?;
 
@@ -62,9 +94,38 @@ let solver = Solver::<FluidCell>::new(64, 64, 64);
 
 ```rust
 use hyle_ca_interface::{neighbors, Hyle, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+use hyle_ca_interface::{Cell, CellModel, CellSchema, StateDef};
+
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+enum LifeCell {
+    #[default]
+    Dead,
+    Alive,
+}
+
+const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+
+impl Cell for LifeCell {
+    fn rule_id(&self) -> u8 {
+        match self {
+            Self::Dead => 0,
+            Self::Alive => 1,
+        }
+    }
+
+    fn is_alive(&self) -> bool {
+        matches!(self, Self::Alive)
+    }
+}
+
+impl CellModel for LifeCell {
+    fn schema() -> CellSchema {
+        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    }
+}
 
 let spec = Hyle::builder()
-    .cells::<u32>()
+    .cells::<LifeCell>()
     .neighborhood(
         "far",
         NeighborhoodSpec::new(
@@ -74,10 +135,10 @@ let spec = Hyle::builder()
         ),
     )
     .rules(|rules| {
-        rules.when(0)
+        rules.when(LifeCell::Dead)
             .using("far")
-            .require(neighbors(1).count().at_least(1))
-            .becomes(1);
+            .require(neighbors(LifeCell::Alive).count().at_least(1))
+            .becomes(LifeCell::Alive);
     })
     .build()?;
 # Ok::<(), hyle_ca_interface::BuildError>(())
@@ -86,9 +147,18 @@ let spec = Hyle::builder()
 ### Torus Topology
 
 ```rust
+use hyle_ca_interface::Cell;
 use hyle_ca_solver::TorusTopology;
 
-let solver = Solver::<u32>::with_topology(64, 64, 64, TorusTopology);
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+struct TestCell(u32);
+
+impl Cell for TestCell {
+    fn rule_id(&self) -> u8 { self.0 as u8 }
+    fn is_alive(&self) -> bool { self.0 != 0 }
+}
+
+let solver = Solver::<TestCell>::with_topology(64, 64, 64, TorusTopology);
 ```
 
 Reads, writes, and rule neighborhoods all wrap across grid edges.

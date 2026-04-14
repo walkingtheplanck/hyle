@@ -66,9 +66,3 @@ pub trait CellModel: CellState {
     /// Portable schema metadata for this cell type.
     fn schema() -> CellSchema;
 }
-
-impl CellModel for u32 {
-    fn schema() -> CellSchema {
-        CellSchema::opaque("u32")
-    }
-}
