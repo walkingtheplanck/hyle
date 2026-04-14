@@ -1,6 +1,6 @@
 use hyle_ca_analysis::analyze_spec;
 use hyle_ca_interface::{
-    neighbors, BlueprintSpec, CellModel, CellSchema, NeighborhoodFalloff, NeighborhoodShape,
+    neighbors, Blueprint, CellModel, CellSchema, NeighborhoodFalloff, NeighborhoodShape,
     NeighborhoodSpec, StateDef, Weight,
 };
 
@@ -21,7 +21,7 @@ impl CellModel for LifeCell {
 
 #[test]
 fn summarizes_rules_and_neighborhoods() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .neighborhood(
             "far",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
@@ -54,7 +54,7 @@ fn summarizes_rules_and_neighborhoods() {
 
 #[test]
 fn detects_shadowed_and_duplicate_rules() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules.when(LifeCell::Alive).keep();
             rules.when(LifeCell::Alive).keep();
@@ -83,7 +83,7 @@ fn detects_shadowed_and_duplicate_rules() {
 
 #[test]
 fn warns_about_unused_named_neighborhoods() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .neighborhood(
             "unused",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 3, NeighborhoodFalloff::Uniform),
@@ -104,7 +104,7 @@ fn warns_about_unused_named_neighborhoods() {
 
 #[test]
 fn warns_about_impossible_weighted_sum_conditions() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -128,7 +128,7 @@ fn warns_about_impossible_weighted_sum_conditions() {
 
 #[test]
 fn warns_about_impossible_neighbor_count_conditions() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)

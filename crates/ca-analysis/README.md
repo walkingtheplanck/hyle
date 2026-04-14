@@ -3,7 +3,7 @@
 Shared analysis and diagnostics for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
 This crate builds on [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface) and provides
-**derived tooling** over declarative blueprint specs:
+**derived tooling** over declarative blueprints:
 - static spec summaries
 - rule and neighborhood diagnostics
 
@@ -14,7 +14,7 @@ contracts directly; this crate helps inspect them consistently.
 
 ```rust
 use hyle_ca_analysis::analyze_spec;
-use hyle_ca_interface::{neighbors, BlueprintSpec, CellModel, CellSchema, StateDef};
+use hyle_ca_interface::{neighbors, Blueprint, CellModel, CellSchema, StateDef};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 enum LifeCell {
@@ -31,7 +31,7 @@ impl CellModel for LifeCell {
     }
 }
 
-let spec = BlueprintSpec::<LifeCell>::builder()
+let spec = Blueprint::<LifeCell>::builder()
     .rules(|rules| {
         rules.when(LifeCell::Dead)
             .require(neighbors(LifeCell::Alive).count().eq(3))

@@ -1,15 +1,15 @@
-//! Builder types for authoring portable blueprint specifications.
+//! Builder types for authoring portable blueprints.
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 use crate::{CellModel, NeighborhoodSpec, TopologyDescriptor};
 
-use super::{BlueprintSpec, Condition, NamedNeighborhood, Rule, RuleEffect, Semantics};
+use super::{Blueprint, Condition, NamedNeighborhood, Rule, RuleEffect, Semantics};
 
 const ADJACENT_NEIGHBORHOOD: &str = "adjacent";
 
-/// Errors raised while building a [`BlueprintSpec`].
+/// Errors raised while building a [`Blueprint`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BuildError {
     /// A neighborhood name was empty.
@@ -113,8 +113,8 @@ impl<C: CellModel> BlueprintBuilder<C> {
         self
     }
 
-    /// Validate and build the portable blueprint specification.
-    pub fn build(self) -> Result<BlueprintSpec<C>, BuildError> {
+    /// Validate and build the portable blueprint.
+    pub fn build(self) -> Result<Blueprint<C>, BuildError> {
         if self.default_neighborhood.is_empty() {
             return Err(BuildError::EmptyDefaultNeighborhood);
         }
@@ -158,7 +158,7 @@ impl<C: CellModel> BlueprintBuilder<C> {
             });
         }
 
-        Ok(BlueprintSpec::new(
+        Ok(Blueprint::new(
             C::schema(),
             self.semantics,
             self.topology,

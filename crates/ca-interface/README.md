@@ -4,7 +4,7 @@ Shared interfaces, contracts, and descriptors for the [Hyle](https://github.com/
 
 This crate defines the shared public interface layer. Depend on it to:
 - define custom cell types
-- author portable blueprint specs with `BlueprintSpec::<C>::builder()`
+- author portable blueprints with `Blueprint::<C>::builder()`
 - implement new solver implementations against the shared `CaSolver` trait
 - centralize backend construction through `CaRuntime` and `CaSolverProvider`
 
@@ -23,7 +23,7 @@ It has **zero dependencies** and is split conceptually into:
 |------|------|
 | [`Cell`] | Marker trait for runtime cell state |
 | [`Instance`] | Runtime dimensions and deterministic seed for one solver run |
-| [`BlueprintSpec`] | Declarative blueprint builder and canonical spec |
+| [`Blueprint`] | Declarative blueprint builder and canonical contract |
 | [`CaSolver`] | Trait that all solver implementations implement |
 | [`CaRuntime`] / [`CaSolverProvider`] | Concrete runtime and factory interfaces that keep backend selection localized |
 | [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Solver-neutral grid descriptors and bulk transfer types |
@@ -34,7 +34,7 @@ It has **zero dependencies** and is split conceptually into:
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 
 Semantic forms are available under `hyle_ca_interface::semantics`, for example:
-- `hyle_ca_interface::semantics::Blueprint`
+- `hyle_ca_interface::semantics::ResolvedBlueprint`
 - `hyle_ca_interface::semantics::Neighborhood`
 - `hyle_ca_interface::semantics::ResolvedTopology`
 
@@ -43,7 +43,7 @@ Semantic forms are available under `hyle_ca_interface::semantics`, for example:
 Use the crate root or the prelude as the main entry points:
 
 - Prefer explicit root imports for application and library code:
-  `use hyle_ca_interface::{BlueprintSpec, CaSolverProvider, Instance};`
+  `use hyle_ca_interface::{Blueprint, CaSolverProvider, Instance};`
 - Use `hyle_ca_interface::prelude::*` when you want a compact common import set
   for blueprint authoring and runtime setup.
 - Treat `hyle_ca_interface::semantics` as an advanced namespace for interpreted
@@ -55,7 +55,7 @@ the intended consumer-facing path.
 ## Building a Portable Blueprint
 
 ```rust
-use hyle_ca_interface::{neighbors, BlueprintSpec, CellModel, CellSchema, StateDef, TopologyDescriptor};
+use hyle_ca_interface::{neighbors, Blueprint, CellModel, CellSchema, StateDef, TopologyDescriptor};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 enum LifeCell {
@@ -72,7 +72,7 @@ impl CellModel for LifeCell {
     }
 }
 
-let spec = BlueprintSpec::<LifeCell>::builder()
+let spec = Blueprint::<LifeCell>::builder()
     .topology(TopologyDescriptor::bounded())
     .rules(|rules| {
         rules.when(LifeCell::Dead)
@@ -95,7 +95,7 @@ Consumers such as viewers can depend on the centralized runtime/provider seam
 instead of naming a concrete solver type directly:
 
 ```ignore
-use hyle_ca_interface::{BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance};
+use hyle_ca_interface::{Blueprint, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance};
 use hyle_ca_solver::CpuSolverProvider;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -105,7 +105,7 @@ impl CellModel for TestCell {
     fn schema() -> CellSchema { CellSchema::opaque("TestCell") }
 }
 
-let spec = BlueprintSpec::<TestCell>::builder().build()?;
+let spec = Blueprint::<TestCell>::builder().build()?;
 let provider = CpuSolverProvider::new();
 let runtime = provider.build(Instance::new(16, 16, 16), &spec);
 
@@ -136,7 +136,7 @@ impl CellModel for FluidCell {
 Any `CellState` automatically implements the runtime `Cell` marker trait.
 Blueprint builders require `CellModel` so the spec carries portable schema
 metadata. The default solver requires `Eq` so it can match exact cell states
-from a `BlueprintSpec`.
+from a `Blueprint`.
 
 ## Grid Descriptors
 
@@ -219,5 +219,5 @@ assert_eq!(mixed.y, AxisTopology::Bounded);
 ## Implementing a Solver
 
 Implement the [`CaSolver`] trait to create a custom solver (GPU, distributed, etc.).
-Solvers are expected to consume a portable representation such as [`BlueprintSpec`]
+Solvers are expected to consume a portable representation such as [`Blueprint`]
 and uphold the runtime contract documented on the trait.

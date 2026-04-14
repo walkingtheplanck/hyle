@@ -24,7 +24,7 @@ A 3D cellular automaton framework for Rust.
 ## Quick Start
 
 ```rust
-use hyle_ca_interface::{neighbors, BlueprintSpec, CellModel, CellSchema, Instance, StateDef};
+use hyle_ca_interface::{neighbors, Blueprint, CellModel, CellSchema, Instance, StateDef};
 use hyle_ca_solver::Solver;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -42,7 +42,7 @@ impl CellModel for LifeCell {
     }
 }
 
-let spec = BlueprintSpec::<LifeCell>::builder()
+let spec = Blueprint::<LifeCell>::builder()
     .rules(|rules| {
         rules.when(LifeCell::Dead)
             .require(neighbors(LifeCell::Alive).count().eq(5))
@@ -74,7 +74,7 @@ let solver = Solver::<FluidCell>::new(64, 64, 64);
 ### Variable-Radius Neighborhoods
 
 ```rust
-use hyle_ca_interface::{neighbors, BlueprintSpec, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+use hyle_ca_interface::{neighbors, Blueprint, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
 use hyle_ca_interface::{CellModel, CellSchema, StateDef};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -92,7 +92,7 @@ impl CellModel for LifeCell {
     }
 }
 
-let spec = BlueprintSpec::<LifeCell>::builder()
+let spec = Blueprint::<LifeCell>::builder()
     .neighborhood(
         "far",
         NeighborhoodSpec::new(

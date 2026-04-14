@@ -1,6 +1,5 @@
 use hyle_ca_interface::{
-    neighbors, BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, GridRegion,
-    Instance,
+    neighbors, Blueprint, CaRuntime, CaSolverProvider, CellModel, CellSchema, GridRegion, Instance,
 };
 use hyle_ca_solver::CpuSolverProvider;
 
@@ -15,7 +14,7 @@ impl CellModel for TestCell {
 
 #[test]
 fn cpu_provider_builds_runtime() {
-    let spec = BlueprintSpec::<TestCell>::builder()
+    let spec = Blueprint::<TestCell>::builder()
         .rules(|rules| {
             rules
                 .when(TestCell(0))

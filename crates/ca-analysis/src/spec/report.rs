@@ -6,7 +6,7 @@ use hyle_ca_interface::{
 
 use crate::Diagnostic;
 
-/// Top-level summary derived from a blueprint spec.
+/// Top-level summary derived from a blueprint.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpecSummary {
     /// Declared portable cell schema.
@@ -59,7 +59,7 @@ pub struct NeighborhoodAnalysis {
     pub used_by_rules: usize,
 }
 
-/// Full analysis result for a blueprint spec.
+/// Full analysis result for a blueprint.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpecAnalysis<C: CellModel> {
     /// High-level summary.

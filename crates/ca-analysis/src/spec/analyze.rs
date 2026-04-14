@@ -1,6 +1,6 @@
 //! Entry points for static spec analysis.
 
-use hyle_ca_interface::{BlueprintSpec, CellModel};
+use hyle_ca_interface::{Blueprint, CellModel};
 
 use crate::{Diagnostic, Subject};
 
@@ -8,23 +8,24 @@ use super::{
     neighborhoods::analyze_neighborhoods, rules::analyze_rules, SpecAnalysis, SpecSummary,
 };
 
-/// Analyze a declarative blueprint spec and return shared diagnostics and summaries.
-pub fn analyze_spec<C: CellModel>(spec: &BlueprintSpec<C>) -> SpecAnalysis<C> {
-    let mut usage_counts = vec![0usize; spec.neighborhoods().len()];
-    for rule in spec.rules() {
+/// Analyze a declarative blueprint and return shared diagnostics and summaries.
+pub fn analyze_spec<C: CellModel>(blueprint: &Blueprint<C>) -> SpecAnalysis<C> {
+    let mut usage_counts = vec![0usize; blueprint.neighborhoods().len()];
+    for rule in blueprint.rules() {
         if let Some(count) = usage_counts.get_mut(rule.neighborhood) {
             *count += 1;
         }
     }
 
     let neighborhoods = analyze_neighborhoods(
-        spec.neighborhoods()
+        blueprint
+            .neighborhoods()
             .iter()
             .enumerate()
             .map(|(index, neighborhood)| (index, neighborhood.name.clone(), neighborhood.spec)),
         &usage_counts,
     );
-    let rules = analyze_rules(spec);
+    let rules = analyze_rules(blueprint);
 
     let mut diagnostics = Vec::new();
     for neighborhood in &neighborhoods {
@@ -50,12 +51,12 @@ pub fn analyze_spec<C: CellModel>(spec: &BlueprintSpec<C>) -> SpecAnalysis<C> {
 
     SpecAnalysis {
         summary: SpecSummary {
-            cell_schema: spec.cell_schema(),
-            semantics: spec.semantics(),
-            rule_count: spec.rules().len(),
+            cell_schema: blueprint.cell_schema(),
+            semantics: blueprint.semantics(),
+            rule_count: blueprint.rules().len(),
             neighborhood_count: neighborhoods.len(),
             max_radius,
-            topology: spec.topology(),
+            topology: blueprint.topology(),
         },
         rules,
         neighborhoods,

@@ -1,8 +1,8 @@
-//! Rule application tests using declarative blueprint specs.
+//! Rule application tests using declarative blueprints.
 
 use hyle_ca_interface::semantics::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
-    neighbors, rng, BlueprintSpec, CaSolver, CellModel, CellSchema, Instance, NeighborhoodFalloff,
+    neighbors, rng, Blueprint, CaSolver, CellModel, CellSchema, Instance, NeighborhoodFalloff,
     NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor, Weight,
 };
 use hyle_ca_solver::Solver;
@@ -64,8 +64,8 @@ impl CellModel for PriorityCell {
     }
 }
 
-fn kill_all_spec() -> BlueprintSpec<LifeCell> {
-    BlueprintSpec::<LifeCell>::builder()
+fn kill_all_spec() -> Blueprint<LifeCell> {
+    Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules.when(LifeCell::Alive).becomes(LifeCell::Dead);
         })
@@ -109,7 +109,7 @@ fn solver_from_blueprint_matches_from_spec() {
 
 #[test]
 fn rule_spread_to_neighbors() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -133,7 +133,7 @@ fn rule_spread_to_neighbors() {
 
 #[test]
 fn rule_threshold_birth() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -154,7 +154,7 @@ fn rule_threshold_birth() {
 
 #[test]
 fn rule_threshold_no_birth() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -174,7 +174,7 @@ fn rule_threshold_no_birth() {
 
 #[test]
 fn rule_type_interaction() {
-    let spec = BlueprintSpec::<MatterCell>::builder()
+    let spec = Blueprint::<MatterCell>::builder()
         .rules(|rules| {
             rules
                 .when(MatterCell::Water)
@@ -204,7 +204,7 @@ fn rule_type_interaction() {
 
 #[test]
 fn deterministic_across_runs() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -218,7 +218,7 @@ fn deterministic_across_runs() {
         .build()
         .expect("valid spec");
 
-    fn run_sim(spec: &BlueprintSpec<LifeCell>) -> Vec<(u32, u32, u32, LifeCell)> {
+    fn run_sim(spec: &Blueprint<LifeCell>) -> Vec<(u32, u32, u32, LifeCell)> {
         let mut solver = Solver::from_spec(8, 8, 8, spec);
         solver.set(4, 4, 4, LifeCell::Alive);
         solver.set(3, 4, 4, LifeCell::Alive);
@@ -238,7 +238,7 @@ fn deterministic_across_runs() {
 
 #[test]
 fn first_matching_rule_wins() {
-    let spec = BlueprintSpec::<PriorityCell>::builder()
+    let spec = Blueprint::<PriorityCell>::builder()
         .rules(|rules| {
             rules
                 .when(PriorityCell::Source)
@@ -260,7 +260,7 @@ fn first_matching_rule_wins() {
 
 #[test]
 fn random_chance_rules_follow_semantic_rng() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -285,7 +285,7 @@ fn random_chance_rules_follow_semantic_rng() {
 
 #[test]
 fn random_chance_rules_change_with_seed() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -313,7 +313,7 @@ fn random_chance_rules_change_with_seed() {
 
 #[test]
 fn rule_with_radius_2() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .neighborhood(
             "radius-two",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
@@ -340,7 +340,7 @@ fn rule_with_radius_2() {
 
 #[test]
 fn rule_respects_torus_topology_from_spec() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .topology(TopologyDescriptor::wrap())
         .rules(|rules| {
             rules
@@ -361,7 +361,7 @@ fn rule_respects_torus_topology_from_spec() {
 
 #[test]
 fn weighted_sum_rules_follow_portable_weights() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)

@@ -1,7 +1,7 @@
 //! Contract tests: does the solver API behave as documented?
 
 use hyle_ca_interface::{
-    neighbors, BlueprintSpec, CaSolver, CellModel, CellSchema, GridRegion, TopologyDescriptor,
+    neighbors, Blueprint, CaSolver, CellModel, CellSchema, GridRegion, TopologyDescriptor,
 };
 use hyle_ca_solver::{DescriptorTopology, Solver, TorusTopology};
 
@@ -216,7 +216,7 @@ fn torus_set_wraps_coordinates() {
 
 #[test]
 fn from_spec_uses_descriptor_topology() {
-    let spec = BlueprintSpec::<TestCell>::builder()
+    let spec = Blueprint::<TestCell>::builder()
         .topology(TopologyDescriptor::wrap())
         .rules(|rules| {
             rules

@@ -1,9 +1,8 @@
 //! Tests for the declarative blueprint builder.
 
 use hyle_ca_interface::{
-    neighbors, rng, BlueprintSpec, BuildError, CellModel, CellSchema, Condition,
-    NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor, Weight,
-    WeightComparison,
+    neighbors, rng, Blueprint, BuildError, CellModel, CellSchema, Condition, NeighborhoodFalloff,
+    NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor, Weight, WeightComparison,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -23,7 +22,7 @@ impl CellModel for LifeCell {
 
 #[test]
 fn builder_emits_default_adjacent_neighborhood() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -52,7 +51,7 @@ fn builder_emits_default_adjacent_neighborhood() {
 
 #[test]
 fn builder_resolves_named_neighborhoods() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .neighborhood(
             "far",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
@@ -73,7 +72,7 @@ fn builder_resolves_named_neighborhoods() {
 
 #[test]
 fn builder_rejects_duplicate_neighborhood_names() {
-    let error = BlueprintSpec::<LifeCell>::builder()
+    let error = Blueprint::<LifeCell>::builder()
         .neighborhood(
             "adjacent",
             NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
@@ -89,7 +88,7 @@ fn builder_rejects_duplicate_neighborhood_names() {
 
 #[test]
 fn builder_rejects_empty_neighborhood_names() {
-    let error = BlueprintSpec::<LifeCell>::builder()
+    let error = Blueprint::<LifeCell>::builder()
         .neighborhood("", NeighborhoodSpec::adjacent())
         .build()
         .expect_err("empty names must fail");
@@ -99,7 +98,7 @@ fn builder_rejects_empty_neighborhood_names() {
 
 #[test]
 fn builder_rejects_unknown_rule_neighborhoods() {
-    let error = BlueprintSpec::<LifeCell>::builder()
+    let error = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -117,7 +116,7 @@ fn builder_rejects_unknown_rule_neighborhoods() {
 
 #[test]
 fn builder_accepts_plain_contract_cell_types() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules.when(LifeCell::Alive).becomes(LifeCell::Dead);
         })
@@ -129,7 +128,7 @@ fn builder_accepts_plain_contract_cell_types() {
 
 #[test]
 fn builder_emits_random_chance_conditions() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -150,7 +149,7 @@ fn builder_emits_random_chance_conditions() {
 
 #[test]
 fn builder_emits_weighted_sum_conditions() {
-    let spec = BlueprintSpec::<LifeCell>::builder()
+    let spec = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)
@@ -175,7 +174,7 @@ fn builder_emits_weighted_sum_conditions() {
 
 #[test]
 fn builder_rejects_zero_random_denominator() {
-    let error = BlueprintSpec::<LifeCell>::builder()
+    let error = Blueprint::<LifeCell>::builder()
         .rules(|rules| {
             rules
                 .when(LifeCell::Dead)

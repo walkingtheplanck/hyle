@@ -1,10 +1,10 @@
 //! Centralized solver-construction interface for apps and tools.
 
-use crate::{BlueprintSpec, Cell, CellModel, Instance};
+use crate::{Blueprint, Cell, CellModel, Instance};
 
 use super::ca_runtime::CaRuntime;
 
-/// A factory that builds a concrete runtime from a blueprint specification.
+/// A factory that builds a concrete runtime from a blueprint.
 ///
 /// Consumers such as viewers can depend on this trait instead of naming a
 /// concrete solver type directly, which keeps backend selection localized to
@@ -13,6 +13,6 @@ pub trait CaSolverProvider<C: Cell + CellModel>: Send + Sync {
     /// Concrete runtime produced by this provider.
     type Runtime: CaRuntime<C>;
 
-    /// Build a new runtime for the given instance and blueprint spec.
-    fn build(&self, instance: Instance, spec: &BlueprintSpec<C>) -> Self::Runtime;
+    /// Build a new runtime for the given instance and blueprint.
+    fn build(&self, instance: Instance, blueprint: &Blueprint<C>) -> Self::Runtime;
 }

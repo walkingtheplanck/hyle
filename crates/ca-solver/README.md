@@ -3,7 +3,7 @@
 Default CPU solver for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
 Double-buffered, single-threaded, and driven by portable
-[`BlueprintSpec`](https://docs.rs/hyle-ca-interface/latest/hyle_ca_interface/struct.BlueprintSpec.html)
+[`Blueprint`](https://docs.rs/hyle-ca-interface/latest/hyle_ca_interface/struct.Blueprint.html)
 definitions from [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface).
 
 For apps and tools that should not depend on the concrete
@@ -17,7 +17,7 @@ instances through the shared `CaSolverProvider` interface.
 ## Quick Start
 
 ```rust
-use hyle_ca_interface::{neighbors, BlueprintSpec, CaSolver, CellModel, CellSchema, Instance, StateDef};
+use hyle_ca_interface::{neighbors, Blueprint, CaSolver, CellModel, CellSchema, Instance, StateDef};
 use hyle_ca_solver::Solver;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -35,7 +35,7 @@ impl CellModel for LifeCell {
     }
 }
 
-let spec = BlueprintSpec::<LifeCell>::builder()
+let spec = Blueprint::<LifeCell>::builder()
     .rules(|rules| {
         rules.when(LifeCell::Dead)
             .require(neighbors(LifeCell::Alive).count().eq(3))
@@ -54,7 +54,7 @@ solver.step();
 ## Decoupled Consumer Path
 
 ```rust
-use hyle_ca_interface::{BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance};
+use hyle_ca_interface::{Blueprint, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance};
 use hyle_ca_solver::CpuSolverProvider;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -64,7 +64,7 @@ impl CellModel for TestCell {
     fn schema() -> CellSchema { CellSchema::opaque("TestCell") }
 }
 
-let spec = BlueprintSpec::<TestCell>::builder().build()?;
+let spec = Blueprint::<TestCell>::builder().build()?;
 let provider = CpuSolverProvider::new();
 let mut runtime = provider.build(Instance::new(16, 16, 16), &spec);
 
@@ -85,8 +85,8 @@ struct TestCell(u32);
 let _solver = Solver::<TestCell>::with_topology(64, 64, 64, TorusTopology);
 ```
 
-When you create a solver from a `BlueprintSpec`, the solver interprets that
-spec into a semantic blueprint and uses the descriptor declared by it.
+When you create a solver from a `Blueprint`, the solver interprets that
+blueprint into a resolved blueprint and uses the descriptor declared by it.
 
 Custom solver implementations that need canonical neighborhood expansion can use
 `hyle_ca_interface::semantics` directly without reimplementing contract interpretation.
@@ -97,7 +97,7 @@ Use named neighborhoods in the spec, then reference them from rules:
 
 ```rust
 use hyle_ca_interface::{
-    neighbors, BlueprintSpec, CaSolver, CellModel, CellSchema, NeighborhoodFalloff,
+    neighbors, Blueprint, CaSolver, CellModel, CellSchema, NeighborhoodFalloff,
     NeighborhoodShape, NeighborhoodSpec, StateDef,
 };
 use hyle_ca_solver::Solver;
@@ -117,7 +117,7 @@ impl CellModel for LifeCell {
     }
 }
 
-let spec = BlueprintSpec::<LifeCell>::builder()
+let spec = Blueprint::<LifeCell>::builder()
     .neighborhood(
         "far",
         NeighborhoodSpec::new(

@@ -7,7 +7,7 @@
 use std::time::Instant;
 
 use hyle_ca_interface::{
-    neighbors, BlueprintSpec, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance, Rng,
+    neighbors, Blueprint, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance, Rng,
     StateDef,
 };
 
@@ -56,8 +56,8 @@ where
         }
     }
 
-    fn spec() -> BlueprintSpec<LifeCell> {
-        BlueprintSpec::<LifeCell>::builder()
+    fn spec() -> Blueprint<LifeCell> {
+        Blueprint::<LifeCell>::builder()
             .rules(|rules| {
                 rules
                     .when(LifeCell::Alive)

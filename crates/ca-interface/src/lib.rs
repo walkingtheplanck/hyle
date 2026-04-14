@@ -9,7 +9,7 @@ mod runtime;
 pub mod semantics;
 
 pub use contracts::{
-    neighbors, rng, AxisTopology, BlueprintBuilder, BlueprintSpec, BuildError, Condition,
+    neighbors, rng, AxisTopology, Blueprint, BlueprintBuilder, BuildError, Condition,
     CountComparison, GridDims, GridRegion, GridSnapshot, NamedNeighborhood, NeighborCount,
     NeighborSelector, NeighborWeightedSum, NeighborhoodFalloff, NeighborhoodShape,
     NeighborhoodSpec, RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder, Semantics,

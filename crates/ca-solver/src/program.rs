@@ -1,6 +1,6 @@
 //! Compiled solver programs derived from interpreted blueprints.
 
-use hyle_ca_interface::semantics::{cell_rng, Blueprint};
+use hyle_ca_interface::semantics::{cell_rng, ResolvedBlueprint};
 use hyle_ca_interface::{
     Cell, CellModel, Condition, CountComparison, RuleEffect, WeightComparison,
 };
@@ -12,7 +12,7 @@ pub(crate) struct CompiledProgram<C: Cell + Eq> {
 }
 
 impl<C: Cell + Eq> CompiledProgram<C> {
-    pub(crate) fn from_blueprint(blueprint: &Blueprint<C>) -> Self
+    pub(crate) fn from_blueprint(blueprint: &ResolvedBlueprint<C>) -> Self
     where
         C: CellModel,
     {

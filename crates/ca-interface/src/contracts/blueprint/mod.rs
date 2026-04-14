@@ -1,4 +1,4 @@
-//! Declarative blueprint specification and builder APIs.
+//! Declarative blueprint contracts and builder APIs.
 
 mod builder;
 mod dsl;
@@ -9,4 +9,4 @@ pub use dsl::{
     neighbors, rng, Condition, CountComparison, NeighborCount, NeighborSelector,
     NeighborWeightedSum, RandomSource, Weight, WeightComparison,
 };
-pub use spec::{BlueprintSpec, NamedNeighborhood, Rule, RuleEffect, Semantics};
+pub use spec::{Blueprint, NamedNeighborhood, Rule, RuleEffect, Semantics};

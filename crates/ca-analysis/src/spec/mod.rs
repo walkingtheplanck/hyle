@@ -1,4 +1,4 @@
-//! Static analysis over declarative blueprint specs.
+//! Static analysis over declarative blueprints.
 
 mod analyze;
 mod neighborhoods;

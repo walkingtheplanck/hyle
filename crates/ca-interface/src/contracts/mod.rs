@@ -8,7 +8,7 @@ pub mod cell;
 pub mod descriptors;
 
 pub use blueprint::{
-    neighbors, rng, BlueprintBuilder, BlueprintSpec, BuildError, Condition, CountComparison,
+    neighbors, rng, Blueprint, BlueprintBuilder, BuildError, Condition, CountComparison,
     NamedNeighborhood, NeighborCount, NeighborSelector, NeighborWeightedSum, RandomSource, Rule,
     RuleBuilder, RuleEffect, RulesBuilder, Semantics, Weight, WeightComparison,
 };

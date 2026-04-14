@@ -1,13 +1,13 @@
 //! Rule-derived analysis helpers.
 
 use hyle_ca_interface::semantics::{max_weighted_sum, neighbor_count};
-use hyle_ca_interface::{BlueprintSpec, CellModel, Condition, CountComparison, WeightComparison};
+use hyle_ca_interface::{Blueprint, CellModel, Condition, CountComparison, WeightComparison};
 
 use crate::{Diagnostic, Subject};
 
 use super::RuleAnalysis;
 
-pub(crate) fn analyze_rules<C: CellModel>(spec: &BlueprintSpec<C>) -> Vec<RuleAnalysis<C>> {
+pub(crate) fn analyze_rules<C: CellModel>(spec: &Blueprint<C>) -> Vec<RuleAnalysis<C>> {
     let rules = spec.rules();
     let mut analyses = Vec::with_capacity(rules.len());
 

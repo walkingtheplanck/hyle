@@ -1,9 +1,8 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
-use hyle_ca_interface::semantics::{interpret_blueprint, Blueprint};
+use hyle_ca_interface::semantics::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
-    BlueprintSpec, CaSolver, Cell, CellModel, GridRegion, GridSnapshot, Instance, RuleEffect,
-    Topology,
+    Blueprint, CaSolver, Cell, CellModel, GridRegion, GridSnapshot, Instance, RuleEffect, Topology,
 };
 
 use crate::grid::{resolve_index, Grid};
@@ -14,8 +13,8 @@ use crate::{BoundedTopology, DescriptorTopology};
 ///
 /// The solver can run without an attached blueprint, in which case `step()`
 /// preserves the current state. Use [`Solver::from_blueprint`] to construct a
-/// solver from an interpreted [`Blueprint`], or [`Solver::from_spec`] to
-/// interpret a declarative [`BlueprintSpec`] and construct one in a single step.
+/// solver from an interpreted [`ResolvedBlueprint`], or [`Solver::from_spec`] to
+/// interpret a declarative [`Blueprint`] and construct one in a single step.
 pub struct Solver<C: Cell + Eq, T: Topology = BoundedTopology> {
     grid: Grid<C>,
     topology: T,
@@ -61,12 +60,17 @@ impl<C: Cell + Eq> Solver<C, BoundedTopology> {
 
 impl<C: Cell + CellModel + Eq> Solver<C, DescriptorTopology> {
     /// Create a solver whose topology and rules come from an interpreted blueprint.
-    pub fn from_blueprint(width: u32, height: u32, depth: u32, blueprint: &Blueprint<C>) -> Self {
+    pub fn from_blueprint(
+        width: u32,
+        height: u32,
+        depth: u32,
+        blueprint: &ResolvedBlueprint<C>,
+    ) -> Self {
         Self::from_blueprint_instance(Instance::new(width, height, depth), blueprint)
     }
 
     /// Create a solver from a runtime instance and interpreted blueprint.
-    pub fn from_blueprint_instance(instance: Instance, blueprint: &Blueprint<C>) -> Self {
+    pub fn from_blueprint_instance(instance: Instance, blueprint: &ResolvedBlueprint<C>) -> Self {
         Solver {
             grid: Grid::new(
                 instance.dims().width,
@@ -80,21 +84,21 @@ impl<C: Cell + CellModel + Eq> Solver<C, DescriptorTopology> {
         }
     }
 
-    /// Interpret a declarative blueprint spec and create a solver from it.
-    pub fn from_spec(width: u32, height: u32, depth: u32, spec: &BlueprintSpec<C>) -> Self
+    /// Interpret a declarative blueprint and create a solver from it.
+    pub fn from_spec(width: u32, height: u32, depth: u32, blueprint: &Blueprint<C>) -> Self
     where
         C: Clone,
     {
-        Self::from_spec_instance(Instance::new(width, height, depth), spec)
+        Self::from_spec_instance(Instance::new(width, height, depth), blueprint)
     }
 
-    /// Interpret a declarative blueprint spec and create a solver from a runtime instance.
-    pub fn from_spec_instance(instance: Instance, spec: &BlueprintSpec<C>) -> Self
+    /// Interpret a declarative blueprint and create a solver from a runtime instance.
+    pub fn from_spec_instance(instance: Instance, blueprint: &Blueprint<C>) -> Self
     where
         C: Clone,
     {
-        let blueprint = interpret_blueprint(spec);
-        Self::from_blueprint_instance(instance, &blueprint)
+        let resolved = interpret_blueprint(blueprint);
+        Self::from_blueprint_instance(instance, &resolved)
     }
 }
 

@@ -1,6 +1,5 @@
 use crate::{
-    BlueprintSpec, CellModel, CellSchema, NamedNeighborhood as NamedNeighborhoodSpec, Rule,
-    Semantics,
+    Blueprint, CellModel, CellSchema, NamedNeighborhood as NamedNeighborhoodSpec, Rule, Semantics,
 };
 
 use super::{interpret_topology, Neighborhood, ResolvedTopology};
@@ -32,9 +31,9 @@ impl NamedNeighborhood {
     }
 }
 
-/// A canonical interpreted blueprint derived from a declarative blueprint spec.
+/// A canonical interpreted blueprint derived from a declarative blueprint.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Blueprint<C: CellModel> {
+pub struct ResolvedBlueprint<C: CellModel> {
     cell_schema: CellSchema,
     semantics: Semantics,
     topology: ResolvedTopology,
@@ -43,7 +42,7 @@ pub struct Blueprint<C: CellModel> {
     rules: Vec<Rule<C>>,
 }
 
-impl<C: CellModel> Blueprint<C> {
+impl<C: CellModel> ResolvedBlueprint<C> {
     /// Return the portable schema metadata for the cell model.
     pub fn cell_schema(&self) -> CellSchema {
         self.cell_schema
@@ -75,19 +74,19 @@ impl<C: CellModel> Blueprint<C> {
     }
 }
 
-/// Interpret a declarative blueprint spec into its canonical semantic form.
-pub fn interpret_blueprint<C: CellModel>(spec: &BlueprintSpec<C>) -> Blueprint<C> {
-    Blueprint {
-        cell_schema: spec.cell_schema(),
-        semantics: spec.semantics(),
-        topology: interpret_topology(spec.topology()),
-        neighborhoods: spec
+/// Interpret a declarative blueprint into its canonical semantic form.
+pub fn interpret_blueprint<C: CellModel>(blueprint: &Blueprint<C>) -> ResolvedBlueprint<C> {
+    ResolvedBlueprint {
+        cell_schema: blueprint.cell_schema(),
+        semantics: blueprint.semantics(),
+        topology: interpret_topology(blueprint.topology()),
+        neighborhoods: blueprint
             .neighborhoods()
             .iter()
             .map(NamedNeighborhood::from)
             .collect(),
-        default_neighborhood: spec.default_neighborhood(),
-        rules: spec.rules().to_vec(),
+        default_neighborhood: blueprint.default_neighborhood(),
+        rules: blueprint.rules().to_vec(),
     }
 }
 

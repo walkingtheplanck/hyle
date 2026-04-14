@@ -1,10 +1,10 @@
-//! Canonical blueprint specification types.
+//! Canonical blueprint contract types.
 
 use crate::{CellModel, CellSchema, CellState, NeighborhoodSpec, TopologyDescriptor};
 
 use super::{BlueprintBuilder, Condition};
 
-/// Portable semantics version for a blueprint specification.
+/// Portable semantics version for a blueprint contract.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Semantics {
     /// Version 1 semantics: deterministic local rules with first-match wins.
@@ -40,12 +40,12 @@ pub enum RuleEffect<C: CellState> {
     Become(C),
 }
 
-/// One deterministic rule in a [`BlueprintSpec`].
+/// One deterministic rule in a [`Blueprint`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Rule<C: CellState> {
     /// Exact center-cell state that this rule applies to.
     pub when: C,
-    /// Index into [`BlueprintSpec::neighborhoods`].
+    /// Index into [`Blueprint::neighborhoods`].
     pub neighborhood: usize,
     /// Optional condition that must evaluate to `true`.
     pub condition: Option<Condition<C>>,
@@ -53,9 +53,9 @@ pub struct Rule<C: CellState> {
     pub effect: RuleEffect<C>,
 }
 
-/// Immutable, solver-agnostic blueprint specification.
+/// Immutable, solver-agnostic blueprint contract.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BlueprintSpec<C: CellModel> {
+pub struct Blueprint<C: CellModel> {
     cell_schema: CellSchema,
     semantics: Semantics,
     topology: TopologyDescriptor,
@@ -64,8 +64,8 @@ pub struct BlueprintSpec<C: CellModel> {
     rules: Vec<Rule<C>>,
 }
 
-impl<C: CellModel> BlueprintSpec<C> {
-    /// Start building a solver-agnostic blueprint specification.
+impl<C: CellModel> Blueprint<C> {
+    /// Start building a solver-agnostic blueprint.
     pub fn builder() -> BlueprintBuilder<C> {
         BlueprintBuilder::new()
     }
