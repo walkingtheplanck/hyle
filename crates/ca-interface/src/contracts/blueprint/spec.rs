@@ -113,6 +113,3 @@ impl<C: CellModel> BlueprintSpec<C> {
         &self.rules
     }
 }
-
-/// Backward-compatible alias for the blueprint specification type.
-pub type AutomatonSpec<C> = BlueprintSpec<C>;

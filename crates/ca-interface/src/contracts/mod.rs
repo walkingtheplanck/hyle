@@ -8,9 +8,9 @@ pub mod cell;
 pub mod descriptors;
 
 pub use blueprint::{
-    neighbors, rng, AutomatonBuilder, AutomatonSpec, BlueprintBuilder, BlueprintSpec, BuildError,
-    Condition, CountComparison, Hyle, HyleBuilder, NamedNeighborhood, NeighborCount,
-    NeighborSelector, RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder, Semantics,
+    neighbors, rng, BlueprintBuilder, BlueprintSpec, BuildError, Condition, CountComparison, Hyle,
+    HyleBuilder, NamedNeighborhood, NeighborCount, NeighborSelector, RandomSource, Rule,
+    RuleBuilder, RuleEffect, RulesBuilder, Semantics,
 };
 pub use cell::{CellModel, CellSchema, CellState, StateDef};
 pub use descriptors::{

@@ -152,9 +152,6 @@ impl<C: CellModel> BlueprintBuilder<C> {
     }
 }
 
-/// Backward-compatible alias for the blueprint builder type.
-pub type AutomatonBuilder<C> = BlueprintBuilder<C>;
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct PendingRule<C: CellModel> {
     when: C,

@@ -9,11 +9,10 @@ mod runtime;
 pub mod semantics;
 
 pub use contracts::{
-    neighbors, rng, AutomatonBuilder, AutomatonSpec, AxisTopology, BlueprintBuilder, BlueprintSpec,
-    BuildError, Condition, CountComparison, GridDims, GridRegion, GridSnapshot, Hyle, HyleBuilder,
-    NamedNeighborhood, NeighborCount, NeighborSelector, NeighborhoodFalloff, NeighborhoodShape,
-    NeighborhoodSpec, RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder, Semantics,
-    TopologyDescriptor,
+    neighbors, rng, AxisTopology, BlueprintBuilder, BlueprintSpec, BuildError, Condition,
+    CountComparison, GridDims, GridRegion, GridSnapshot, Hyle, HyleBuilder, NamedNeighborhood,
+    NeighborCount, NeighborSelector, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
+    RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder, Semantics, TopologyDescriptor,
 };
 pub use contracts::{CellModel, CellSchema, CellState, StateDef};
 pub use runtime::{
