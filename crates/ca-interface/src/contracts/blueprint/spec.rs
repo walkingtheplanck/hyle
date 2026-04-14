@@ -1,6 +1,9 @@
 //! Canonical blueprint contract types.
 
-use crate::{AttributeDef, CellModel, CellSchema, CellState, NeighborhoodSpec, TopologyDescriptor};
+use crate::{
+    AttributeAssignment, AttributeDef, CellModel, CellSchema, CellState, NeighborhoodSpec,
+    TopologyDescriptor,
+};
 
 use super::{BlueprintBuilder, Condition};
 
@@ -49,6 +52,8 @@ pub struct Rule<C: CellState> {
     pub neighborhood: usize,
     /// Optional condition that must evaluate to `true`.
     pub condition: Option<Condition<C>>,
+    /// Attached attribute writes applied when the rule matches.
+    pub attribute_updates: Vec<AttributeAssignment>,
     /// Effect applied when the rule matches.
     pub effect: RuleEffect<C>,
 }

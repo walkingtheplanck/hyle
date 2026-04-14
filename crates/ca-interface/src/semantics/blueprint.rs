@@ -1,5 +1,6 @@
 use crate::{
-    Blueprint, CellModel, CellSchema, NamedNeighborhood as NamedNeighborhoodSpec, Rule, Semantics,
+    AttributeDef, Blueprint, CellModel, CellSchema, NamedNeighborhood as NamedNeighborhoodSpec,
+    Rule, Semantics,
 };
 
 use super::{interpret_topology, Neighborhood, ResolvedTopology};
@@ -37,6 +38,7 @@ pub struct ResolvedBlueprint<C: CellModel> {
     cell_schema: CellSchema,
     semantics: Semantics,
     topology: ResolvedTopology,
+    attributes: Vec<AttributeDef>,
     neighborhoods: Vec<NamedNeighborhood>,
     default_neighborhood: usize,
     rules: Vec<Rule<C>>,
@@ -56,6 +58,11 @@ impl<C: CellModel> ResolvedBlueprint<C> {
     /// Return the interpreted topology descriptor.
     pub fn topology(&self) -> &ResolvedTopology {
         &self.topology
+    }
+
+    /// Return the declared attached per-cell attributes.
+    pub fn attributes(&self) -> &[AttributeDef] {
+        &self.attributes
     }
 
     /// Return the interpreted named neighborhoods.
@@ -80,6 +87,7 @@ pub fn interpret_blueprint<C: CellModel>(blueprint: &Blueprint<C>) -> ResolvedBl
         cell_schema: blueprint.cell_schema(),
         semantics: blueprint.semantics(),
         topology: interpret_topology(blueprint.topology()),
+        attributes: blueprint.attributes().to_vec(),
         neighborhoods: blueprint
             .neighborhoods()
             .iter()

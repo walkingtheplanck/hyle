@@ -6,7 +6,8 @@ mod spec;
 
 pub use builder::{BlueprintBuilder, BuildError, RuleBuilder, RulesBuilder};
 pub use dsl::{
-    neighbors, rng, Condition, CountComparison, NeighborCount, NeighborSelector,
-    NeighborWeightedSum, RandomSource, Weight, WeightComparison,
+    attr, neighbors, rng, AttributeAssignment, AttributeComparison, AttributeSelector, Condition,
+    CountComparison, NeighborCount, NeighborSelector, NeighborWeightedSum, RandomSource, Weight,
+    WeightComparison,
 };
 pub use spec::{Blueprint, NamedNeighborhood, Rule, RuleEffect, Semantics};

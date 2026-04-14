@@ -1,9 +1,9 @@
 //! Tests for the declarative blueprint builder.
 
 use hyle_ca_interface::{
-    neighbors, rng, AttributeDef, AttributeType, AttributeValue, Blueprint, BuildError, CellModel,
-    CellSchema, Condition, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef,
-    TopologyDescriptor, Weight, WeightComparison,
+    attr, neighbors, rng, AttributeComparison, AttributeDef, AttributeType, AttributeValue,
+    Blueprint, BuildError, CellModel, CellSchema, Condition, NeighborhoodFalloff,
+    NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor, Weight, WeightComparison,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -189,6 +189,97 @@ fn builder_emits_random_chance_conditions() {
             stream: 7,
             one_in: 3,
         })
+    );
+}
+
+#[test]
+fn builder_emits_attribute_conditions_and_updates() {
+    let spec = Blueprint::<LifeCell>::builder()
+        .attribute("heat", AttributeType::U8)
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Alive)
+                .require(attr("heat").at_least(2u8))
+                .set_attr("heat", 0u8)
+                .keep();
+        })
+        .build()
+        .expect("valid spec");
+
+    assert_eq!(
+        spec.rules()[0].condition,
+        Some(Condition::Attribute {
+            attribute: "heat".to_string(),
+            comparison: AttributeComparison::AtLeast(AttributeValue::U8(2)),
+        })
+    );
+    assert_eq!(
+        spec.rules()[0].attribute_updates,
+        vec![hyle_ca_interface::AttributeAssignment::new(
+            "heat",
+            AttributeValue::U8(0),
+        )]
+    );
+}
+
+#[test]
+fn builder_rejects_unknown_condition_attributes() {
+    let error = Blueprint::<LifeCell>::builder()
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Alive)
+                .require(attr("heat").eq(1u8))
+                .keep();
+        })
+        .build()
+        .expect_err("unknown condition attributes must fail");
+
+    assert_eq!(
+        error,
+        BuildError::UnknownConditionAttribute("heat".to_string())
+    );
+}
+
+#[test]
+fn builder_rejects_invalid_attribute_type_in_conditions() {
+    let error = Blueprint::<LifeCell>::builder()
+        .attribute("charged", AttributeType::Bool)
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Alive)
+                .require(attr("charged").at_least(true))
+                .keep();
+        })
+        .build()
+        .expect_err("ordered boolean comparisons must fail");
+
+    assert_eq!(
+        error,
+        BuildError::UnsupportedAttributeComparison {
+            attribute: "charged".to_string(),
+            comparison: "at_least",
+            value_type: AttributeType::Bool,
+        }
+    );
+}
+
+#[test]
+fn builder_rejects_duplicate_rule_attribute_updates() {
+    let error = Blueprint::<LifeCell>::builder()
+        .attribute("heat", AttributeType::U8)
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Alive)
+                .set_attr("heat", 1u8)
+                .set_attr("heat", 2u8)
+                .keep();
+        })
+        .build()
+        .expect_err("duplicate updates must fail");
+
+    assert_eq!(
+        error,
+        BuildError::DuplicateRuleAttributeUpdate("heat".to_string())
     );
 }
 

@@ -2,9 +2,11 @@
 
 use hyle_ca_interface::semantics::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
-    Blueprint, CaSolver, Cell, CellModel, GridRegion, GridSnapshot, Instance, RuleEffect, Topology,
+    AttributeValue, Blueprint, CaSolver, Cell, CellModel, GridRegion, GridSnapshot, Instance,
+    RuleEffect, Topology,
 };
 
+use crate::attributes::AttributeStore;
 use crate::grid::{resolve_index, Grid};
 use crate::program::CompiledProgram;
 use crate::{BoundedTopology, DescriptorTopology};
@@ -17,6 +19,7 @@ use crate::{BoundedTopology, DescriptorTopology};
 /// interpret a declarative [`Blueprint`] and construct one in a single step.
 pub struct Solver<C: Cell + Eq, T: Topology = BoundedTopology> {
     grid: Grid<C>,
+    attributes: AttributeStore,
     topology: T,
     program: Option<CompiledProgram<C>>,
     step_count: u32,
@@ -50,6 +53,7 @@ impl<C: Cell + Eq> Solver<C, BoundedTopology> {
                 instance.dims().height,
                 instance.dims().depth,
             ),
+            attributes: AttributeStore::new(instance.dims().cell_count() + 1, &[]),
             topology,
             program: None,
             step_count: 0,
@@ -76,6 +80,10 @@ impl<C: Cell + CellModel + Eq> Solver<C, DescriptorTopology> {
                 instance.dims().width,
                 instance.dims().height,
                 instance.dims().depth,
+            ),
+            attributes: AttributeStore::new(
+                instance.dims().cell_count() + 1,
+                blueprint.attributes(),
             ),
             topology: DescriptorTopology::new(blueprint.topology().descriptor()),
             program: Some(CompiledProgram::from_blueprint(blueprint)),
@@ -107,6 +115,7 @@ impl<C: Cell + Eq, T: Topology> Solver<C, T> {
     pub fn into_topology<U: Topology>(self, topology: U) -> Solver<C, U> {
         Solver {
             grid: self.grid,
+            attributes: self.attributes,
             topology,
             program: self.program,
             step_count: self.step_count,
@@ -123,6 +132,55 @@ impl<C: Cell + Eq, T: Topology> Solver<C, T> {
     pub fn set_topology<U: Topology>(self, topology: U) -> Solver<C, U> {
         self.into_topology(topology)
     }
+
+    /// Read one attached attribute value by name at the resolved cell coordinate.
+    pub fn get_attribute(&self, name: &str, x: i32, y: i32, z: i32) -> Option<AttributeValue> {
+        let attribute = self.attributes.index_of(name)?;
+        let index = self.grid.resolve_idx(&self.topology, x, y, z);
+        if index == self.grid.guard_idx() {
+            None
+        } else {
+            Some(self.attributes.get(attribute, index))
+        }
+    }
+
+    /// Overwrite one attached attribute value by name at the resolved cell coordinate.
+    pub fn set_attribute(
+        &mut self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+        value: AttributeValue,
+    ) -> Result<(), AttributeWriteError> {
+        let Some(attribute) = self.attributes.index_of(name) else {
+            return Err(AttributeWriteError::UnknownAttribute(name.to_string()));
+        };
+
+        let index = self.grid.resolve_idx(&self.topology, x, y, z);
+        if index == self.grid.guard_idx() {
+            return Err(AttributeWriteError::OutOfBounds { x, y, z });
+        }
+
+        self.attributes.set_current(attribute, index, value);
+        Ok(())
+    }
+}
+
+/// Errors raised by concrete solver attribute writes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum AttributeWriteError {
+    /// The named attribute is not declared on the active blueprint.
+    UnknownAttribute(String),
+    /// The requested coordinate resolves outside the simulation bounds.
+    OutOfBounds {
+        /// X coordinate requested by the caller.
+        x: i32,
+        /// Y coordinate requested by the caller.
+        y: i32,
+        /// Z coordinate requested by the caller.
+        z: i32,
+    },
 }
 
 impl<C: Cell + Eq, T: Topology> Solver<C, T> {
@@ -152,11 +210,21 @@ impl<C: Cell + Eq, T: Topology> Solver<C, T> {
                         self.step_count,
                         self.seed,
                         |dx, dy, dz| cells[resolve(x + dx, y + dy, z + dz)],
+                        |attribute| self.attributes.get(attribute, idx),
                     );
 
                     match effect {
-                        Some(RuleEffect::Keep) | None => {}
-                        Some(RuleEffect::Become(cell)) => self.grid.cells_next[idx] = cell,
+                        Some(evaluation) => {
+                            for update in evaluation.attribute_updates {
+                                self.attributes
+                                    .set_next(update.attribute, idx, update.value);
+                            }
+                            match evaluation.effect {
+                                RuleEffect::Keep => {}
+                                RuleEffect::Become(cell) => self.grid.cells_next[idx] = cell,
+                            }
+                        }
+                        None => {}
                     }
                 }
             }
@@ -205,8 +273,10 @@ impl<C: Cell + Eq, T: Topology> CaSolver<C> for Solver<C, T> {
 
     fn step(&mut self) {
         self.grid.prepare_step();
+        self.attributes.prepare_step();
         self.step_program();
         self.grid.swap();
+        self.attributes.swap();
         self.step_count += 1;
     }
 

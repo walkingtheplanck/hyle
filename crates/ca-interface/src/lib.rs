@@ -9,11 +9,12 @@ mod runtime;
 pub mod semantics;
 
 pub use contracts::{
-    neighbors, rng, AttributeDef, AttributeType, AttributeValue, AxisTopology, Blueprint,
-    BlueprintBuilder, BuildError, Condition, CountComparison, GridDims, GridRegion, GridSnapshot,
-    NamedNeighborhood, NeighborCount, NeighborSelector, NeighborWeightedSum, NeighborhoodFalloff,
-    NeighborhoodShape, NeighborhoodSpec, RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder,
-    Semantics, TopologyDescriptor, Weight, WeightComparison, WEIGHT_SCALE,
+    attr, neighbors, rng, AttributeAssignment, AttributeComparison, AttributeDef,
+    AttributeSelector, AttributeType, AttributeValue, AxisTopology, Blueprint, BlueprintBuilder,
+    BuildError, Condition, CountComparison, GridDims, GridRegion, GridSnapshot, NamedNeighborhood,
+    NeighborCount, NeighborSelector, NeighborWeightedSum, NeighborhoodFalloff, NeighborhoodShape,
+    NeighborhoodSpec, RandomSource, Rule, RuleBuilder, RuleEffect, RulesBuilder, Semantics,
+    TopologyDescriptor, Weight, WeightComparison, WEIGHT_SCALE,
 };
 pub use contracts::{CellModel, CellSchema, CellState, StateDef};
 pub use runtime::{

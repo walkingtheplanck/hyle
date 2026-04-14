@@ -8,9 +8,10 @@ pub mod cell;
 pub mod descriptors;
 
 pub use blueprint::{
-    neighbors, rng, Blueprint, BlueprintBuilder, BuildError, Condition, CountComparison,
-    NamedNeighborhood, NeighborCount, NeighborSelector, NeighborWeightedSum, RandomSource, Rule,
-    RuleBuilder, RuleEffect, RulesBuilder, Semantics, Weight, WeightComparison,
+    attr, neighbors, rng, AttributeAssignment, AttributeComparison, AttributeSelector, Blueprint,
+    BlueprintBuilder, BuildError, Condition, CountComparison, NamedNeighborhood, NeighborCount,
+    NeighborSelector, NeighborWeightedSum, RandomSource, Rule, RuleBuilder, RuleEffect,
+    RulesBuilder, Semantics, Weight, WeightComparison,
 };
 pub use cell::{CellModel, CellSchema, CellState, StateDef};
 pub use descriptors::{

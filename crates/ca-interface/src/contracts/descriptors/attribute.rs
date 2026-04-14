@@ -19,6 +19,13 @@ pub enum AttributeType {
     I32,
 }
 
+impl AttributeType {
+    /// Return whether this scalar type is boolean.
+    pub const fn is_boolean(self) -> bool {
+        matches!(self, AttributeType::Bool)
+    }
+}
+
 /// Default scalar value declared for an attached per-cell attribute channel.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AttributeValue {
@@ -63,6 +70,48 @@ impl AttributeValue {
             AttributeType::I16 => AttributeValue::I16(0),
             AttributeType::I32 => AttributeValue::I32(0),
         }
+    }
+}
+
+impl From<bool> for AttributeValue {
+    fn from(value: bool) -> Self {
+        AttributeValue::Bool(value)
+    }
+}
+
+impl From<u8> for AttributeValue {
+    fn from(value: u8) -> Self {
+        AttributeValue::U8(value)
+    }
+}
+
+impl From<u16> for AttributeValue {
+    fn from(value: u16) -> Self {
+        AttributeValue::U16(value)
+    }
+}
+
+impl From<u32> for AttributeValue {
+    fn from(value: u32) -> Self {
+        AttributeValue::U32(value)
+    }
+}
+
+impl From<i8> for AttributeValue {
+    fn from(value: i8) -> Self {
+        AttributeValue::I8(value)
+    }
+}
+
+impl From<i16> for AttributeValue {
+    fn from(value: i16) -> Self {
+        AttributeValue::I16(value)
+    }
+}
+
+impl From<i32> for AttributeValue {
+    fn from(value: i32) -> Self {
+        AttributeValue::I32(value)
     }
 }
 

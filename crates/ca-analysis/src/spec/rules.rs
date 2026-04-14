@@ -19,6 +19,7 @@ pub(crate) fn analyze_rules<C: CellModel>(spec: &Blueprint<C>) -> Vec<RuleAnalys
             earlier.when == rule.when
                 && earlier.neighborhood == rule.neighborhood
                 && earlier.condition == rule.condition
+                && earlier.attribute_updates == rule.attribute_updates
                 && earlier.effect == rule.effect
         });
 
@@ -95,7 +96,7 @@ fn collect_condition_diagnostics<C: CellModel>(
                 ));
             }
         }
-        Condition::RandomChance { .. } => {}
+        Condition::RandomChance { .. } | Condition::Attribute { .. } => {}
         Condition::And(conditions) | Condition::Or(conditions) => {
             for condition in conditions {
                 collect_condition_diagnostics(condition, neighborhood, rule_index, diagnostics);

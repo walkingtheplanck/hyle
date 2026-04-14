@@ -92,10 +92,10 @@ If no rule matches, the center cell is kept unchanged.
 
 ## Attached Attributes
 
-Blueprints can declare named attached per-cell attributes as portable metadata:
+Blueprints can declare named attached per-cell attributes and use them in rules:
 
 ```rust
-use hyle_ca_interface::{AttributeType, AttributeValue, Blueprint, CellModel, CellSchema};
+use hyle_ca_interface::{attr, AttributeType, AttributeValue, Blueprint, CellModel, CellSchema};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 struct TestCell(u8);
@@ -107,15 +107,21 @@ impl CellModel for TestCell {
 let spec = Blueprint::<TestCell>::builder()
     .attribute("heat", AttributeType::U8)
     .attribute_with_default("charged", AttributeValue::Bool(true))
+    .rules(|rules| {
+        rules
+            .when(TestCell(1))
+            .require(attr("heat").at_least(2u8))
+            .set_attr("heat", 0u8)
+            .keep();
+    })
     .build()?;
 
 assert_eq!(spec.attributes().len(), 2);
 # Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
-These attributes are part of the portable blueprint contract. They describe
-named attached data channels, but the current rule DSL does not read or write
-them yet.
+These attributes are part of the portable blueprint contract. The current DSL
+supports center-cell attribute predicates and rule-driven attribute writes.
 
 ## Decoupled Runtime Construction
 

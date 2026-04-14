@@ -4,10 +4,13 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 use crate::{
-    AttributeDef, AttributeType, AttributeValue, CellModel, NeighborhoodSpec, TopologyDescriptor,
+    AttributeComparison, AttributeDef, AttributeType, AttributeValue, CellModel, NeighborhoodSpec,
+    TopologyDescriptor,
 };
 
-use super::{Blueprint, Condition, NamedNeighborhood, Rule, RuleEffect, Semantics};
+use super::{
+    AttributeAssignment, Blueprint, Condition, NamedNeighborhood, Rule, RuleEffect, Semantics,
+};
 
 const ADJACENT_NEIGHBORHOOD: &str = "adjacent";
 
@@ -18,6 +21,34 @@ pub enum BuildError {
     EmptyAttributeName,
     /// An attribute name was registered more than once.
     DuplicateAttribute(String),
+    /// A rule referenced an empty attribute name in a condition.
+    EmptyConditionAttribute,
+    /// A rule referenced an unknown attribute name in a condition.
+    UnknownConditionAttribute(String),
+    /// A rule attempted to update an empty attribute name.
+    EmptyRuleAttributeUpdate,
+    /// A rule attempted to update an unknown attribute name.
+    UnknownRuleAttributeUpdate(String),
+    /// A rule attempted to update the same attribute more than once.
+    DuplicateRuleAttributeUpdate(String),
+    /// A rule used an attribute value whose scalar type does not match the declaration.
+    AttributeTypeMismatch {
+        /// Referenced attribute name.
+        attribute: String,
+        /// Declared scalar type.
+        expected: AttributeType,
+        /// Actual scalar type provided by the rule.
+        actual: AttributeType,
+    },
+    /// A rule used an unsupported comparison for the attribute's scalar type.
+    UnsupportedAttributeComparison {
+        /// Referenced attribute name.
+        attribute: String,
+        /// Comparison kind used by the rule.
+        comparison: &'static str,
+        /// Declared scalar type.
+        value_type: AttributeType,
+    },
     /// A neighborhood name was empty.
     EmptyNeighborhoodName,
     /// The default neighborhood name was empty.
@@ -48,6 +79,39 @@ impl Display for BuildError {
             BuildError::DuplicateAttribute(name) => {
                 write!(f, "duplicate attribute name: {name}")
             }
+            BuildError::EmptyConditionAttribute => {
+                write!(f, "rule condition attribute name must not be empty")
+            }
+            BuildError::UnknownConditionAttribute(name) => {
+                write!(f, "rule condition references unknown attribute: {name}")
+            }
+            BuildError::EmptyRuleAttributeUpdate => {
+                write!(f, "rule attribute update name must not be empty")
+            }
+            BuildError::UnknownRuleAttributeUpdate(name) => {
+                write!(f, "rule updates unknown attribute: {name}")
+            }
+            BuildError::DuplicateRuleAttributeUpdate(name) => {
+                write!(f, "rule updates attribute more than once: {name}")
+            }
+            BuildError::AttributeTypeMismatch {
+                attribute,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "attribute '{attribute}' expects value type {:?}, got {:?}",
+                expected, actual
+            ),
+            BuildError::UnsupportedAttributeComparison {
+                attribute,
+                comparison,
+                value_type,
+            } => write!(
+                f,
+                "attribute '{attribute}' does not support comparison '{comparison}' for {:?}",
+                value_type
+            ),
             BuildError::EmptyNeighborhoodName => {
                 write!(f, "neighborhood name must not be empty")
             }
@@ -190,7 +254,8 @@ impl<C: CellModel> BlueprintBuilder<C> {
 
         let mut rules = Vec::with_capacity(self.rules.len());
         for rule in self.rules {
-            validate_condition(rule.condition.as_ref())?;
+            validate_condition(rule.condition.as_ref(), &self.attributes)?;
+            validate_attribute_updates(&rule.attribute_updates, &self.attributes)?;
             let neighborhood_name = rule
                 .neighborhood
                 .unwrap_or_else(|| self.default_neighborhood.clone());
@@ -205,6 +270,7 @@ impl<C: CellModel> BlueprintBuilder<C> {
                 when: rule.when,
                 neighborhood,
                 condition: rule.condition,
+                attribute_updates: rule.attribute_updates,
                 effect: rule.effect,
             });
         }
@@ -221,7 +287,10 @@ impl<C: CellModel> BlueprintBuilder<C> {
     }
 }
 
-fn validate_condition<C: CellModel>(condition: Option<&Condition<C>>) -> Result<(), BuildError> {
+fn validate_condition<C: CellModel>(
+    condition: Option<&Condition<C>>,
+    attributes: &[AttributeDef],
+) -> Result<(), BuildError> {
     let Some(condition) = condition else {
         return Ok(());
     };
@@ -238,13 +307,122 @@ fn validate_condition<C: CellModel>(condition: Option<&Condition<C>>) -> Result<
                 Ok(())
             }
         }
+        Condition::Attribute {
+            attribute,
+            comparison,
+        } => validate_attribute_condition(attribute, *comparison, attributes),
         Condition::And(conditions) | Condition::Or(conditions) => {
             for condition in conditions {
-                validate_condition(Some(condition))?;
+                validate_condition(Some(condition), attributes)?;
             }
             Ok(())
         }
-        Condition::Not(condition) => validate_condition(Some(condition)),
+        Condition::Not(condition) => validate_condition(Some(condition), attributes),
+    }
+}
+
+fn validate_attribute_condition(
+    attribute: &str,
+    comparison: AttributeComparison,
+    attributes: &[AttributeDef],
+) -> Result<(), BuildError> {
+    if attribute.is_empty() {
+        return Err(BuildError::EmptyConditionAttribute);
+    }
+
+    let attribute_def = attributes
+        .iter()
+        .find(|candidate| candidate.name == attribute)
+        .ok_or_else(|| BuildError::UnknownConditionAttribute(attribute.to_string()))?;
+
+    match comparison {
+        AttributeComparison::Eq(value) => {
+            validate_attribute_value(attribute, attribute_def.value_type, value)?;
+        }
+        AttributeComparison::InRange { min, max }
+        | AttributeComparison::NotInRange { min, max } => {
+            validate_attribute_ordered_value(attribute, attribute_def.value_type, min, "in_range")?;
+            validate_attribute_ordered_value(attribute, attribute_def.value_type, max, "in_range")?;
+        }
+        AttributeComparison::AtLeast(value) => {
+            validate_attribute_ordered_value(
+                attribute,
+                attribute_def.value_type,
+                value,
+                "at_least",
+            )?;
+        }
+        AttributeComparison::AtMost(value) => {
+            validate_attribute_ordered_value(
+                attribute,
+                attribute_def.value_type,
+                value,
+                "at_most",
+            )?;
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_attribute_updates(
+    updates: &[AttributeAssignment],
+    attributes: &[AttributeDef],
+) -> Result<(), BuildError> {
+    let mut seen = Vec::with_capacity(updates.len());
+    for update in updates {
+        if update.attribute.is_empty() {
+            return Err(BuildError::EmptyRuleAttributeUpdate);
+        }
+        if seen.iter().any(|name: &String| name == &update.attribute) {
+            return Err(BuildError::DuplicateRuleAttributeUpdate(
+                update.attribute.clone(),
+            ));
+        }
+
+        let attribute_def = attributes
+            .iter()
+            .find(|candidate| candidate.name == update.attribute)
+            .ok_or_else(|| BuildError::UnknownRuleAttributeUpdate(update.attribute.clone()))?;
+
+        validate_attribute_value(&update.attribute, attribute_def.value_type, update.value)?;
+        seen.push(update.attribute.clone());
+    }
+    Ok(())
+}
+
+fn validate_attribute_value(
+    attribute: &str,
+    expected: AttributeType,
+    value: AttributeValue,
+) -> Result<(), BuildError> {
+    let actual = value.value_type();
+    if actual != expected {
+        Err(BuildError::AttributeTypeMismatch {
+            attribute: attribute.to_string(),
+            expected,
+            actual,
+        })
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_attribute_ordered_value(
+    attribute: &str,
+    expected: AttributeType,
+    value: AttributeValue,
+    comparison: &'static str,
+) -> Result<(), BuildError> {
+    validate_attribute_value(attribute, expected, value)?;
+    if expected.is_boolean() {
+        Err(BuildError::UnsupportedAttributeComparison {
+            attribute: attribute.to_string(),
+            comparison,
+            value_type: expected,
+        })
+    } else {
+        Ok(())
     }
 }
 
@@ -253,6 +431,7 @@ struct PendingRule<C: CellModel> {
     when: C,
     neighborhood: Option<String>,
     condition: Option<Condition<C>>,
+    attribute_updates: Vec<AttributeAssignment>,
     effect: RuleEffect<C>,
 }
 
@@ -273,6 +452,7 @@ impl<C: CellModel> RulesBuilder<C> {
             when: state,
             neighborhood: None,
             condition: None,
+            attribute_updates: Vec::new(),
         }
     }
 
@@ -287,6 +467,7 @@ pub struct RuleBuilder<'a, C: CellModel> {
     when: C,
     neighborhood: Option<String>,
     condition: Option<Condition<C>>,
+    attribute_updates: Vec<AttributeAssignment>,
 }
 
 impl<'a, C: CellModel> RuleBuilder<'a, C> {
@@ -310,6 +491,17 @@ impl<'a, C: CellModel> RuleBuilder<'a, C> {
         self.require(condition.negate())
     }
 
+    /// Overwrite an attached attribute when this rule matches.
+    pub fn set_attr(
+        mut self,
+        attribute: impl Into<String>,
+        value: impl Into<AttributeValue>,
+    ) -> Self {
+        self.attribute_updates
+            .push(AttributeAssignment::new(attribute, value));
+        self
+    }
+
     /// Keep the center cell unchanged when this rule matches.
     pub fn keep(self) -> &'a mut RulesBuilder<C> {
         self.finish(RuleEffect::Keep)
@@ -325,6 +517,7 @@ impl<'a, C: CellModel> RuleBuilder<'a, C> {
             when: self.when,
             neighborhood: self.neighborhood,
             condition: self.condition,
+            attribute_updates: self.attribute_updates,
             effect,
         });
         self.rules

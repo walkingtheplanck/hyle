@@ -3,7 +3,7 @@
 use std::ops::RangeInclusive;
 
 use crate::contracts::descriptors::WEIGHT_SCALE;
-use crate::CellState;
+use crate::{AttributeValue, CellState};
 
 /// A deterministic rule condition.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -28,6 +28,13 @@ pub enum Condition<C: CellState> {
         stream: u32,
         /// True when the derived RNG hits a `1 / n` chance.
         one_in: u32,
+    },
+    /// Compare the center cell's attached attribute against a predicate.
+    Attribute {
+        /// Named attribute channel read from the center cell.
+        attribute: String,
+        /// Attribute comparison to apply.
+        comparison: AttributeComparison,
     },
     /// Logical conjunction.
     And(Vec<Condition<C>>),
@@ -92,6 +99,7 @@ impl<C: CellState> Condition<C> {
             Condition::NeighborCount { state, .. }
             | Condition::NeighborWeightedSum { state, .. } => Some(state),
             Condition::RandomChance { .. }
+            | Condition::Attribute { .. }
             | Condition::And(_)
             | Condition::Or(_)
             | Condition::Not(_) => None,
@@ -104,6 +112,7 @@ impl<C: CellState> Condition<C> {
             Condition::NeighborCount { comparison, .. } => Some(*comparison),
             Condition::NeighborWeightedSum { .. }
             | Condition::RandomChance { .. }
+            | Condition::Attribute { .. }
             | Condition::And(_)
             | Condition::Or(_)
             | Condition::Not(_) => None,
@@ -116,11 +125,37 @@ impl<C: CellState> Condition<C> {
             Condition::NeighborWeightedSum { comparison, .. } => Some(*comparison),
             Condition::NeighborCount { .. }
             | Condition::RandomChance { .. }
+            | Condition::Attribute { .. }
             | Condition::And(_)
             | Condition::Or(_)
             | Condition::Not(_) => None,
         }
     }
+}
+
+/// Comparison used for center-cell attached attributes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AttributeComparison {
+    /// Equal to an exact attribute value.
+    Eq(AttributeValue),
+    /// Within an inclusive range.
+    InRange {
+        /// Inclusive lower bound.
+        min: AttributeValue,
+        /// Inclusive upper bound.
+        max: AttributeValue,
+    },
+    /// Outside an inclusive range.
+    NotInRange {
+        /// Inclusive lower bound.
+        min: AttributeValue,
+        /// Inclusive upper bound.
+        max: AttributeValue,
+    },
+    /// Greater than or equal to a value.
+    AtLeast(AttributeValue),
+    /// Less than or equal to a value.
+    AtMost(AttributeValue),
 }
 
 /// Numeric comparison used for neighbor counts.
@@ -191,6 +226,25 @@ impl Weight {
     /// Return the raw fixed-point value.
     pub const fn units(self) -> u64 {
         self.0
+    }
+}
+
+/// One attribute write applied when a rule matches.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AttributeAssignment {
+    /// Named attribute channel to overwrite.
+    pub attribute: String,
+    /// Replacement value written to the next state.
+    pub value: AttributeValue,
+}
+
+impl AttributeAssignment {
+    /// Construct a new attribute assignment.
+    pub fn new(attribute: impl Into<String>, value: impl Into<AttributeValue>) -> Self {
+        Self {
+            attribute: attribute.into(),
+            value: value.into(),
+        }
     }
 }
 
@@ -333,6 +387,73 @@ impl<C: CellState> NeighborWeightedSum<C> {
 /// Select neighbors equal to `state`.
 pub fn neighbors<C: CellState>(state: C) -> NeighborSelector<C> {
     NeighborSelector { state }
+}
+
+/// Select the center cell's attached attribute by name.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AttributeSelector {
+    attribute: String,
+}
+
+impl AttributeSelector {
+    /// Require an exact attribute value.
+    pub fn eq<C: CellState>(self, value: impl Into<AttributeValue>) -> Condition<C> {
+        Condition::Attribute {
+            attribute: self.attribute,
+            comparison: AttributeComparison::Eq(value.into()),
+        }
+    }
+
+    /// Require the attribute to fall inside an inclusive range.
+    pub fn in_range<C: CellState, T>(self, range: RangeInclusive<T>) -> Condition<C>
+    where
+        T: Into<AttributeValue> + Copy,
+    {
+        Condition::Attribute {
+            attribute: self.attribute,
+            comparison: AttributeComparison::InRange {
+                min: (*range.start()).into(),
+                max: (*range.end()).into(),
+            },
+        }
+    }
+
+    /// Require the attribute to fall outside an inclusive range.
+    pub fn not_in<C: CellState, T>(self, range: RangeInclusive<T>) -> Condition<C>
+    where
+        T: Into<AttributeValue> + Copy,
+    {
+        Condition::Attribute {
+            attribute: self.attribute,
+            comparison: AttributeComparison::NotInRange {
+                min: (*range.start()).into(),
+                max: (*range.end()).into(),
+            },
+        }
+    }
+
+    /// Require the attribute to be at least the given value.
+    pub fn at_least<C: CellState>(self, value: impl Into<AttributeValue>) -> Condition<C> {
+        Condition::Attribute {
+            attribute: self.attribute,
+            comparison: AttributeComparison::AtLeast(value.into()),
+        }
+    }
+
+    /// Require the attribute to be at most the given value.
+    pub fn at_most<C: CellState>(self, value: impl Into<AttributeValue>) -> Condition<C> {
+        Condition::Attribute {
+            attribute: self.attribute,
+            comparison: AttributeComparison::AtMost(value.into()),
+        }
+    }
+}
+
+/// Select a named center-cell attribute for rule conditions.
+pub fn attr(name: impl Into<String>) -> AttributeSelector {
+    AttributeSelector {
+        attribute: name.into(),
+    }
 }
 
 /// Select a deterministic random stream for a rule condition.

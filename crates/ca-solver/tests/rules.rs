@@ -2,8 +2,9 @@
 
 use hyle_ca_interface::semantics::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
-    neighbors, rng, Blueprint, CaSolver, CellModel, CellSchema, Instance, NeighborhoodFalloff,
-    NeighborhoodShape, NeighborhoodSpec, StateDef, TopologyDescriptor, Weight,
+    attr, neighbors, rng, AttributeType, AttributeValue, Blueprint, CaSolver, CellModel,
+    CellSchema, Instance, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef,
+    TopologyDescriptor, Weight,
 };
 use hyle_ca_solver::Solver;
 
@@ -386,4 +387,60 @@ fn weighted_sum_rules_follow_portable_weights() {
     solver.step();
 
     assert_eq!(solver.get(1, 1, 1), LifeCell::Alive);
+}
+
+#[test]
+fn attribute_conditions_can_gate_rule_application() {
+    let spec = Blueprint::<LifeCell>::builder()
+        .attribute("heat", AttributeType::U8)
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Alive)
+                .require(attr("heat").at_least(2u8))
+                .becomes(LifeCell::Dead);
+        })
+        .build()
+        .expect("valid spec");
+
+    let mut solver = Solver::from_spec(3, 3, 3, &spec);
+    solver.set(1, 1, 1, LifeCell::Alive);
+    solver
+        .set_attribute("heat", 1, 1, 1, AttributeValue::U8(2))
+        .expect("known attribute write should succeed");
+
+    solver.step();
+
+    assert_eq!(solver.get(1, 1, 1), LifeCell::Dead);
+}
+
+#[test]
+fn attribute_updates_persist_across_steps() {
+    let spec = Blueprint::<LifeCell>::builder()
+        .attribute("age", AttributeType::U8)
+        .rules(|rules| {
+            rules
+                .when(LifeCell::Alive)
+                .require(attr("age").eq(0u8))
+                .set_attr("age", 1u8)
+                .keep();
+            rules
+                .when(LifeCell::Alive)
+                .require(attr("age").at_least(1u8))
+                .becomes(LifeCell::Dead);
+        })
+        .build()
+        .expect("valid spec");
+
+    let mut solver = Solver::from_spec(3, 3, 3, &spec);
+    solver.set(1, 1, 1, LifeCell::Alive);
+
+    solver.step();
+    assert_eq!(solver.get(1, 1, 1), LifeCell::Alive);
+    assert_eq!(
+        solver.get_attribute("age", 1, 1, 1),
+        Some(AttributeValue::U8(1))
+    );
+
+    solver.step();
+    assert_eq!(solver.get(1, 1, 1), LifeCell::Dead);
 }
