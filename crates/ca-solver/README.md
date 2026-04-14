@@ -85,8 +85,7 @@ impl CellModel for TestCell {
 
 let spec = Hyle::builder().cells::<TestCell>().build()?;
 let provider = CpuSolverProvider::new();
-let mut runtime: Box<dyn CaRuntime<TestCell>> =
-    provider.build(Instance::new(16, 16, 16), &spec);
+let mut runtime = provider.build(Instance::new(16, 16, 16), &spec);
 
 runtime.step();
 # Ok::<(), hyle_ca_interface::BuildError>(())

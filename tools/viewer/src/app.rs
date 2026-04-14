@@ -5,26 +5,32 @@ use std::time::Instant;
 
 use eframe::egui;
 use glam::Vec3;
-use hyle_ca_solver::CpuSolverProvider;
+use hyle_ca_interface::CaSolverProvider;
 
-use crate::ca::{gol_world, Materials, SimpleWorld, Simulation};
+use crate::ca::{gol_world, LifeCell, Materials, SimpleWorld, Simulation};
 use crate::input::InputState;
 use crate::rendering::{draw_toolbar, render, Camera, GpuRaytracer};
 
-pub struct ViewerApp {
+pub struct ViewerApp<P>
+where
+    P: CaSolverProvider<LifeCell>,
+{
     world: SimpleWorld,
     materials: Materials,
     camera: Camera,
     gpu: GpuRaytracer,
-    sim: Simulation,
+    sim: Simulation<P>,
     input: InputState,
     world_dirty: bool,
     frame_times: VecDeque<f64>,
     last_frame: Instant,
 }
 
-impl ViewerApp {
-    pub fn new(cc: &eframe::CreationContext) -> Self {
+impl<P> ViewerApp<P>
+where
+    P: CaSolverProvider<LifeCell>,
+{
+    pub fn new(cc: &eframe::CreationContext, provider: P) -> Self {
         let render_state = cc
             .wgpu_render_state
             .as_ref()
@@ -34,7 +40,7 @@ impl ViewerApp {
         let mut renderer = render_state.renderer.write();
 
         let (mut world, materials) = gol_world();
-        let mut sim = Simulation::new(Box::new(CpuSolverProvider::new()));
+        let mut sim = Simulation::new(provider);
         sim.reset(&mut world); // prime initial state
 
         let gpu = GpuRaytracer::new(device, queue, &mut renderer, &world, &materials);
@@ -69,7 +75,10 @@ impl ViewerApp {
     }
 }
 
-impl eframe::App for ViewerApp {
+impl<P> eframe::App for ViewerApp<P>
+where
+    P: CaSolverProvider<LifeCell>,
+{
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let dt_ms = self.last_frame.elapsed().as_secs_f64() * 1000.0;
         self.last_frame = Instant::now();

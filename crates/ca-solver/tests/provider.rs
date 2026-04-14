@@ -23,7 +23,7 @@ impl CellModel for TestCell {
 }
 
 #[test]
-fn cpu_provider_builds_runtime_trait_object() {
+fn cpu_provider_builds_runtime() {
     let spec = Hyle::builder()
         .cells::<TestCell>()
         .rules(|rules| {
@@ -40,8 +40,7 @@ fn cpu_provider_builds_runtime_trait_object() {
         .expect("test blueprint should build");
 
     let provider = CpuSolverProvider::new();
-    let mut runtime: Box<dyn CaRuntime<TestCell>> =
-        provider.build(Instance::new(4, 4, 4).with_seed(7), &spec);
+    let mut runtime = provider.build(Instance::new(4, 4, 4).with_seed(7), &spec);
 
     runtime.set(1, 1, 1, TestCell(1));
     runtime.step();

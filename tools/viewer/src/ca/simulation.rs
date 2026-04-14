@@ -41,18 +41,24 @@ impl CellModel for LifeCell {
     }
 }
 
-pub struct Simulation {
+pub struct Simulation<P>
+where
+    P: CaSolverProvider<LifeCell>,
+{
     pub auto_step: bool,
     pub step_interval_ms: f64,
-    solver: Box<dyn CaSolverProvider<LifeCell>>,
-    ca: Box<dyn CaRuntime<LifeCell>>,
+    solver: P,
+    ca: P::Runtime,
     last_step: Instant,
 }
 
-impl Simulation {
-    pub fn new(solver: Box<dyn CaSolverProvider<LifeCell>>) -> Self {
-        let mut ca = Self::build_ca(&*solver);
-        Self::seed(&mut *ca);
+impl<P> Simulation<P>
+where
+    P: CaSolverProvider<LifeCell>,
+{
+    pub fn new(solver: P) -> Self {
+        let mut ca = Self::build_ca(&solver);
+        Self::seed(&mut ca);
 
         Self {
             auto_step: true,
@@ -84,13 +90,13 @@ impl Simulation {
         Instance::new(64, 64, 64).with_seed(1)
     }
 
-    fn build_ca(solver: &dyn CaSolverProvider<LifeCell>) -> Box<dyn CaRuntime<LifeCell>> {
+    fn build_ca(solver: &P) -> P::Runtime {
         let spec = Self::spec();
         solver.build(Self::instance(), &spec)
     }
 
     /// Seed: ~18% random fill in a 16^3 region at center.
-    fn seed(ca: &mut dyn CaRuntime<LifeCell>) {
+    fn seed(ca: &mut impl CaRuntime<LifeCell>) {
         for z in 24u32..40 {
             for y in 24u32..40 {
                 for x in 24u32..40 {
@@ -110,8 +116,8 @@ impl Simulation {
     }
 
     pub fn reset(&mut self, world: &mut SimpleWorld) {
-        self.ca = Self::build_ca(&*self.solver);
-        Self::seed(&mut *self.ca);
+        self.ca = Self::build_ca(&self.solver);
+        Self::seed(&mut self.ca);
         self.sync_to_world(world);
     }
 
