@@ -12,6 +12,7 @@ Use this file as the strict operational checklist for working in this repo.
 - Always commit after completing a change.
 - Use conventional commit subject format: `<type>: <lowercase description>`.
 - Every commit must include a body that states what changed and why.
+- Prefer explanations in simple terms that are easy to digest, especially when clarifying architecture, tradeoffs, or errors.
 - When adding or changing functionality, add or update tests to cover it.
 - Run the relevant test suite after each meaningful change set, not only at the end.
 - If tests fail because of your changes, treat that as a regression and fix it before continuing or committing.
