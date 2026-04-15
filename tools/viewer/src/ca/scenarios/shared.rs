@@ -1,6 +1,6 @@
 //! Shared viewer material definitions, palette, and seeding helpers.
 
-use hyle_ca_interface::{Blueprint, CaRuntime, Instance, MaterialSet, Rng};
+use hyle_ca_interface::{Blueprint, CaRuntime, Instance, MaterialId, MaterialSet, Rng};
 
 use crate::ca::world::{Material, Materials};
 
@@ -26,6 +26,10 @@ pub(crate) enum ViewerCell {
 impl ViewerCell {
     pub const fn voxel(self) -> u16 {
         self as u16
+    }
+
+    pub fn from_material_id(material: MaterialId) -> Option<Self> {
+        <Self as MaterialSet>::variants().get(material.index()).copied()
     }
 
     pub fn palette_len() -> usize {
@@ -185,6 +189,16 @@ impl Scenario {
             Material::solid([0.22, 0.45, 0.82, 1.0]),
         );
         materials
+    }
+
+    pub fn alive_materials(self) -> &'static [ViewerCell] {
+        match self {
+            Scenario::Life4555 => &[ViewerCell::Alive],
+            Scenario::WeightedBloom => &[ViewerCell::Bloom],
+            Scenario::CrystalForge => &[ViewerCell::Crystal, ViewerCell::Hot],
+            Scenario::FireCycle => &[ViewerCell::Grass, ViewerCell::Fire, ViewerCell::Ember],
+            Scenario::TubeGarden => &[ViewerCell::Alive],
+        }
     }
 
     pub fn seed(self, ca: &mut impl CaRuntime) {

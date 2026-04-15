@@ -6,6 +6,7 @@ publish = false
 description = "Dev-only GPU raytracing viewer for Hyle CA simulations."
 
 [dependencies]
+hyle-ca-analysis = { path = "../../crates/ca-analysis" }
 hyle-ca-interface = { path = "../../crates/ca-interface" }
 hyle-ca-solver = { path = "../../crates/ca-solver" }
 glam         = { workspace = true }

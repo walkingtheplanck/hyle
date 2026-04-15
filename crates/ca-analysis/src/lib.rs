@@ -2,7 +2,9 @@
 #![deny(missing_docs)]
 
 mod diagnostic;
+mod runtime;
 mod spec;
 
 pub use diagnostic::{Diagnostic, Severity, Subject};
+pub use runtime::{analyze_step_report, MaterialPopulation, RuntimeReport};
 pub use spec::{analyze_spec, NeighborhoodAnalysis, RuleAnalysis, SpecAnalysis, SpecSummary};

@@ -6,6 +6,7 @@ This crate builds on [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-inte
 **derived tooling** over declarative blueprints:
 - static spec summaries
 - rule and neighborhood diagnostics
+- runtime report analysis over completed solver steps
 
 It intentionally does **not** execute simulations. Solvers consume the same
 contracts directly; this crate helps inspect them consistently.
@@ -81,6 +82,41 @@ assert_eq!(analysis.summary.rule_count, 1);
 - unused named neighborhoods
 - duplicate rules
 - rules shadowed by earlier unconditional rules
+
+### Runtime Analysis
+
+- living cell counts for a caller-supplied alive-material set
+- born and died cell counts per completed step
+- stable vs changed cell counts
+- material populations and material-to-material transitions
+
+```rust
+use hyle_ca_analysis::analyze_step_report;
+use hyle_ca_interface::{MaterialId, StepReport, TransitionCount};
+
+let step = StepReport::new(
+    4,
+    3,
+    vec![6, 2],
+    vec![
+        TransitionCount {
+            from: MaterialId::new(0),
+            to: MaterialId::new(1),
+            count: 2,
+        },
+        TransitionCount {
+            from: MaterialId::new(1),
+            to: MaterialId::new(0),
+            count: 1,
+        },
+    ],
+);
+
+let runtime = analyze_step_report(&step, &[MaterialId::new(1)]);
+assert_eq!(runtime.living_cells, 2);
+assert_eq!(runtime.born_cells, 2);
+assert_eq!(runtime.died_cells, 1);
+```
 
 ## Relationship To Other Crates
 

@@ -901,6 +901,7 @@ dependencies = [
  "bytemuck",
  "eframe",
  "glam",
+ "hyle-ca-analysis",
  "hyle-ca-interface",
  "hyle-ca-solver",
  "wgpu",

@@ -2,7 +2,7 @@
 
 use crate::{
     AttributeAccessError, AttributeId, AttributeValue, GridDims, GridRegion, GridSnapshot,
-    MaterialId,
+    MaterialId, StepReport,
 };
 
 use super::solver::CaSolver;
@@ -17,6 +17,9 @@ pub trait CaRuntime: Send {
 
     /// Advance the simulation by one step.
     fn step(&mut self);
+
+    /// Advance the simulation by one step and return a low-level report.
+    fn step_report(&mut self) -> StepReport;
 
     /// Set a material at the given coordinate.
     fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId);
@@ -66,6 +69,10 @@ where
 
     fn step(&mut self) {
         CaSolver::step(self);
+    }
+
+    fn step_report(&mut self) -> StepReport {
+        CaSolver::step_report(self)
     }
 
     fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId) {

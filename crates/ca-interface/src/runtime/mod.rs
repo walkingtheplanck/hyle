@@ -5,6 +5,7 @@ mod ca_runtime;
 mod instance;
 mod provider;
 mod solver;
+mod step_report;
 mod topology;
 
 pub use attribute_access::AttributeAccessError;
@@ -12,4 +13,5 @@ pub use ca_runtime::CaRuntime;
 pub use instance::Instance;
 pub use provider::CaSolverProvider;
 pub use solver::{CaSolver, ValidatedSolver};
+pub use step_report::{StepReport, TransitionCount};
 pub use topology::Topology;

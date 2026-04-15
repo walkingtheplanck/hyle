@@ -2,7 +2,7 @@
 
 use crate::{
     AttributeAccessError, AttributeId, AttributeValue, GridDims, GridRegion, GridSnapshot,
-    MaterialId, Topology,
+    MaterialId, StepReport, Topology,
 };
 
 /// The common interface shared by all CA solvers (CPU, GPU, etc.).
@@ -91,6 +91,9 @@ pub trait CaSolver {
 
     /// Advance the simulation by one logical step.
     fn step(&mut self);
+
+    /// Advance the simulation by one logical step and return a low-level report.
+    fn step_report(&mut self) -> StepReport;
 
     /// Number of logical steps already completed.
     fn step_count(&self) -> u32;

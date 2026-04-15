@@ -5,11 +5,15 @@ use std::time::Instant;
 
 use eframe::egui;
 use glam::Vec3;
-use hyle_ca_interface::CaSolverProvider;
+use hyle_ca_analysis::{analyze_spec, analyze_step_report, RuntimeReport, SpecAnalysis};
+use hyle_ca_interface::{CaSolverProvider, MaterialSet};
 
 use crate::ca::{viewer_world, Materials, Scenario, SimpleWorld, Simulation};
 use crate::input::InputState;
-use crate::rendering::{draw_toolbar, render, Camera, GpuRaytracer};
+use crate::rendering::{
+    draw_runtime_analysis_window, draw_static_analysis_window, draw_toolbar, render, Camera,
+    GpuRaytracer,
+};
 
 pub struct ViewerApp<P>
 where
@@ -22,6 +26,10 @@ where
     sim: Simulation<P>,
     input: InputState,
     world_dirty: bool,
+    show_runtime_analysis: bool,
+    show_static_analysis: bool,
+    static_analysis: SpecAnalysis,
+    runtime_analysis: Option<RuntimeReport>,
     frame_times: VecDeque<f64>,
     last_frame: Instant,
 }
@@ -43,6 +51,7 @@ where
         let mut sim = Simulation::new(provider);
         sim.reset(&mut world);
         let materials = sim.materials();
+        let static_analysis = analyze_spec(&sim.scenario().blueprint());
 
         let gpu = GpuRaytracer::new(device, queue, &mut renderer, &world, &materials);
         drop(renderer);
@@ -58,6 +67,10 @@ where
             sim,
             input: InputState::new(),
             world_dirty: true,
+            show_runtime_analysis: false,
+            show_static_analysis: false,
+            static_analysis,
+            runtime_analysis: None,
             frame_times: VecDeque::with_capacity(60),
             last_frame: Instant::now(),
         }
@@ -90,8 +103,12 @@ where
 
         ctx.request_repaint();
 
-        if self.sim.maybe_auto_step(&mut self.world) {
+        let auto_step = self
+            .sim
+            .maybe_auto_step(&mut self.world, self.show_runtime_analysis);
+        if auto_step.stepped {
             self.world_dirty = true;
+            self.update_runtime_analysis(auto_step.report);
         }
 
         let actions = self.input.handle_keyboard(ctx, &mut self.camera);
@@ -112,6 +129,8 @@ where
             self.sim.scenario(),
             &mut self.sim.auto_step,
             &mut self.sim.step_interval_ms,
+            &mut self.show_runtime_analysis,
+            &mut self.show_static_analysis,
             fps,
             approx_vp,
         );
@@ -126,12 +145,14 @@ where
         }
 
         if toolbar.step_requested {
-            self.sim.step(&mut self.world);
+            let step = self.sim.step(&mut self.world, self.show_runtime_analysis);
             self.world_dirty = true;
+            self.update_runtime_analysis(step.report);
         }
         if toolbar.reset_requested {
             self.sim.reset(&mut self.world);
             self.world_dirty = true;
+            self.runtime_analysis = None;
         }
 
         egui::CentralPanel::default()
@@ -148,6 +169,17 @@ where
                     &mut self.input,
                 );
             });
+
+        if self.show_static_analysis {
+            draw_static_analysis_window(ctx, &mut self.show_static_analysis, &self.static_analysis);
+        }
+        if self.show_runtime_analysis {
+            draw_runtime_analysis_window(
+                ctx,
+                &mut self.show_runtime_analysis,
+                self.runtime_analysis.as_ref(),
+            );
+        }
     }
 }
 
@@ -165,8 +197,25 @@ where
         }
 
         self.materials = self.sim.materials();
+        self.static_analysis = analyze_spec(&self.sim.scenario().blueprint());
+        self.runtime_analysis = None;
         self.gpu
             .upload_palette(&render_state.device, &render_state.queue, &self.materials);
         self.world_dirty = true;
+    }
+
+    fn update_runtime_analysis(&mut self, report: Option<hyle_ca_interface::StepReport>) {
+        let Some(report) = report else {
+            return;
+        };
+
+        let alive_materials = self
+            .sim
+            .scenario()
+            .alive_materials()
+            .iter()
+            .map(|material| material.id())
+            .collect::<Vec<_>>();
+        self.runtime_analysis = Some(analyze_step_report(&report, &alive_materials));
     }
 }

@@ -1,6 +1,8 @@
 //! Debug-only wrapper that validates all `CaSolver` contracts at runtime.
 
-use crate::{AttributeAccessError, AttributeId, AttributeValue, CaSolver, MaterialId};
+use crate::{
+    AttributeAccessError, AttributeId, AttributeValue, CaSolver, MaterialId, StepReport,
+};
 
 /// Wrapper that validates `CaSolver` contracts on every operation.
 ///
@@ -179,6 +181,23 @@ where
             before + 1,
             "contract violation: step_count was {before}, after step() it is {after}"
         );
+    }
+
+    fn step_report(&mut self) -> StepReport {
+        let before = self.inner.step_count();
+        let report = self.inner.step_report();
+        let after = self.inner.step_count();
+        assert_eq!(
+            after,
+            before + 1,
+            "contract violation: step_count was {before}, after step_report() it is {after}"
+        );
+        assert_eq!(
+            report.step, after,
+            "contract violation: step_report() returned step {}, but step_count() is {}",
+            report.step, after
+        );
+        report
     }
 
     fn step_count(&self) -> u32 {

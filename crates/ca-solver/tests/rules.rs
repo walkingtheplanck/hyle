@@ -262,3 +262,21 @@ fn weighted_sum_rules_work() {
     solver.step();
     assert_eq!(solver.get(2, 2, 2), M::Alive.id());
 }
+
+#[test]
+fn step_report_tracks_populations_and_transitions() {
+    let mut solver = Solver::from_spec(4, 4, 4, &kill_all_spec());
+    solver.set(1, 1, 1, M::Alive.id());
+    solver.set(2, 2, 2, M::Alive.id());
+
+    let report = solver.step_report();
+
+    assert_eq!(report.step, 1);
+    assert_eq!(report.changed_cells, 2);
+    assert_eq!(report.population(M::Alive.id()), 0);
+    assert_eq!(report.population(M::Dead.id()), 64);
+    assert_eq!(report.transitions.len(), 1);
+    assert_eq!(report.transitions[0].from, M::Alive.id());
+    assert_eq!(report.transitions[0].to, M::Dead.id());
+    assert_eq!(report.transitions[0].count, 2);
+}

@@ -1,9 +1,11 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
+use std::collections::BTreeMap;
+
 use hyle_ca_interface::semantics::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
     AttributeAccessError, AttributeId, AttributeValue, Blueprint, CaSolver, GridRegion,
-    GridSnapshot, Instance, MaterialId, RuleEffect, Topology,
+    GridSnapshot, Instance, MaterialId, RuleEffect, StepReport, Topology, TransitionCount,
 };
 
 use crate::attributes::AttributeStore;
@@ -156,6 +158,41 @@ impl<T: Topology> Solver<T> {
 }
 
 impl<T: Topology> Solver<T> {
+    fn build_step_report(&self) -> StepReport {
+        let mut populations = Vec::new();
+        let mut transitions = BTreeMap::<(u16, u16), u64>::new();
+        let mut changed_cells = 0u64;
+
+        for index in 0..self.grid.cell_count() {
+            let before = self.grid.cells[index];
+            let after = self.grid.cells_next[index];
+
+            if populations.len() <= after.index() {
+                populations.resize(after.index() + 1, 0);
+            }
+            populations[after.index()] += 1;
+
+            if before != after {
+                changed_cells += 1;
+                *transitions.entry((before.raw(), after.raw())).or_default() += 1;
+            }
+        }
+
+        StepReport::new(
+            self.step_count + 1,
+            changed_cells,
+            populations,
+            transitions
+                .into_iter()
+                .map(|((from, to), count)| TransitionCount {
+                    from: MaterialId::new(from),
+                    to: MaterialId::new(to),
+                    count,
+                })
+                .collect(),
+        )
+    }
+
     fn step_program(&mut self) {
         let program = match &mut self.program {
             Some(program) => program,
@@ -295,6 +332,17 @@ impl<T: Topology> CaSolver for Solver<T> {
         self.grid.swap();
         self.attributes.swap();
         self.step_count += 1;
+    }
+
+    fn step_report(&mut self) -> StepReport {
+        self.grid.prepare_step();
+        self.attributes.prepare_step();
+        self.step_program();
+        let report = self.build_step_report();
+        self.grid.swap();
+        self.attributes.swap();
+        self.step_count += 1;
+        report
     }
 
     fn step_count(&self) -> u32 {

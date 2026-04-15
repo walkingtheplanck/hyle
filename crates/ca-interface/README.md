@@ -15,7 +15,7 @@ interpretation helpers live in this crate under `hyle_ca_interface::semantics`.
 It has **zero dependencies** and is split conceptually into:
 - `contracts` for declarative blueprint and descriptor data
 - `semantics` for interpreted blueprint, neighborhood, and topology meaning
-- `runtime` for running-simulation interfaces and shared runtime types such as `MaterialId`, `Instance`, `Topology`, `CaSolver`, `CaRuntime`, `CaSolverProvider`, and `ValidatedSolver`
+- `runtime` for running-simulation interfaces and shared runtime types such as `MaterialId`, `Instance`, `StepReport`, `Topology`, `CaSolver`, `CaRuntime`, `CaSolverProvider`, and `ValidatedSolver`
 
 ## Key Types
 
@@ -30,6 +30,7 @@ It has **zero dependencies** and is split conceptually into:
 | [`NeighborhoodSpec`] | Declarative neighborhood description shared across solvers |
 | [`Weight`] | Fixed-point weight threshold used by weighted neighborhood predicates |
 | [`Rng`] | Shared deterministic random-number primitive parameterized by seed, position, step, and stream |
+| [`StepReport`] | Low-level material populations and transitions for one completed step |
 | [`Topology`] / [`TopologyDescriptor`] | Boundary behavior traits and descriptors |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 
@@ -253,6 +254,9 @@ let runtime = provider.build(Instance::new(16, 16, 16), &spec);
 ```
 
 This keeps backend selection localized to one construction site while preserving static dispatch.
+When a consumer needs low-level runtime metrics, both `CaSolver` and `CaRuntime`
+also expose `step_report()`, which advances one step and returns changed-cell
+counts, final populations, and material-to-material transitions for that step.
 
 ## Defining Symbol Sets
 
