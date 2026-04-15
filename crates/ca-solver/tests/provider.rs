@@ -1,5 +1,6 @@
 use hyle_ca_interface::{
-    neighbors, Blueprint, CaRuntime, CaSolverProvider, CellModel, CellSchema, GridRegion, Instance,
+    neighbors, AttributeType, AttributeValue, Blueprint, CaRuntime, CaSolverProvider, CellModel,
+    CellSchema, GridRegion, Instance,
 };
 use hyle_ca_solver::CpuSolverProvider;
 
@@ -15,6 +16,7 @@ impl CellModel for TestCell {
 #[test]
 fn cpu_provider_builds_runtime() {
     let spec = Blueprint::<TestCell>::builder()
+        .attribute("heat", AttributeType::U8)
         .rules(|rules| {
             rules
                 .when(TestCell(0))
@@ -36,6 +38,9 @@ fn cpu_provider_builds_runtime() {
         GridRegion::new([0, 0, 0], [2, 1, 1]),
         &[TestCell(2), TestCell(3)],
     );
+    runtime
+        .set_attr("heat", 1, 1, 1, AttributeValue::U8(4))
+        .expect("runtime attribute writes should succeed");
     runtime.step();
 
     let snapshot = runtime.readback();
@@ -45,5 +50,6 @@ fn cpu_provider_builds_runtime() {
         runtime.read_region(GridRegion::new([0, 0, 0], [2, 1, 1])),
         vec![TestCell(2), TestCell(3)]
     );
+    assert_eq!(runtime.get_attr("heat", 1, 1, 1), Ok(AttributeValue::U8(4)));
     assert_eq!(runtime.step_count(), 1);
 }

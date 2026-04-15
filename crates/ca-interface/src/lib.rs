@@ -18,6 +18,7 @@ pub use contracts::{
 };
 pub use contracts::{CellModel, CellSchema, CellState, StateDef};
 pub use runtime::{
-    CaRuntime, CaSolver, CaSolverProvider, Cell, Instance, Topology, ValidatedSolver,
+    AttributeAccessError, CaRuntime, CaSolver, CaSolverProvider, Cell, Instance, Topology,
+    ValidatedSolver,
 };
 pub use semantics::Rng;

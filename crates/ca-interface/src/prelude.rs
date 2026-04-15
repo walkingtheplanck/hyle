@@ -6,4 +6,4 @@ pub use crate::contracts::{
     CellSchema, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef,
     TopologyDescriptor, Weight,
 };
-pub use crate::{CaRuntime, CaSolverProvider, Cell, Instance, Rng};
+pub use crate::{AttributeAccessError, CaRuntime, CaSolverProvider, Cell, Instance, Rng};

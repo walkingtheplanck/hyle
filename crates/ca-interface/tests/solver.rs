@@ -3,7 +3,8 @@
 use std::marker::PhantomData;
 
 use hyle_ca_interface::{
-    AxisTopology, CaSolver, Cell, GridDims, GridRegion, Topology, TopologyDescriptor,
+    AttributeAccessError, AttributeValue, AxisTopology, CaSolver, Cell, GridDims, GridRegion,
+    Topology, TopologyDescriptor,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -104,6 +105,37 @@ impl<C: Cell> CaSolver<C> for DummySolver<C> {
             if let Some(slot) = self.cells.get_mut(index) {
                 *slot = cell;
             }
+        }
+    }
+
+    fn get_attr(
+        &self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> Result<AttributeValue, AttributeAccessError> {
+        let index = self.resolve_index(x, y, z);
+        if index == self.guard_index() {
+            Err(AttributeAccessError::OutOfBounds { x, y, z })
+        } else {
+            Err(AttributeAccessError::UnknownAttribute(name.to_string()))
+        }
+    }
+
+    fn set_attr(
+        &mut self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+        _value: AttributeValue,
+    ) -> Result<(), AttributeAccessError> {
+        let index = self.resolve_index(x, y, z);
+        if index == self.guard_index() {
+            Err(AttributeAccessError::OutOfBounds { x, y, z })
+        } else {
+            Err(AttributeAccessError::UnknownAttribute(name.to_string()))
         }
     }
 
@@ -222,5 +254,23 @@ fn default_replace_cells_overwrites_the_full_grid() {
             TestCell(7),
             TestCell(8),
         ]
+    );
+}
+
+#[test]
+fn attribute_access_reports_unknown_attributes_and_bounds() {
+    let mut solver = DummySolver::<TestCell>::new(2, 2, 2);
+
+    assert_eq!(
+        solver.get_attr("heat", 0, 0, 0),
+        Err(AttributeAccessError::UnknownAttribute("heat".to_string()))
+    );
+    assert_eq!(
+        solver.set_attr("heat", 0, 0, 0, AttributeValue::U8(1)),
+        Err(AttributeAccessError::UnknownAttribute("heat".to_string()))
+    );
+    assert_eq!(
+        solver.get_attr("heat", -1, 0, 0),
+        Err(AttributeAccessError::OutOfBounds { x: -1, y: 0, z: 0 })
     );
 }

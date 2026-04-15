@@ -1,6 +1,6 @@
 //! Object-safe runtime interface for consumers that only need to drive a simulation.
 
-use crate::{Cell, GridDims, GridRegion, GridSnapshot};
+use crate::{AttributeAccessError, AttributeValue, Cell, GridDims, GridRegion, GridSnapshot};
 
 use super::solver::CaSolver;
 
@@ -18,6 +18,25 @@ pub trait CaRuntime<C: Cell>: Send {
 
     /// Set a cell value at the given coordinate.
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C);
+
+    /// Read one attached attribute by name from the resolved cell coordinate.
+    fn get_attr(
+        &self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> Result<AttributeValue, AttributeAccessError>;
+
+    /// Overwrite one attached attribute by name at the resolved cell coordinate.
+    fn set_attr(
+        &mut self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+        value: AttributeValue,
+    ) -> Result<(), AttributeAccessError>;
 
     /// Read a contiguous rectangular region in x-major order.
     fn read_region(&self, region: GridRegion) -> Vec<C>;
@@ -50,6 +69,27 @@ where
 
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
         CaSolver::set(self, x, y, z, cell);
+    }
+
+    fn get_attr(
+        &self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> Result<AttributeValue, AttributeAccessError> {
+        CaSolver::get_attr(self, name, x, y, z)
+    }
+
+    fn set_attr(
+        &mut self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+        value: AttributeValue,
+    ) -> Result<(), AttributeAccessError> {
+        CaSolver::set_attr(self, name, x, y, z, value)
     }
 
     fn read_region(&self, region: GridRegion) -> Vec<C> {

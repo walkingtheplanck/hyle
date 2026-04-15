@@ -2,8 +2,8 @@
 
 use hyle_ca_interface::semantics::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
-    AttributeValue, Blueprint, CaSolver, Cell, CellModel, GridRegion, GridSnapshot, Instance,
-    RuleEffect, Topology,
+    AttributeAccessError, AttributeValue, Blueprint, CaSolver, Cell, CellModel, GridRegion,
+    GridSnapshot, Instance, RuleEffect, Topology,
 };
 
 use crate::attributes::AttributeStore;
@@ -132,55 +132,6 @@ impl<C: Cell + Eq, T: Topology> Solver<C, T> {
     pub fn set_topology<U: Topology>(self, topology: U) -> Solver<C, U> {
         self.into_topology(topology)
     }
-
-    /// Read one attached attribute value by name at the resolved cell coordinate.
-    pub fn get_attribute(&self, name: &str, x: i32, y: i32, z: i32) -> Option<AttributeValue> {
-        let attribute = self.attributes.index_of(name)?;
-        let index = self.grid.resolve_idx(&self.topology, x, y, z);
-        if index == self.grid.guard_idx() {
-            None
-        } else {
-            Some(self.attributes.get(attribute, index))
-        }
-    }
-
-    /// Overwrite one attached attribute value by name at the resolved cell coordinate.
-    pub fn set_attribute(
-        &mut self,
-        name: &str,
-        x: i32,
-        y: i32,
-        z: i32,
-        value: AttributeValue,
-    ) -> Result<(), AttributeWriteError> {
-        let Some(attribute) = self.attributes.index_of(name) else {
-            return Err(AttributeWriteError::UnknownAttribute(name.to_string()));
-        };
-
-        let index = self.grid.resolve_idx(&self.topology, x, y, z);
-        if index == self.grid.guard_idx() {
-            return Err(AttributeWriteError::OutOfBounds { x, y, z });
-        }
-
-        self.attributes.set_current(attribute, index, value);
-        Ok(())
-    }
-}
-
-/// Errors raised by concrete solver attribute writes.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum AttributeWriteError {
-    /// The named attribute is not declared on the active blueprint.
-    UnknownAttribute(String),
-    /// The requested coordinate resolves outside the simulation bounds.
-    OutOfBounds {
-        /// X coordinate requested by the caller.
-        x: i32,
-        /// Y coordinate requested by the caller.
-        y: i32,
-        /// Z coordinate requested by the caller.
-        z: i32,
-    },
 }
 
 impl<C: Cell + Eq, T: Topology> Solver<C, T> {
@@ -269,6 +220,46 @@ impl<C: Cell + Eq, T: Topology> CaSolver<C> for Solver<C, T> {
 
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
         self.grid.set(&self.topology, x, y, z, cell);
+    }
+
+    fn get_attr(
+        &self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> Result<AttributeValue, AttributeAccessError> {
+        let Some(attribute) = self.attributes.index_of(name) else {
+            return Err(AttributeAccessError::UnknownAttribute(name.to_string()));
+        };
+
+        let index = self.grid.resolve_idx(&self.topology, x, y, z);
+        if index == self.grid.guard_idx() {
+            Err(AttributeAccessError::OutOfBounds { x, y, z })
+        } else {
+            Ok(self.attributes.get(attribute, index))
+        }
+    }
+
+    fn set_attr(
+        &mut self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+        value: AttributeValue,
+    ) -> Result<(), AttributeAccessError> {
+        let Some(attribute) = self.attributes.index_of(name) else {
+            return Err(AttributeAccessError::UnknownAttribute(name.to_string()));
+        };
+
+        let index = self.grid.resolve_idx(&self.topology, x, y, z);
+        if index == self.grid.guard_idx() {
+            return Err(AttributeAccessError::OutOfBounds { x, y, z });
+        }
+
+        self.attributes.set_current(attribute, index, value);
+        Ok(())
     }
 
     fn step(&mut self) {

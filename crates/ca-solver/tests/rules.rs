@@ -405,7 +405,7 @@ fn attribute_conditions_can_gate_rule_application() {
     let mut solver = Solver::from_spec(3, 3, 3, &spec);
     solver.set(1, 1, 1, LifeCell::Alive);
     solver
-        .set_attribute("heat", 1, 1, 1, AttributeValue::U8(2))
+        .set_attr("heat", 1, 1, 1, AttributeValue::U8(2))
         .expect("known attribute write should succeed");
 
     solver.step();
@@ -436,10 +436,7 @@ fn attribute_updates_persist_across_steps() {
 
     solver.step();
     assert_eq!(solver.get(1, 1, 1), LifeCell::Alive);
-    assert_eq!(
-        solver.get_attribute("age", 1, 1, 1),
-        Some(AttributeValue::U8(1))
-    );
+    assert_eq!(solver.get_attr("age", 1, 1, 1), Ok(AttributeValue::U8(1)));
 
     solver.step();
     assert_eq!(solver.get(1, 1, 1), LifeCell::Dead);

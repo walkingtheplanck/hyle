@@ -1,6 +1,8 @@
 //! Solver trait - the common interface all CA solvers implement.
 
-use crate::{Cell, GridDims, GridRegion, GridSnapshot, Topology};
+use crate::{
+    AttributeAccessError, AttributeValue, Cell, GridDims, GridRegion, GridSnapshot, Topology,
+};
 
 /// The common interface shared by all CA solvers (CPU, GPU, etc.).
 ///
@@ -68,6 +70,25 @@ pub trait CaSolver<C: Cell> {
 
     /// Set the cell at (x, y, z) according to `resolve_index(...)`.
     fn set(&mut self, x: i32, y: i32, z: i32, cell: C);
+
+    /// Read one attached attribute by name from the resolved cell coordinate.
+    fn get_attr(
+        &self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> Result<AttributeValue, AttributeAccessError>;
+
+    /// Overwrite one attached attribute by name at the resolved cell coordinate.
+    fn set_attr(
+        &mut self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+        value: AttributeValue,
+    ) -> Result<(), AttributeAccessError>;
 
     /// Advance the blueprint by one step.
     fn step(&mut self);

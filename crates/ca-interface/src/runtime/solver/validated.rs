@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-use crate::{CaSolver, Cell};
+use crate::{AttributeAccessError, AttributeValue, CaSolver, Cell};
 
 /// Wrapper that validates `CaSolver` contracts on every operation.
 ///
@@ -152,6 +152,27 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
                 "contract violation: set({x},{y},{z}, {cell:?}) resolved to index {resolved} / ({ix},{iy},{iz}) but get returned {readback:?}"
             );
         }
+    }
+
+    fn get_attr(
+        &self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> Result<AttributeValue, AttributeAccessError> {
+        self.inner.get_attr(name, x, y, z)
+    }
+
+    fn set_attr(
+        &mut self,
+        name: &str,
+        x: i32,
+        y: i32,
+        z: i32,
+        value: AttributeValue,
+    ) -> Result<(), AttributeAccessError> {
+        self.inner.set_attr(name, x, y, z, value)
     }
 
     fn step(&mut self) {
