@@ -71,7 +71,7 @@ pub fn expand_neighborhood(spec: NeighborhoodSpec) -> Neighborhood {
 
 /// Return the exact number of neighbor positions included by a neighborhood spec.
 pub fn neighbor_count(spec: NeighborhoodSpec) -> u32 {
-    shape_neighbor_count(spec.shape(), spec.radius())
+    shape_neighbor_count(spec.shape(), spec.radius().get())
 }
 
 /// Return the maximum weighted sum for a fully matching neighborhood spec.
@@ -84,13 +84,13 @@ pub fn max_weighted_sum(spec: NeighborhoodSpec) -> u64 {
 
 /// Return the canonical weighted neighborhood samples for a declarative spec.
 pub fn samples(spec: NeighborhoodSpec) -> Vec<NeighborhoodSample> {
-    let radius = spec.radius() as i32;
+    let radius = spec.radius().get() as i32;
     let mut samples = Vec::with_capacity(neighbor_count(spec) as usize);
 
     for dz in -radius..=radius {
         for dy in -radius..=radius {
             for dx in -radius..=radius {
-                if includes(spec.shape(), dx, dy, dz, spec.radius()) {
+                if includes(spec.shape(), dx, dy, dz, spec.radius().get()) {
                     let offset = Offset3::new(dx, dy, dz);
                     samples.push(NeighborhoodSample::new(
                         offset,

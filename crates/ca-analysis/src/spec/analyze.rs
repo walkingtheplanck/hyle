@@ -1,6 +1,6 @@
 //! Entry points for static spec analysis.
 
-use hyle_ca_interface::{Blueprint, CellModel};
+use hyle_ca_interface::Blueprint;
 
 use crate::{Diagnostic, Subject};
 
@@ -9,10 +9,10 @@ use super::{
 };
 
 /// Analyze a declarative blueprint and return shared diagnostics and summaries.
-pub fn analyze_spec<C: CellModel>(blueprint: &Blueprint<C>) -> SpecAnalysis<C> {
+pub fn analyze_spec(blueprint: &Blueprint) -> SpecAnalysis {
     let mut usage_counts = vec![0usize; blueprint.neighborhoods().len()];
     for rule in blueprint.rules() {
-        if let Some(count) = usage_counts.get_mut(rule.neighborhood) {
+        if let Some(count) = usage_counts.get_mut(rule.neighborhood.index()) {
             *count += 1;
         }
     }
@@ -22,7 +22,7 @@ pub fn analyze_spec<C: CellModel>(blueprint: &Blueprint<C>) -> SpecAnalysis<C> {
             .neighborhoods()
             .iter()
             .enumerate()
-            .map(|(index, neighborhood)| (index, neighborhood.name.clone(), neighborhood.spec)),
+            .map(|(index, neighborhood)| (index, neighborhood.name(), *neighborhood)),
         &usage_counts,
     );
     let rules = analyze_rules(blueprint);
@@ -45,13 +45,13 @@ pub fn analyze_spec<C: CellModel>(blueprint: &Blueprint<C>) -> SpecAnalysis<C> {
 
     let max_radius = neighborhoods
         .iter()
-        .map(|neighborhood| neighborhood.spec.radius())
+        .map(|neighborhood| neighborhood.spec.radius().get())
         .max()
         .unwrap_or(0);
 
     SpecAnalysis {
         summary: SpecSummary {
-            cell_schema: blueprint.cell_schema(),
+            materials: blueprint.materials().to_vec(),
             semantics: blueprint.semantics(),
             attributes: blueprint.attributes().to_vec(),
             rule_count: blueprint.rules().len(),

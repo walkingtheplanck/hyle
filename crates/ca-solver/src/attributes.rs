@@ -1,32 +1,22 @@
 //! Double-buffered attached attribute storage.
 
-use std::collections::HashMap;
-
-use hyle_ca_interface::{AttributeDef, AttributeValue};
+use hyle_ca_interface::{AttributeDef, AttributeId, AttributeValue};
 
 pub(crate) struct AttributeStore {
-    index_by_name: HashMap<String, usize>,
     buffers: Vec<AttributeBuffer>,
 }
 
 impl AttributeStore {
     pub(crate) fn new(total_cells: usize, defs: &[AttributeDef]) -> Self {
-        let mut index_by_name = HashMap::with_capacity(defs.len());
         let mut buffers = Vec::with_capacity(defs.len());
-
-        for (index, def) in defs.iter().enumerate() {
-            index_by_name.insert(def.name.clone(), index);
-            buffers.push(AttributeBuffer::new(total_cells, def.default));
+        for def in defs {
+            buffers.push(AttributeBuffer::new(total_cells, AttributeValue::zero(def.value_type)));
         }
-
-        Self {
-            index_by_name,
-            buffers,
-        }
+        Self { buffers }
     }
 
-    pub(crate) fn index_of(&self, name: &str) -> Option<usize> {
-        self.index_by_name.get(name).copied()
+    pub(crate) fn contains(&self, attribute: AttributeId) -> bool {
+        attribute.index() < self.buffers.len()
     }
 
     pub(crate) fn prepare_step(&mut self) {
@@ -41,21 +31,32 @@ impl AttributeStore {
         }
     }
 
-    pub(crate) fn get(&self, attribute: usize, cell_index: usize) -> AttributeValue {
-        self.buffers[attribute].get(cell_index)
+    pub(crate) fn get(&self, attribute: AttributeId, cell_index: usize) -> AttributeValue {
+        self.buffers[attribute.index()].get(cell_index)
     }
 
-    pub(crate) fn set_next(&mut self, attribute: usize, cell_index: usize, value: AttributeValue) {
-        self.buffers[attribute].set_next(cell_index, value);
+    pub(crate) fn set_next(
+        &mut self,
+        attribute: AttributeId,
+        cell_index: usize,
+        value: AttributeValue,
+    ) {
+        self.buffers[attribute.index()].set_next(cell_index, value);
     }
 
     pub(crate) fn set_current(
         &mut self,
-        attribute: usize,
+        attribute: AttributeId,
         cell_index: usize,
         value: AttributeValue,
     ) {
-        self.buffers[attribute].set_current(cell_index, value);
+        self.buffers[attribute.index()].set_current(cell_index, value);
+    }
+
+    pub(crate) fn reset_next_to_defaults(&mut self, cell_index: usize, defaults: &[AttributeValue]) {
+        for (buffer, value) in self.buffers.iter_mut().zip(defaults.iter().copied()) {
+            buffer.set_next(cell_index, value);
+        }
     }
 }
 
@@ -72,31 +73,31 @@ enum AttributeBuffer {
 impl AttributeBuffer {
     fn new(total_cells: usize, default: AttributeValue) -> Self {
         match default {
-            AttributeValue::Bool(value) => AttributeBuffer::Bool {
+            AttributeValue::Bool(value) => Self::Bool {
                 current: vec![value; total_cells],
                 next: vec![value; total_cells],
             },
-            AttributeValue::U8(value) => AttributeBuffer::U8 {
+            AttributeValue::U8(value) => Self::U8 {
                 current: vec![value; total_cells],
                 next: vec![value; total_cells],
             },
-            AttributeValue::U16(value) => AttributeBuffer::U16 {
+            AttributeValue::U16(value) => Self::U16 {
                 current: vec![value; total_cells],
                 next: vec![value; total_cells],
             },
-            AttributeValue::U32(value) => AttributeBuffer::U32 {
+            AttributeValue::U32(value) => Self::U32 {
                 current: vec![value; total_cells],
                 next: vec![value; total_cells],
             },
-            AttributeValue::I8(value) => AttributeBuffer::I8 {
+            AttributeValue::I8(value) => Self::I8 {
                 current: vec![value; total_cells],
                 next: vec![value; total_cells],
             },
-            AttributeValue::I16(value) => AttributeBuffer::I16 {
+            AttributeValue::I16(value) => Self::I16 {
                 current: vec![value; total_cells],
                 next: vec![value; total_cells],
             },
-            AttributeValue::I32(value) => AttributeBuffer::I32 {
+            AttributeValue::I32(value) => Self::I32 {
                 current: vec![value; total_cells],
                 next: vec![value; total_cells],
             },
@@ -105,90 +106,62 @@ impl AttributeBuffer {
 
     fn prepare_step(&mut self) {
         match self {
-            AttributeBuffer::Bool { current, next } => next.copy_from_slice(current),
-            AttributeBuffer::U8 { current, next } => next.copy_from_slice(current),
-            AttributeBuffer::U16 { current, next } => next.copy_from_slice(current),
-            AttributeBuffer::U32 { current, next } => next.copy_from_slice(current),
-            AttributeBuffer::I8 { current, next } => next.copy_from_slice(current),
-            AttributeBuffer::I16 { current, next } => next.copy_from_slice(current),
-            AttributeBuffer::I32 { current, next } => next.copy_from_slice(current),
+            Self::Bool { current, next } => next.copy_from_slice(current),
+            Self::U8 { current, next } => next.copy_from_slice(current),
+            Self::U16 { current, next } => next.copy_from_slice(current),
+            Self::U32 { current, next } => next.copy_from_slice(current),
+            Self::I8 { current, next } => next.copy_from_slice(current),
+            Self::I16 { current, next } => next.copy_from_slice(current),
+            Self::I32 { current, next } => next.copy_from_slice(current),
         }
     }
 
     fn swap(&mut self) {
         match self {
-            AttributeBuffer::Bool { current, next } => std::mem::swap(current, next),
-            AttributeBuffer::U8 { current, next } => std::mem::swap(current, next),
-            AttributeBuffer::U16 { current, next } => std::mem::swap(current, next),
-            AttributeBuffer::U32 { current, next } => std::mem::swap(current, next),
-            AttributeBuffer::I8 { current, next } => std::mem::swap(current, next),
-            AttributeBuffer::I16 { current, next } => std::mem::swap(current, next),
-            AttributeBuffer::I32 { current, next } => std::mem::swap(current, next),
+            Self::Bool { current, next } => std::mem::swap(current, next),
+            Self::U8 { current, next } => std::mem::swap(current, next),
+            Self::U16 { current, next } => std::mem::swap(current, next),
+            Self::U32 { current, next } => std::mem::swap(current, next),
+            Self::I8 { current, next } => std::mem::swap(current, next),
+            Self::I16 { current, next } => std::mem::swap(current, next),
+            Self::I32 { current, next } => std::mem::swap(current, next),
         }
     }
 
     fn get(&self, cell_index: usize) -> AttributeValue {
         match self {
-            AttributeBuffer::Bool { current, .. } => AttributeValue::Bool(current[cell_index]),
-            AttributeBuffer::U8 { current, .. } => AttributeValue::U8(current[cell_index]),
-            AttributeBuffer::U16 { current, .. } => AttributeValue::U16(current[cell_index]),
-            AttributeBuffer::U32 { current, .. } => AttributeValue::U32(current[cell_index]),
-            AttributeBuffer::I8 { current, .. } => AttributeValue::I8(current[cell_index]),
-            AttributeBuffer::I16 { current, .. } => AttributeValue::I16(current[cell_index]),
-            AttributeBuffer::I32 { current, .. } => AttributeValue::I32(current[cell_index]),
+            Self::Bool { current, .. } => AttributeValue::Bool(current[cell_index]),
+            Self::U8 { current, .. } => AttributeValue::U8(current[cell_index]),
+            Self::U16 { current, .. } => AttributeValue::U16(current[cell_index]),
+            Self::U32 { current, .. } => AttributeValue::U32(current[cell_index]),
+            Self::I8 { current, .. } => AttributeValue::I8(current[cell_index]),
+            Self::I16 { current, .. } => AttributeValue::I16(current[cell_index]),
+            Self::I32 { current, .. } => AttributeValue::I32(current[cell_index]),
         }
     }
 
     fn set_next(&mut self, cell_index: usize, value: AttributeValue) {
         match (self, value) {
-            (AttributeBuffer::Bool { next, .. }, AttributeValue::Bool(value)) => {
-                next[cell_index] = value
-            }
-            (AttributeBuffer::U8 { next, .. }, AttributeValue::U8(value)) => {
-                next[cell_index] = value
-            }
-            (AttributeBuffer::U16 { next, .. }, AttributeValue::U16(value)) => {
-                next[cell_index] = value
-            }
-            (AttributeBuffer::U32 { next, .. }, AttributeValue::U32(value)) => {
-                next[cell_index] = value
-            }
-            (AttributeBuffer::I8 { next, .. }, AttributeValue::I8(value)) => {
-                next[cell_index] = value
-            }
-            (AttributeBuffer::I16 { next, .. }, AttributeValue::I16(value)) => {
-                next[cell_index] = value
-            }
-            (AttributeBuffer::I32 { next, .. }, AttributeValue::I32(value)) => {
-                next[cell_index] = value
-            }
+            (Self::Bool { next, .. }, AttributeValue::Bool(value)) => next[cell_index] = value,
+            (Self::U8 { next, .. }, AttributeValue::U8(value)) => next[cell_index] = value,
+            (Self::U16 { next, .. }, AttributeValue::U16(value)) => next[cell_index] = value,
+            (Self::U32 { next, .. }, AttributeValue::U32(value)) => next[cell_index] = value,
+            (Self::I8 { next, .. }, AttributeValue::I8(value)) => next[cell_index] = value,
+            (Self::I16 { next, .. }, AttributeValue::I16(value)) => next[cell_index] = value,
+            (Self::I32 { next, .. }, AttributeValue::I32(value)) => next[cell_index] = value,
             _ => panic!("attribute value type must match its storage buffer"),
         }
     }
 
     fn set_current(&mut self, cell_index: usize, value: AttributeValue) {
         match (self, value) {
-            (AttributeBuffer::Bool { current, .. }, AttributeValue::Bool(value)) => {
-                current[cell_index] = value
-            }
-            (AttributeBuffer::U8 { current, .. }, AttributeValue::U8(value)) => {
-                current[cell_index] = value
-            }
-            (AttributeBuffer::U16 { current, .. }, AttributeValue::U16(value)) => {
-                current[cell_index] = value
-            }
-            (AttributeBuffer::U32 { current, .. }, AttributeValue::U32(value)) => {
-                current[cell_index] = value
-            }
-            (AttributeBuffer::I8 { current, .. }, AttributeValue::I8(value)) => {
-                current[cell_index] = value
-            }
-            (AttributeBuffer::I16 { current, .. }, AttributeValue::I16(value)) => {
-                current[cell_index] = value
-            }
-            (AttributeBuffer::I32 { current, .. }, AttributeValue::I32(value)) => {
-                current[cell_index] = value
-            }
+            (Self::Bool { current, .. }, AttributeValue::Bool(value)) => current[cell_index] = value,
+            (Self::U8 { current, .. }, AttributeValue::U8(value)) => current[cell_index] = value,
+            (Self::U16 { current, .. }, AttributeValue::U16(value)) => current[cell_index] = value,
+            (Self::U32 { current, .. }, AttributeValue::U32(value)) => current[cell_index] = value,
+            (Self::I8 { current, .. }, AttributeValue::I8(value)) => current[cell_index] = value,
+            (Self::I16 { current, .. }, AttributeValue::I16(value)) => current[cell_index] = value,
+            (Self::I32 { current, .. }, AttributeValue::I32(value)) => current[cell_index] = value,
             _ => panic!("attribute value type must match its storage buffer"),
         }
     }

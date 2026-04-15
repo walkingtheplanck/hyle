@@ -1,33 +1,29 @@
 //! Debug-only wrapper that validates all `CaSolver` contracts at runtime.
 
-use std::marker::PhantomData;
-
-use crate::{AttributeAccessError, AttributeValue, CaSolver, Cell};
+use crate::{AttributeAccessError, AttributeId, AttributeValue, CaSolver, MaterialId};
 
 /// Wrapper that validates `CaSolver` contracts on every operation.
 ///
-/// Panics immediately when a contract is violated, with a message
-/// describing which invariant failed and the arguments that triggered it.
-pub struct ValidatedSolver<C: Cell, S: CaSolver<C>> {
+/// Panics immediately when a contract is violated, with a message describing
+/// which invariant failed and the arguments that triggered it.
+pub struct ValidatedSolver<S: CaSolver> {
     inner: S,
     initial_width: u32,
     initial_height: u32,
     initial_depth: u32,
-    _phantom: PhantomData<C>,
 }
 
-impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> ValidatedSolver<C, S> {
+impl<S: CaSolver> ValidatedSolver<S> {
     /// Wrap a solver with contract validation.
     pub fn new(inner: S) -> Self {
         let w = inner.width();
         let h = inner.height();
         let d = inner.depth();
-        ValidatedSolver {
+        Self {
             inner,
             initial_width: w,
             initial_height: h,
             initial_depth: d,
-            _phantom: PhantomData,
         }
     }
 
@@ -47,38 +43,38 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> ValidatedSolver<C, 
     }
 }
 
-impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for ValidatedSolver<C, S> {
+impl<S> CaSolver for ValidatedSolver<S>
+where
+    S: CaSolver,
+{
     type Topology = S::Topology;
 
     fn width(&self) -> u32 {
         let w = self.inner.width();
-        assert!(
-            w == self.initial_width,
+        assert_eq!(
+            w, self.initial_width,
             "contract violation: width() changed from {} to {}",
-            self.initial_width,
-            w
+            self.initial_width, w
         );
         w
     }
 
     fn height(&self) -> u32 {
         let h = self.inner.height();
-        assert!(
-            h == self.initial_height,
+        assert_eq!(
+            h, self.initial_height,
             "contract violation: height() changed from {} to {}",
-            self.initial_height,
-            h
+            self.initial_height, h
         );
         h
     }
 
     fn depth(&self) -> u32 {
         let d = self.inner.depth();
-        assert!(
-            d == self.initial_depth,
+        assert_eq!(
+            d, self.initial_depth,
             "contract violation: depth() changed from {} to {}",
-            self.initial_depth,
-            d
+            self.initial_depth, d
         );
         d
     }
@@ -98,7 +94,6 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
     fn resolve_index(&self, x: i32, y: i32, z: i32) -> usize {
         let resolved = self.inner.resolve_index(x, y, z);
         let guard = self.inner.guard_index();
-
         assert!(
             resolved <= guard,
             "contract violation: resolve_index({x},{y},{z}) returned {resolved}, which is larger than guard index {guard}"
@@ -107,8 +102,8 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
         if resolved != guard {
             let (ix, iy, iz) = decode_index(resolved, self.inner.width(), self.inner.height());
             let canonical = self.inner.resolve_index(ix as i32, iy as i32, iz as i32);
-            assert!(
-                canonical == resolved,
+            assert_eq!(
+                canonical, resolved,
                 "contract violation: resolve_index({x},{y},{z}) returned {resolved}, but resolving its decoded coordinate ({ix},{iy},{iz}) produced {canonical}"
             );
         }
@@ -116,22 +111,22 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
         resolved
     }
 
-    fn get(&self, x: i32, y: i32, z: i32) -> C {
+    fn get(&self, x: i32, y: i32, z: i32) -> MaterialId {
         let result = self.inner.get(x, y, z);
         let resolved = self.inner.resolve_index(x, y, z);
         let guard = self.inner.guard_index();
 
         if resolved == guard {
-            assert!(
-                result == C::default(),
-                "contract violation: get({x},{y},{z}) resolved to the guard index {guard} but returned {result:?} instead of {:?}",
-                C::default()
+            assert_eq!(
+                result,
+                MaterialId::default(),
+                "contract violation: get({x},{y},{z}) resolved to the guard index {guard} but returned {result:?}"
             );
         } else {
             let (ix, iy, iz) = decode_index(resolved, self.inner.width(), self.inner.height());
             let canonical = self.inner.get(ix as i32, iy as i32, iz as i32);
-            assert!(
-                result == canonical,
+            assert_eq!(
+                result, canonical,
                 "contract violation: get({x},{y},{z}) returned {result:?}, but its resolved cell ({ix},{iy},{iz}) returned {canonical:?}"
             );
         }
@@ -139,50 +134,50 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
         result
     }
 
-    fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
+    fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId) {
         let resolved = self.inner.resolve_index(x, y, z);
         let guard = self.inner.guard_index();
-        self.inner.set(x, y, z, cell);
+        self.inner.set(x, y, z, material);
 
         if resolved != guard {
             let (ix, iy, iz) = decode_index(resolved, self.inner.width(), self.inner.height());
             let readback = self.inner.get(ix as i32, iy as i32, iz as i32);
-            assert!(
-                readback == cell,
-                "contract violation: set({x},{y},{z}, {cell:?}) resolved to index {resolved} / ({ix},{iy},{iz}) but get returned {readback:?}"
+            assert_eq!(
+                readback, material,
+                "contract violation: set({x},{y},{z}, {material:?}) resolved to index {resolved} / ({ix},{iy},{iz}) but get returned {readback:?}"
             );
         }
     }
 
     fn get_attr(
         &self,
-        name: &str,
+        attribute: AttributeId,
         x: i32,
         y: i32,
         z: i32,
     ) -> Result<AttributeValue, AttributeAccessError> {
-        self.inner.get_attr(name, x, y, z)
+        self.inner.get_attr(attribute, x, y, z)
     }
 
     fn set_attr(
         &mut self,
-        name: &str,
+        attribute: AttributeId,
         x: i32,
         y: i32,
         z: i32,
         value: AttributeValue,
     ) -> Result<(), AttributeAccessError> {
-        self.inner.set_attr(name, x, y, z, value)
+        self.inner.set_attr(attribute, x, y, z, value)
     }
 
     fn step(&mut self) {
         let before = self.inner.step_count();
         self.inner.step();
         let after = self.inner.step_count();
-        assert!(
-            after == before + 1,
-            "contract violation: step_count was {before}, after step() it is {after} (expected {})",
-            before + 1
+        assert_eq!(
+            after,
+            before + 1,
+            "contract violation: step_count was {before}, after step() it is {after}"
         );
     }
 
@@ -190,19 +185,19 @@ impl<C: Cell + PartialEq + core::fmt::Debug, S: CaSolver<C>> CaSolver<C> for Val
         self.inner.step_count()
     }
 
-    fn readback(&self) -> crate::GridSnapshot<C> {
+    fn readback(&self) -> crate::GridSnapshot<MaterialId> {
         self.inner.readback()
     }
 
-    fn read_region(&self, region: crate::GridRegion) -> Vec<C> {
+    fn read_region(&self, region: crate::GridRegion) -> Vec<MaterialId> {
         self.inner.read_region(region)
     }
 
-    fn write_region(&mut self, region: crate::GridRegion, cells: &[C]) {
+    fn write_region(&mut self, region: crate::GridRegion, cells: &[MaterialId]) {
         self.inner.write_region(region, cells);
     }
 
-    fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> {
+    fn iter_cells(&self) -> Vec<(u32, u32, u32, MaterialId)> {
         self.inner.iter_cells()
     }
 }

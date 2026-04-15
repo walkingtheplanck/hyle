@@ -1,6 +1,6 @@
-//! Shared viewer cell definitions, palette, and seeding helpers.
+//! Shared viewer material definitions, palette, and seeding helpers.
 
-use hyle_ca_interface::{Blueprint, CaRuntime, CellModel, CellSchema, Instance, Rng, StateDef};
+use hyle_ca_interface::{Blueprint, CaRuntime, Instance, MaterialSet, Rng};
 
 use crate::ca::world::{Material, Materials};
 
@@ -23,33 +23,47 @@ pub(crate) enum ViewerCell {
     Wall = 10,
 }
 
-const VIEWER_CELL_STATES: [StateDef; 11] = [
-    StateDef::new("Dead"),
-    StateDef::new("Alive"),
-    StateDef::new("Bloom"),
-    StateDef::new("Crystal"),
-    StateDef::new("Hot"),
-    StateDef::new("Grass"),
-    StateDef::new("Fire"),
-    StateDef::new("Ember"),
-    StateDef::new("Ash"),
-    StateDef::new("Stone"),
-    StateDef::new("Wall"),
-];
-
 impl ViewerCell {
     pub const fn voxel(self) -> u16 {
         self as u16
     }
 
-    pub const fn palette_len() -> usize {
-        VIEWER_CELL_STATES.len()
+    pub fn palette_len() -> usize {
+        <Self as MaterialSet>::variants().len()
     }
 }
 
-impl CellModel for ViewerCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("ViewerCell", &VIEWER_CELL_STATES)
+impl MaterialSet for ViewerCell {
+    fn variants() -> &'static [Self] {
+        &[
+            ViewerCell::Dead,
+            ViewerCell::Alive,
+            ViewerCell::Bloom,
+            ViewerCell::Crystal,
+            ViewerCell::Hot,
+            ViewerCell::Grass,
+            ViewerCell::Fire,
+            ViewerCell::Ember,
+            ViewerCell::Ash,
+            ViewerCell::Stone,
+            ViewerCell::Wall,
+        ]
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            ViewerCell::Dead => "dead",
+            ViewerCell::Alive => "alive",
+            ViewerCell::Bloom => "bloom",
+            ViewerCell::Crystal => "crystal",
+            ViewerCell::Hot => "hot",
+            ViewerCell::Grass => "grass",
+            ViewerCell::Fire => "fire",
+            ViewerCell::Ember => "ember",
+            ViewerCell::Ash => "ash",
+            ViewerCell::Stone => "stone",
+            ViewerCell::Wall => "wall",
+        }
     }
 }
 
@@ -118,7 +132,7 @@ impl Scenario {
         })
     }
 
-    pub fn blueprint(self) -> Blueprint<ViewerCell> {
+    pub fn blueprint(self) -> Blueprint {
         match self {
             Scenario::Life4555 => life_4555::blueprint(),
             Scenario::WeightedBloom => weighted_bloom::blueprint(),
@@ -173,7 +187,7 @@ impl Scenario {
         materials
     }
 
-    pub fn seed(self, ca: &mut impl CaRuntime<ViewerCell>) {
+    pub fn seed(self, ca: &mut impl CaRuntime) {
         match self {
             Scenario::Life4555 => life_4555::seed(ca),
             Scenario::WeightedBloom => weighted_bloom::seed(ca),
@@ -185,7 +199,7 @@ impl Scenario {
 }
 
 pub(super) fn fill_box(
-    ca: &mut impl CaRuntime<ViewerCell>,
+    ca: &mut impl CaRuntime,
     x_range: std::ops::Range<i32>,
     y_range: std::ops::Range<i32>,
     z_range: std::ops::Range<i32>,
@@ -194,14 +208,14 @@ pub(super) fn fill_box(
     for z in z_range.clone() {
         for y in y_range.clone() {
             for x in x_range.clone() {
-                ca.set(x, y, z, cell);
+                ca.set(x, y, z, cell.id());
             }
         }
     }
 }
 
 pub(super) fn fill_sphere(
-    ca: &mut impl CaRuntime<ViewerCell>,
+    ca: &mut impl CaRuntime,
     center: [i32; 3],
     radius: i32,
     cell: ViewerCell,
@@ -215,7 +229,7 @@ pub(super) fn fill_sphere(
                 let dy = y - cy;
                 let dz = z - cz;
                 if dx * dx + dy * dy + dz * dz <= radius_sq {
-                    ca.set(x, y, z, cell);
+                    ca.set(x, y, z, cell.id());
                 }
             }
         }
@@ -223,7 +237,7 @@ pub(super) fn fill_sphere(
 }
 
 pub(super) fn seed_random_box(
-    ca: &mut impl CaRuntime<ViewerCell>,
+    ca: &mut impl CaRuntime,
     x_range: std::ops::Range<i32>,
     y_range: std::ops::Range<i32>,
     z_range: std::ops::Range<i32>,
@@ -237,7 +251,7 @@ pub(super) fn seed_random_box(
             for x in x_range.clone() {
                 let rng = Rng::with_stream_and_seed(x as u32, y as u32, z as u32, 0, stream, seed);
                 if rng.chance(chance) {
-                    ca.set(x, y, z, cell);
+                    ca.set(x, y, z, cell.id());
                 }
             }
         }

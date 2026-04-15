@@ -1,7 +1,9 @@
 //! Portable blueprint attribute descriptors.
 
+use crate::contracts::AttributeId;
+
 /// Scalar type used by an attached per-cell attribute channel.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum AttributeType {
     /// Boolean attribute.
     Bool,
@@ -118,30 +120,37 @@ impl From<i32> for AttributeValue {
 /// One named attached per-cell attribute declared by a blueprint.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttributeDef {
+    /// Stable numeric identifier.
+    pub id: AttributeId,
     /// Human-readable attribute name.
-    pub name: String,
+    pub name: &'static str,
     /// Scalar type of the attribute channel.
     pub value_type: AttributeType,
-    /// Default value assigned to cells unless overridden by a runtime.
-    pub default: AttributeValue,
 }
 
 impl AttributeDef {
-    /// Construct a named attribute with the given scalar type and zero default.
-    pub fn new(name: impl Into<String>, value_type: AttributeType) -> Self {
+    /// Construct a named attribute descriptor.
+    pub const fn new(id: AttributeId, name: &'static str, value_type: AttributeType) -> Self {
         Self {
-            name: name.into(),
+            id,
+            name,
             value_type,
-            default: AttributeValue::zero(value_type),
         }
     }
+}
 
-    /// Construct a named attribute with an explicit default value.
-    pub fn with_default(name: impl Into<String>, default: AttributeValue) -> Self {
-        Self {
-            name: name.into(),
-            value_type: default.value_type(),
-            default,
-        }
+/// One material-scoped default for an attached attribute channel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MaterialAttributeBinding {
+    /// Attribute being attached to the material.
+    pub attribute: AttributeId,
+    /// Default value applied when a cell enters the material.
+    pub default: AttributeValue,
+}
+
+impl MaterialAttributeBinding {
+    /// Construct a new material-scoped attribute binding.
+    pub const fn new(attribute: AttributeId, default: AttributeValue) -> Self {
+        Self { attribute, default }
     }
 }

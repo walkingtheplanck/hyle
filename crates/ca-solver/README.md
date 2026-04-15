@@ -17,33 +17,64 @@ instances through the shared `CaSolverProvider` interface.
 ## Quick Start
 
 ```rust
-use hyle_ca_interface::{neighbors, Blueprint, CaSolver, CellModel, CellSchema, Instance, StateDef};
+use hyle_ca_interface::{
+    neighbors, Blueprint, CaSolver, Instance, MaterialSet, NeighborhoodFalloff,
+    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+};
 use hyle_ca_solver::Solver;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-enum LifeCell {
+enum Material {
     #[default]
     Dead,
     Alive,
 }
 
-const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] {
+        &[Material::Dead, Material::Alive]
+    }
 
-impl CellModel for LifeCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    fn label(self) -> &'static str {
+        match self {
+            Material::Dead => "dead",
+            Material::Alive => "alive",
+        }
     }
 }
 
-let spec = Blueprint::<LifeCell>::builder()
-    .rules(|rules| {
-        rules.when(LifeCell::Dead)
-            .require(neighbors(LifeCell::Alive).count().eq(3))
-            .becomes(LifeCell::Alive);
-        rules.when(LifeCell::Alive)
-            .unless(neighbors(LifeCell::Alive).count().in_range(2..=3))
-            .becomes(LifeCell::Dead);
-    })
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] {
+        &[Neighborhood::Adjacent]
+    }
+
+    fn label(self) -> &'static str {
+        "adjacent"
+    }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([NeighborhoodSpec::new(
+        Neighborhood::Adjacent,
+        NeighborhoodShape::Moore,
+        NeighborhoodRadius::new(1),
+        NeighborhoodFalloff::Uniform,
+    )])
+    .rules([
+        RuleSpec::when(Material::Dead)
+            .require(neighbors(Material::Alive).count().eq(3))
+            .becomes(Material::Alive),
+        RuleSpec::when(Material::Alive)
+            .require(neighbors(Material::Alive).count().in_range(2..=3).negate())
+            .becomes(Material::Dead),
+    ])
     .build()?;
 
 let mut solver = Solver::from_spec_instance(Instance::new(64, 64, 64).with_seed(7), &spec);
@@ -54,17 +85,43 @@ solver.step();
 ## Decoupled Consumer Path
 
 ```rust
-use hyle_ca_interface::{Blueprint, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance};
+use hyle_ca_interface::{
+    Blueprint, CaRuntime, CaSolverProvider, Instance, MaterialSet, NeighborhoodFalloff,
+    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
+};
 use hyle_ca_solver::CpuSolverProvider;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-struct TestCell(u32);
-
-impl CellModel for TestCell {
-    fn schema() -> CellSchema { CellSchema::opaque("TestCell") }
+enum Material {
+    #[default]
+    Empty,
 }
 
-let spec = Blueprint::<TestCell>::builder().build()?;
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] { &[Material::Empty] }
+    fn label(self) -> &'static str { "empty" }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] { &[Neighborhood::Adjacent] }
+    fn label(self) -> &'static str { "adjacent" }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([NeighborhoodSpec::new(
+        Neighborhood::Adjacent,
+        NeighborhoodShape::Moore,
+        NeighborhoodRadius::new(1),
+        NeighborhoodFalloff::Uniform,
+    )])
+    .build()?;
 let provider = CpuSolverProvider::new();
 let mut runtime = provider.build(Instance::new(16, 16, 16), &spec);
 
@@ -79,10 +136,7 @@ The solver still supports direct construction with built-in topology types:
 ```rust
 use hyle_ca_solver::{Solver, TorusTopology};
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
-struct TestCell(u32);
-
-let _solver = Solver::<TestCell>::with_topology(64, 64, 64, TorusTopology);
+let _solver = Solver::with_topology(64, 64, 64, TorusTopology);
 ```
 
 When you create a solver from a `Blueprint`, the solver interprets that
@@ -97,41 +151,72 @@ Use named neighborhoods in the spec, then reference them from rules:
 
 ```rust
 use hyle_ca_interface::{
-    neighbors, Blueprint, CaSolver, CellModel, CellSchema, NeighborhoodFalloff,
-    NeighborhoodShape, NeighborhoodSpec, StateDef,
+    neighbors, Blueprint, CaSolver, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
 };
 use hyle_ca_solver::Solver;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-enum LifeCell {
+enum Material {
     #[default]
     Dead,
     Alive,
 }
 
-const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] {
+        &[Material::Dead, Material::Alive]
+    }
 
-impl CellModel for LifeCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    fn label(self) -> &'static str {
+        match self {
+            Material::Dead => "dead",
+            Material::Alive => "alive",
+        }
     }
 }
 
-let spec = Blueprint::<LifeCell>::builder()
-    .neighborhood(
-        "far",
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+    Far,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] {
+        &[Neighborhood::Adjacent, Neighborhood::Far]
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Neighborhood::Adjacent => "adjacent",
+            Neighborhood::Far => "far",
+        }
+    }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([
         NeighborhoodSpec::new(
+            Neighborhood::Adjacent,
             NeighborhoodShape::Moore,
-            2,
+            NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
         ),
-    )
-    .rules(|rules| {
-        rules.when(LifeCell::Dead)
-            .using("far")
-            .require(neighbors(LifeCell::Alive).count().at_least(1))
-            .becomes(LifeCell::Alive);
-    })
+        NeighborhoodSpec::new(
+            Neighborhood::Far,
+            NeighborhoodShape::Moore,
+            NeighborhoodRadius::new(2),
+            NeighborhoodFalloff::Uniform,
+        ),
+    ])
+    .default_neighborhood(Neighborhood::Adjacent)
+    .rules([RuleSpec::when(Material::Dead)
+        .using(Neighborhood::Far)
+        .require(neighbors(Material::Alive).count().at_least(1))
+        .becomes(Material::Alive)])
     .build()?;
 
 let mut solver = Solver::from_spec(8, 8, 8, &spec);

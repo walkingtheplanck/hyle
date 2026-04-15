@@ -2,19 +2,23 @@
 
 /// Declarative blueprint specification and builder APIs.
 pub mod blueprint;
-/// Declarative cell-state constraints shared by blueprints.
-pub mod cell;
 /// Portable descriptor types shared across solver implementations.
 pub mod descriptors;
+/// Enum-backed symbol traits and ids shared by blueprints and runtimes.
+pub mod symbols;
 
 pub use blueprint::{
-    attr, neighbors, rng, AttributeAssignment, AttributeComparison, AttributeSelector, Blueprint,
-    BlueprintBuilder, BuildError, Condition, CountComparison, NamedNeighborhood, NeighborCount,
-    NeighborSelector, NeighborWeightedSum, RandomSource, Rule, RuleBuilder, RuleEffect,
-    RulesBuilder, Semantics, Weight, WeightComparison,
+    attr, neighbors, rng, AttrAssign, AttributeAssignment, AttributeComparison, AttributeSelector,
+    Blueprint, BlueprintBuilder, BuildError, Condition, CountComparison, MatAttr, NeighborCount,
+    NeighborSelector, NeighborWeightedSum, RandomSource, ResolvedCondition, Rule, RuleEffect,
+    RuleSpec, Semantics, Weight, WeightComparison,
 };
-pub use cell::{CellModel, CellSchema, CellState, StateDef};
 pub use descriptors::{
     AttributeDef, AttributeType, AttributeValue, AxisTopology, GridDims, GridRegion, GridSnapshot,
-    NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, TopologyDescriptor, WEIGHT_SCALE,
+    MaterialAttributeBinding, MaterialDef, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodShape, NeighborhoodSpec, TopologyDescriptor, WEIGHT_SCALE,
+};
+pub use symbols::{
+    AttributeId, AttributeRef, AttributeSet, MaterialId, MaterialRef, MaterialSet, NeighborhoodId,
+    NeighborhoodRef, NeighborhoodSet,
 };

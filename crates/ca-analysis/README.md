@@ -14,29 +14,58 @@ contracts directly; this crate helps inspect them consistently.
 
 ```rust
 use hyle_ca_analysis::analyze_spec;
-use hyle_ca_interface::{neighbors, Blueprint, CellModel, CellSchema, StateDef};
+use hyle_ca_interface::{
+    neighbors, Blueprint, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-enum LifeCell {
+enum Material {
     #[default]
     Dead,
     Alive,
 }
 
-const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] {
+        &[Material::Dead, Material::Alive]
+    }
 
-impl CellModel for LifeCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    fn label(self) -> &'static str {
+        match self {
+            Material::Dead => "dead",
+            Material::Alive => "alive",
+        }
     }
 }
 
-let spec = Blueprint::<LifeCell>::builder()
-    .rules(|rules| {
-        rules.when(LifeCell::Dead)
-            .require(neighbors(LifeCell::Alive).count().eq(3))
-            .becomes(LifeCell::Alive);
-    })
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] {
+        &[Neighborhood::Adjacent]
+    }
+
+    fn label(self) -> &'static str {
+        "adjacent"
+    }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([NeighborhoodSpec::new(
+        Neighborhood::Adjacent,
+        NeighborhoodShape::Moore,
+        NeighborhoodRadius::new(1),
+        NeighborhoodFalloff::Uniform,
+    )])
+    .rules([RuleSpec::when(Material::Dead)
+        .require(neighbors(Material::Alive).count().eq(3))
+        .becomes(Material::Alive)])
     .build()?;
 
 let analysis = analyze_spec(&spec);

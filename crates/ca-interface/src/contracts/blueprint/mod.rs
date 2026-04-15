@@ -4,10 +4,10 @@ mod builder;
 mod dsl;
 mod spec;
 
-pub use builder::{BlueprintBuilder, BuildError, RuleBuilder, RulesBuilder};
+pub use builder::{BlueprintBuilder, BuildError, MatAttr, RuleSpec};
 pub use dsl::{
-    attr, neighbors, rng, AttributeAssignment, AttributeComparison, AttributeSelector, Condition,
+    attr, neighbors, rng, AttrAssign, AttributeComparison, AttributeSelector, Condition,
     CountComparison, NeighborCount, NeighborSelector, NeighborWeightedSum, RandomSource, Weight,
     WeightComparison,
 };
-pub use spec::{Blueprint, NamedNeighborhood, Rule, RuleEffect, Semantics};
+pub use spec::{AttributeAssignment, Blueprint, ResolvedCondition, Rule, RuleEffect, Semantics};

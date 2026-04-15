@@ -6,7 +6,7 @@ use hyle_ca_interface::NeighborhoodSpec;
 use super::NeighborhoodAnalysis;
 
 pub(crate) fn analyze_neighborhoods(
-    names: impl Iterator<Item = (usize, String, NeighborhoodSpec)>,
+    names: impl Iterator<Item = (usize, &'static str, NeighborhoodSpec)>,
     usage_counts: &[usize],
 ) -> Vec<NeighborhoodAnalysis> {
     names

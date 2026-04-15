@@ -1,5 +1,3 @@
-use crate::CellState;
-
 /// Immutable grid dimensions in cells.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct GridDims {
@@ -81,14 +79,14 @@ impl GridRegion {
 ///
 /// Cells are stored in x-major order: x changes fastest, then y, then z.
 #[derive(Clone, Debug)]
-pub struct GridSnapshot<C: CellState> {
+pub struct GridSnapshot<C> {
     /// Dimensions of the captured grid.
     pub dims: GridDims,
     /// Captured cell values in x-major order.
     pub cells: Vec<C>,
 }
 
-impl<C: CellState> GridSnapshot<C> {
+impl<C> GridSnapshot<C> {
     /// Construct a validated grid snapshot.
     pub fn new(dims: GridDims, cells: Vec<C>) -> Self {
         assert_eq!(

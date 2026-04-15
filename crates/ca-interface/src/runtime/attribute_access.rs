@@ -1,10 +1,12 @@
 //! Shared runtime attribute-access error types.
 
+use crate::AttributeId;
+
 /// Errors raised by runtime attribute reads and writes.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AttributeAccessError {
-    /// The named attribute is not declared on the active blueprint.
-    UnknownAttribute(String),
+    /// The requested attribute id is not declared on the active blueprint.
+    UnknownAttribute(AttributeId),
     /// The requested coordinate resolves outside the simulation bounds.
     OutOfBounds {
         /// X coordinate requested by the caller.

@@ -2,8 +2,9 @@
 
 pub use crate::contracts::blueprint::{attr, neighbors, rng};
 pub use crate::contracts::{
-    AttributeDef, AttributeType, AttributeValue, AxisTopology, Blueprint, BuildError, CellModel,
-    CellSchema, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef,
+    AttrAssign, AttributeDef, AttributeId, AttributeSet, AttributeType, AttributeValue,
+    AxisTopology, Blueprint, BuildError, MatAttr, MaterialId, MaterialSet, NeighborhoodFalloff,
+    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
     TopologyDescriptor, Weight,
 };
-pub use crate::{AttributeAccessError, CaRuntime, CaSolverProvider, Cell, Instance, Rng};
+pub use crate::{AttributeAccessError, CaRuntime, CaSolverProvider, Instance, Rng};

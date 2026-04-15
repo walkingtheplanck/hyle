@@ -1,13 +1,13 @@
 //! Rule-derived analysis helpers.
 
 use hyle_ca_interface::semantics::{max_weighted_sum, neighbor_count};
-use hyle_ca_interface::{Blueprint, CellModel, Condition, CountComparison, WeightComparison};
+use hyle_ca_interface::{Blueprint, CountComparison, ResolvedCondition, WeightComparison};
 
 use crate::{Diagnostic, Subject};
 
 use super::RuleAnalysis;
 
-pub(crate) fn analyze_rules<C: CellModel>(spec: &Blueprint<C>) -> Vec<RuleAnalysis<C>> {
+pub(crate) fn analyze_rules(spec: &Blueprint) -> Vec<RuleAnalysis> {
     let rules = spec.rules();
     let mut analyses = Vec::with_capacity(rules.len());
 
@@ -44,7 +44,7 @@ pub(crate) fn analyze_rules<C: CellModel>(spec: &Blueprint<C>) -> Vec<RuleAnalys
         if let Some(condition) = &rule.condition {
             collect_condition_diagnostics(
                 condition,
-                spec.neighborhoods()[rule.neighborhood].spec,
+                spec.neighborhoods()[rule.neighborhood.index()],
                 index,
                 &mut diagnostics,
             );
@@ -65,14 +65,14 @@ pub(crate) fn analyze_rules<C: CellModel>(spec: &Blueprint<C>) -> Vec<RuleAnalys
     analyses
 }
 
-fn collect_condition_diagnostics<C: CellModel>(
-    condition: &Condition<C>,
+fn collect_condition_diagnostics(
+    condition: &ResolvedCondition,
     neighborhood: hyle_ca_interface::NeighborhoodSpec,
     rule_index: usize,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     match condition {
-        Condition::NeighborCount { comparison, .. } => {
+        ResolvedCondition::NeighborCount { comparison, .. } => {
             let max_count = neighbor_count(neighborhood);
             if count_never_matches(*comparison, max_count) {
                 diagnostics.push(Diagnostic::warning(
@@ -84,7 +84,7 @@ fn collect_condition_diagnostics<C: CellModel>(
                 ));
             }
         }
-        Condition::NeighborWeightedSum { comparison, .. } => {
+        ResolvedCondition::NeighborWeightedSum { comparison, .. } => {
             let max_weight = max_weighted_sum(neighborhood);
             if weighted_never_matches(*comparison, max_weight) {
                 diagnostics.push(Diagnostic::warning(
@@ -96,13 +96,13 @@ fn collect_condition_diagnostics<C: CellModel>(
                 ));
             }
         }
-        Condition::RandomChance { .. } | Condition::Attribute { .. } => {}
-        Condition::And(conditions) | Condition::Or(conditions) => {
+        ResolvedCondition::RandomChance { .. } | ResolvedCondition::Attribute { .. } => {}
+        ResolvedCondition::And(conditions) | ResolvedCondition::Or(conditions) => {
             for condition in conditions {
                 collect_condition_diagnostics(condition, neighborhood, rule_index, diagnostics);
             }
         }
-        Condition::Not(condition) => {
+        ResolvedCondition::Not(condition) => {
             collect_condition_diagnostics(condition, neighborhood, rule_index, diagnostics);
         }
     }

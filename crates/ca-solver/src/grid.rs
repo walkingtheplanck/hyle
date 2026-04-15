@@ -1,23 +1,19 @@
-//! Dense 3D grid - double-buffered cell storage.
+//! Dense 3D grid - double-buffered material storage.
 
-use hyle_ca_interface::{Cell, GridDims, Topology};
+use hyle_ca_interface::{GridDims, MaterialId, Topology};
 
 /// Dense 3D grid with double buffering for order-independent stepping.
-pub(crate) struct Grid<C: Cell> {
+pub(crate) struct Grid {
     pub width: u32,
     pub height: u32,
     pub depth: u32,
-    pub cells: Vec<C>,
-    pub cells_next: Vec<C>,
+    pub cells: Vec<MaterialId>,
+    pub cells_next: Vec<MaterialId>,
 }
 
-impl<C: Cell> Grid<C> {
-    /// Create a grid filled with `C::default()`.
-    pub fn new(width: u32, height: u32, depth: u32) -> Self {
-        // Coordinate resolution starts from `i32` positions. Keeping each axis
-        // within `i32::MAX` lets bounded topology use the cast-and-compare path
-        // safely: any negative `i32` becomes a `u32` value that is necessarily
-        // larger than every valid dimension and therefore rejected.
+impl Grid {
+    /// Create a grid filled with the default material id.
+    pub fn new(width: u32, height: u32, depth: u32, default_material: MaterialId) -> Self {
         let max_dim = i32::MAX as u32;
         assert!(width <= max_dim, "width must be <= i32::MAX");
         assert!(height <= max_dim, "height must be <= i32::MAX");
@@ -28,12 +24,12 @@ impl<C: Cell> Grid<C> {
             .and_then(|xy| xy.checked_mul(depth as usize))
             .expect("grid cell count must fit in usize");
         let total = n.checked_add(1).expect("grid allocation size overflow");
-        Grid {
+        Self {
             width,
             height,
             depth,
-            cells: vec![C::default(); total],
-            cells_next: vec![C::default(); total],
+            cells: vec![default_material; total],
+            cells_next: vec![default_material; total],
         }
     }
 
@@ -61,33 +57,21 @@ impl<C: Cell> Grid<C> {
         resolve_index(topology, self.dims(), self.guard_idx(), x, y, z)
     }
 
-    /// Get a cell from the current buffer according to topology.
-    pub fn get<T: Topology>(&self, topology: &T, x: i32, y: i32, z: i32) -> C {
-        self.get_from_slice(&self.cells, topology, x, y, z)
-    }
-
-    /// Get a cell from an arbitrary backing slice according to topology.
-    pub fn get_from_slice<T: Topology>(
-        &self,
-        cells: &[C],
-        topology: &T,
-        x: i32,
-        y: i32,
-        z: i32,
-    ) -> C {
+    /// Get a material from the current buffer according to topology.
+    pub fn get<T: Topology>(&self, topology: &T, x: i32, y: i32, z: i32) -> MaterialId {
         let index = self.resolve_idx(topology, x, y, z);
-        cells[index]
+        self.cells[index]
     }
 
-    /// Set a cell in the current buffer according to topology.
-    pub fn set<T: Topology>(&mut self, topology: &T, x: i32, y: i32, z: i32, cell: C) {
+    /// Set a material in the current buffer according to topology.
+    pub fn set<T: Topology>(&mut self, topology: &T, x: i32, y: i32, z: i32, material: MaterialId) {
         let index = self.resolve_idx(topology, x, y, z);
         if index != self.guard_idx() {
-            self.cells[index] = cell;
+            self.cells[index] = material;
         }
     }
 
-    /// Copy current cells to next buffer, preparing for a step.
+    /// Copy current materials to the next buffer, preparing for a step.
     pub fn prepare_step(&mut self) {
         self.cells_next.copy_from_slice(&self.cells);
     }
@@ -97,8 +81,8 @@ impl<C: Cell> Grid<C> {
         std::mem::swap(&mut self.cells, &mut self.cells_next);
     }
 
-    /// Iterate all cells as `(x, y, z, cell)`.
-    pub fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> {
+    /// Iterate all materials as `(x, y, z, material)`.
+    pub fn iter_cells(&self) -> Vec<(u32, u32, u32, MaterialId)> {
         let w = self.width;
         let h = self.height;
         self.cells
@@ -115,7 +99,6 @@ impl<C: Cell> Grid<C> {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(crate) fn resolve_index<T: Topology>(
     topology: &T,
     dims: GridDims,

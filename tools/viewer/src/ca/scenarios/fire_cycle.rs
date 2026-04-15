@@ -1,60 +1,82 @@
 //! Grass, fire, ember, ash, and stone ecology.
 
 use hyle_ca_interface::{
-    neighbors, rng, Blueprint, CaRuntime, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec,
-    Weight,
+    neighbors, rng, Blueprint, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec, Weight,
 };
 
 use super::shared::{fill_box, fill_sphere, seed_random_box, ViewerCell};
 
-pub(super) fn blueprint() -> Blueprint<ViewerCell> {
-    Blueprint::<ViewerCell>::builder()
-        .neighborhood(
-            "ember-field",
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Neighborhoods {
+    Adjacent,
+    EmberField,
+}
+
+impl NeighborhoodSet for Neighborhoods {
+    fn variants() -> &'static [Self] {
+        &[Neighborhoods::Adjacent, Neighborhoods::EmberField]
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Neighborhoods::Adjacent => "adjacent",
+            Neighborhoods::EmberField => "ember_field",
+        }
+    }
+}
+
+pub(super) fn blueprint() -> Blueprint {
+    Blueprint::builder()
+        .materials::<ViewerCell>()
+        .neighborhoods::<Neighborhoods>()
+        .neighborhood_specs([
             NeighborhoodSpec::new(
+                Neighborhoods::Adjacent,
+                NeighborhoodShape::Moore,
+                NeighborhoodRadius::new(1),
+                NeighborhoodFalloff::Uniform,
+            ),
+            NeighborhoodSpec::new(
+                Neighborhoods::EmberField,
                 NeighborhoodShape::Spherical,
-                2,
+                NeighborhoodRadius::new(2),
                 NeighborhoodFalloff::InverseSquare,
             ),
-        )
-        .rules(|rules| {
-            rules.when(ViewerCell::Stone).keep();
-            rules.when(ViewerCell::Fire).becomes(ViewerCell::Ember);
-            rules
-                .when(ViewerCell::Ember)
+        ])
+        .rules([
+            RuleSpec::when(ViewerCell::Stone).keep(),
+            RuleSpec::when(ViewerCell::Fire).becomes(ViewerCell::Ember),
+            RuleSpec::when(ViewerCell::Ember)
                 .require(rng(1).one_in(2))
-                .becomes(ViewerCell::Ash);
-            rules
-                .when(ViewerCell::Grass)
+                .becomes(ViewerCell::Ash),
+            RuleSpec::when(ViewerCell::Grass)
                 .require(neighbors(ViewerCell::Fire).any())
-                .becomes(ViewerCell::Fire);
-            rules
-                .when(ViewerCell::Grass)
-                .using("ember-field")
+                .becomes(ViewerCell::Fire),
+            RuleSpec::when(ViewerCell::Grass)
+                .using(Neighborhoods::EmberField)
                 .require(
                     neighbors(ViewerCell::Ember)
                         .weighted_sum()
                         .at_least(Weight::cells(1)),
                 )
                 .require(rng(2).one_in(2))
-                .becomes(ViewerCell::Fire);
-            rules
-                .when(ViewerCell::Ash)
+                .becomes(ViewerCell::Fire),
+            RuleSpec::when(ViewerCell::Ash)
                 .require(neighbors(ViewerCell::Grass).count().at_least(2))
                 .require(rng(3).one_in(6))
-                .becomes(ViewerCell::Grass);
-            rules
-                .when(ViewerCell::Dead)
+                .becomes(ViewerCell::Grass),
+            RuleSpec::when(ViewerCell::Dead)
                 .require(neighbors(ViewerCell::Grass).count().at_least(3))
                 .require(neighbors(ViewerCell::Fire).count().eq(0))
                 .require(rng(4).one_in(8))
-                .becomes(ViewerCell::Grass);
-        })
+                .becomes(ViewerCell::Grass),
+        ])
         .build()
         .expect("fire cycle blueprint should build")
 }
 
-pub(super) fn seed(ca: &mut impl CaRuntime<ViewerCell>) {
+pub(super) fn seed(ca: &mut impl CaRuntime) {
     fill_box(ca, 8..56, 6..30, 8..56, ViewerCell::Grass);
     fill_sphere(ca, [20, 16, 20], 4, ViewerCell::Stone);
     fill_sphere(ca, [42, 14, 38], 3, ViewerCell::Stone);

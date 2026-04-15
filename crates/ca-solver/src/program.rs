@@ -2,43 +2,33 @@
 
 use hyle_ca_interface::semantics::{cell_rng, ResolvedBlueprint};
 use hyle_ca_interface::{
-    AttributeAssignment, AttributeComparison, AttributeValue, Cell, CellModel, Condition,
-    CountComparison, RuleEffect, WeightComparison,
+    AttributeAssignment, AttributeComparison, AttributeId, AttributeValue, CountComparison,
+    MaterialId, ResolvedCondition, RuleEffect, WeightComparison,
 };
 
 use crate::Neighborhood;
 
-pub(crate) struct CompiledProgram<C: Cell + Eq> {
-    rules: Vec<CompiledRule<C>>,
+pub(crate) struct CompiledProgram {
+    rules: Vec<CompiledRule>,
 }
 
-pub(crate) struct Evaluation<C: Cell + Eq> {
-    pub(crate) effect: RuleEffect<C>,
-    pub(crate) attribute_updates: Vec<CompiledAttributeAssignment>,
+pub(crate) struct Evaluation {
+    pub(crate) effect: RuleEffect,
+    pub(crate) attribute_updates: Vec<AttributeAssignment>,
 }
 
-impl<C: Cell + Eq> CompiledProgram<C> {
-    pub(crate) fn from_blueprint(blueprint: &ResolvedBlueprint<C>) -> Self
-    where
-        C: CellModel,
-    {
+impl CompiledProgram {
+    pub(crate) fn from_blueprint(blueprint: &ResolvedBlueprint) -> Self {
         let neighborhoods = blueprint.neighborhoods();
         let rules = blueprint
             .rules()
             .iter()
             .map(|rule| {
-                let neighborhood = neighborhoods[rule.neighborhood].neighborhood();
+                let neighborhood = neighborhoods[rule.neighborhood.index()].neighborhood();
                 CompiledRule {
                     when: rule.when,
-                    condition: rule
-                        .condition
-                        .as_ref()
-                        .map(|condition| compile_condition(condition, blueprint)),
-                    attribute_updates: rule
-                        .attribute_updates
-                        .iter()
-                        .map(|update| compile_attribute_assignment(update, blueprint))
-                        .collect(),
+                    condition: rule.condition.clone().map(compile_condition),
+                    attribute_updates: rule.attribute_updates.clone(),
                     effect: rule.effect,
                     neighborhood: Neighborhood::new(neighborhood.samples()),
                 }
@@ -50,13 +40,13 @@ impl<C: Cell + Eq> CompiledProgram<C> {
 
     pub(crate) fn evaluate(
         &mut self,
-        center: C,
+        center: MaterialId,
         pos: [i32; 3],
         step: u32,
         seed: u64,
-        sample: impl Fn(i32, i32, i32) -> C,
-        read_attribute: impl Fn(usize) -> AttributeValue,
-    ) -> Option<Evaluation<C>> {
+        sample: impl Fn(i32, i32, i32) -> MaterialId,
+        read_attribute: impl Fn(AttributeId) -> AttributeValue,
+    ) -> Option<Evaluation> {
         for rule in &mut self.rules {
             if let Some(evaluation) =
                 rule.evaluate(center, pos, step, seed, &sample, &read_attribute)
@@ -69,28 +59,22 @@ impl<C: Cell + Eq> CompiledProgram<C> {
     }
 }
 
-struct CompiledRule<C: Cell + Eq> {
-    when: C,
-    condition: Option<CompiledCondition<C>>,
-    attribute_updates: Vec<CompiledAttributeAssignment>,
-    effect: RuleEffect<C>,
-    neighborhood: Neighborhood<C>,
+struct CompiledRule {
+    when: MaterialId,
+    condition: Option<CompiledCondition>,
+    attribute_updates: Vec<AttributeAssignment>,
+    effect: RuleEffect,
+    neighborhood: Neighborhood,
 }
 
 #[derive(Clone)]
-pub(crate) struct CompiledAttributeAssignment {
-    pub(crate) attribute: usize,
-    pub(crate) value: AttributeValue,
-}
-
-#[derive(Clone)]
-enum CompiledCondition<C: Cell + Eq> {
+enum CompiledCondition {
     NeighborCount {
-        state: C,
+        material: MaterialId,
         comparison: CountComparison,
     },
     NeighborWeightedSum {
-        state: C,
+        material: MaterialId,
         comparison: WeightComparison,
     },
     RandomChance {
@@ -98,24 +82,24 @@ enum CompiledCondition<C: Cell + Eq> {
         one_in: u32,
     },
     Attribute {
-        attribute: usize,
+        attribute: AttributeId,
         comparison: AttributeComparison,
     },
-    And(Vec<CompiledCondition<C>>),
-    Or(Vec<CompiledCondition<C>>),
-    Not(Box<CompiledCondition<C>>),
+    And(Vec<CompiledCondition>),
+    Or(Vec<CompiledCondition>),
+    Not(Box<CompiledCondition>),
 }
 
-impl<C: Cell + Eq> CompiledRule<C> {
+impl CompiledRule {
     fn evaluate(
         &mut self,
-        center: C,
+        center: MaterialId,
         pos: [i32; 3],
         step: u32,
         seed: u64,
-        sample: &impl Fn(i32, i32, i32) -> C,
-        read_attribute: &impl Fn(usize) -> AttributeValue,
-    ) -> Option<Evaluation<C>> {
+        sample: &impl Fn(i32, i32, i32) -> MaterialId,
+        read_attribute: &impl Fn(AttributeId) -> AttributeValue,
+    ) -> Option<Evaluation> {
         if center != self.when {
             return None;
         }
@@ -141,83 +125,65 @@ impl<C: Cell + Eq> CompiledRule<C> {
     }
 }
 
-fn compile_condition<C: Cell + Eq + CellModel>(
-    condition: &Condition<C>,
-    blueprint: &ResolvedBlueprint<C>,
-) -> CompiledCondition<C> {
+fn compile_condition(condition: ResolvedCondition) -> CompiledCondition {
     match condition {
-        Condition::NeighborCount { state, comparison } => CompiledCondition::NeighborCount {
-            state: *state,
-            comparison: *comparison,
+        ResolvedCondition::NeighborCount {
+            material,
+            comparison,
+        } => CompiledCondition::NeighborCount {
+            material,
+            comparison,
         },
-        Condition::NeighborWeightedSum { state, comparison } => {
-            CompiledCondition::NeighborWeightedSum {
-                state: *state,
-                comparison: *comparison,
-            }
+        ResolvedCondition::NeighborWeightedSum {
+            material,
+            comparison,
+        } => CompiledCondition::NeighborWeightedSum {
+            material,
+            comparison,
+        },
+        ResolvedCondition::RandomChance { stream, one_in } => {
+            CompiledCondition::RandomChance { stream, one_in }
         }
-        Condition::RandomChance { stream, one_in } => CompiledCondition::RandomChance {
-            stream: *stream,
-            one_in: *one_in,
-        },
-        Condition::Attribute {
+        ResolvedCondition::Attribute {
             attribute,
             comparison,
         } => CompiledCondition::Attribute {
-            attribute: blueprint
-                .attributes()
-                .iter()
-                .position(|candidate| candidate.name == attribute.as_str())
-                .expect("validated attribute conditions must resolve during compilation"),
-            comparison: *comparison,
+            attribute,
+            comparison,
         },
-        Condition::And(conditions) => CompiledCondition::And(
-            conditions
-                .iter()
-                .map(|condition| compile_condition(condition, blueprint))
-                .collect(),
-        ),
-        Condition::Or(conditions) => CompiledCondition::Or(
-            conditions
-                .iter()
-                .map(|condition| compile_condition(condition, blueprint))
-                .collect(),
-        ),
-        Condition::Not(condition) => {
-            CompiledCondition::Not(Box::new(compile_condition(condition, blueprint)))
+        ResolvedCondition::And(conditions) => {
+            CompiledCondition::And(conditions.into_iter().map(compile_condition).collect())
+        }
+        ResolvedCondition::Or(conditions) => {
+            CompiledCondition::Or(conditions.into_iter().map(compile_condition).collect())
+        }
+        ResolvedCondition::Not(condition) => {
+            CompiledCondition::Not(Box::new(compile_condition(*condition)))
         }
     }
 }
 
-fn compile_attribute_assignment<C: Cell + Eq + CellModel>(
-    update: &AttributeAssignment,
-    blueprint: &ResolvedBlueprint<C>,
-) -> CompiledAttributeAssignment {
-    CompiledAttributeAssignment {
-        attribute: blueprint
-            .attributes()
-            .iter()
-            .position(|candidate| candidate.name == update.attribute.as_str())
-            .expect("validated attribute updates must resolve during compilation"),
-        value: update.value,
-    }
-}
-
-fn evaluate_condition<C: Cell + Eq>(
-    condition: &CompiledCondition<C>,
-    neighborhood: &Neighborhood<C>,
+fn evaluate_condition(
+    condition: &CompiledCondition,
+    neighborhood: &Neighborhood,
     pos: [i32; 3],
     step: u32,
     seed: u64,
-    read_attribute: &impl Fn(usize) -> AttributeValue,
+    read_attribute: &impl Fn(AttributeId) -> AttributeValue,
 ) -> bool {
     match condition {
-        CompiledCondition::NeighborCount { state, comparison } => {
-            let count = neighborhood.count(|entry| entry.cell == *state);
+        CompiledCondition::NeighborCount {
+            material,
+            comparison,
+        } => {
+            let count = neighborhood.count(|entry| entry.cell == *material);
             compare_count(count, *comparison)
         }
-        CompiledCondition::NeighborWeightedSum { state, comparison } => {
-            let weight = neighborhood.weighted_sum(|entry| entry.cell == *state);
+        CompiledCondition::NeighborWeightedSum {
+            material,
+            comparison,
+        } => {
+            let weight = neighborhood.weighted_sum(|entry| entry.cell == *material);
             compare_weight(weight, *comparison)
         }
         CompiledCondition::RandomChance { stream, one_in } => {

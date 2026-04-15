@@ -3,22 +3,24 @@
 use std::ops::RangeInclusive;
 
 use crate::contracts::descriptors::WEIGHT_SCALE;
-use crate::{AttributeValue, CellState};
+use crate::contracts::{
+    AttributeRef, AttributeSet, AttributeType, AttributeValue, MaterialRef, MaterialSet,
+};
 
 /// A deterministic rule condition.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Condition<C: CellState> {
+pub enum Condition {
     /// Compare the count of matching neighbors against a predicate.
     NeighborCount {
-        /// State that neighbors must equal to be counted.
-        state: C,
+        /// Material that neighbors must equal to be counted.
+        material: MaterialRef,
         /// Count comparison to apply.
         comparison: CountComparison,
     },
     /// Compare the weighted sum of matching neighbors against a predicate.
     NeighborWeightedSum {
-        /// State that neighbors must equal to be included in the sum.
-        state: C,
+        /// Material that neighbors must equal to be included in the sum.
+        material: MaterialRef,
         /// Weighted comparison to apply.
         comparison: WeightComparison,
     },
@@ -31,20 +33,20 @@ pub enum Condition<C: CellState> {
     },
     /// Compare the center cell's attached attribute against a predicate.
     Attribute {
-        /// Named attribute channel read from the center cell.
-        attribute: String,
+        /// Attribute channel read from the center cell.
+        attribute: AttributeRef,
         /// Attribute comparison to apply.
         comparison: AttributeComparison,
     },
     /// Logical conjunction.
-    And(Vec<Condition<C>>),
+    And(Vec<Condition>),
     /// Logical disjunction.
-    Or(Vec<Condition<C>>),
+    Or(Vec<Condition>),
     /// Logical negation.
-    Not(Box<Condition<C>>),
+    Not(Box<Condition>),
 }
 
-impl<C: CellState> Condition<C> {
+impl Condition {
     /// Combine two conditions with logical AND.
     #[must_use]
     pub fn and(self, other: Self) -> Self {
@@ -91,45 +93,6 @@ impl<C: CellState> Condition<C> {
     #[must_use]
     pub fn negate(self) -> Self {
         Condition::Not(Box::new(self))
-    }
-
-    /// The matching state used by this condition if it is a direct neighbor count.
-    pub fn state(&self) -> Option<&C> {
-        match self {
-            Condition::NeighborCount { state, .. }
-            | Condition::NeighborWeightedSum { state, .. } => Some(state),
-            Condition::RandomChance { .. }
-            | Condition::Attribute { .. }
-            | Condition::And(_)
-            | Condition::Or(_)
-            | Condition::Not(_) => None,
-        }
-    }
-
-    /// The count comparison used by this condition if it is a direct neighbor count.
-    pub fn comparison(&self) -> Option<CountComparison> {
-        match self {
-            Condition::NeighborCount { comparison, .. } => Some(*comparison),
-            Condition::NeighborWeightedSum { .. }
-            | Condition::RandomChance { .. }
-            | Condition::Attribute { .. }
-            | Condition::And(_)
-            | Condition::Or(_)
-            | Condition::Not(_) => None,
-        }
-    }
-
-    /// The weighted comparison used by this condition if it is a direct weighted sum.
-    pub fn weighted_comparison(&self) -> Option<WeightComparison> {
-        match self {
-            Condition::NeighborWeightedSum { comparison, .. } => Some(*comparison),
-            Condition::NeighborCount { .. }
-            | Condition::RandomChance { .. }
-            | Condition::Attribute { .. }
-            | Condition::And(_)
-            | Condition::Or(_)
-            | Condition::Not(_) => None,
-        }
     }
 }
 
@@ -229,72 +192,102 @@ impl Weight {
     }
 }
 
-/// One attribute write applied when a rule matches.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AttributeAssignment {
-    /// Named attribute channel to overwrite.
-    pub attribute: String,
-    /// Replacement value written to the next state.
-    pub value: AttributeValue,
+/// One material-scoped attribute assignment used by `material_attributes`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AttrAssign {
+    /// Attribute being attached to a material.
+    pub attribute: AttributeRef,
+    /// Default value for that material.
+    pub default: AttributeValue,
 }
 
-impl AttributeAssignment {
-    /// Construct a new attribute assignment.
-    pub fn new(attribute: impl Into<String>, value: impl Into<AttributeValue>) -> Self {
+impl AttrAssign {
+    /// Start building a material-scoped attribute assignment.
+    pub fn new<A: AttributeSet>(attribute: A) -> PendingAttrAssign {
+        PendingAttrAssign {
+            attribute: attribute.attribute(),
+        }
+    }
+
+    /// Construct a material-scoped attribute assignment with a default value.
+    pub fn with_default<A: AttributeSet>(
+        attribute: A,
+        default: impl Into<AttributeValue>,
+    ) -> Self {
         Self {
-            attribute: attribute.into(),
-            value: value.into(),
+            attribute: attribute.attribute(),
+            default: default.into(),
         }
     }
 }
 
-/// Select neighbors equal to a specific cell state.
+/// Pending material-scoped attribute assignment awaiting its default value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct NeighborSelector<C: CellState> {
-    state: C,
+pub struct PendingAttrAssign {
+    attribute: AttributeRef,
 }
 
-impl<C: CellState> NeighborSelector<C> {
-    /// Start a count comparison for the selected state.
-    pub fn count(self) -> NeighborCount<C> {
-        NeighborCount { state: self.state }
+impl PendingAttrAssign {
+    /// Finalize the assignment with a material default value.
+    pub fn default(self, value: impl Into<AttributeValue>) -> AttrAssign {
+        AttrAssign {
+            attribute: self.attribute,
+            default: value.into(),
+        }
+    }
+}
+
+/// Select neighbors equal to a specific material.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NeighborSelector {
+    material: MaterialRef,
+}
+
+impl NeighborSelector {
+    /// Start a count comparison for the selected material.
+    pub fn count(self) -> NeighborCount {
+        NeighborCount {
+            material: self.material,
+        }
     }
 
-    /// Start a weighted-sum comparison for the selected state.
-    pub fn weighted_sum(self) -> NeighborWeightedSum<C> {
-        NeighborWeightedSum { state: self.state }
+    /// Start a weighted-sum comparison for the selected material.
+    pub fn weighted_sum(self) -> NeighborWeightedSum {
+        NeighborWeightedSum {
+            material: self.material,
+        }
     }
 
     /// Require at least one matching neighbor.
-    pub fn any(self) -> Condition<C> {
+    pub fn any(self) -> Condition {
         self.count().at_least(1)
     }
 
     /// Require no matching neighbors.
-    pub fn none(self) -> Condition<C> {
+    pub fn none(self) -> Condition {
         self.count().eq(0)
     }
 }
 
 /// A pending numeric comparison on the count of matching neighbors.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct NeighborCount<C: CellState> {
-    state: C,
+pub struct NeighborCount {
+    material: MaterialRef,
 }
 
-impl<C: CellState> NeighborCount<C> {
+impl NeighborCount {
     /// Require an exact neighbor count.
-    pub fn eq(self, count: u32) -> Condition<C> {
+    pub fn eq(self, count: u32) -> Condition {
         Condition::NeighborCount {
-            state: self.state,
+            material: self.material,
             comparison: CountComparison::Eq(count),
         }
     }
 
     /// Require the neighbor count to fall inside an inclusive range.
-    pub fn in_range(self, range: RangeInclusive<u32>) -> Condition<C> {
+    pub fn in_range(self, range: RangeInclusive<u32>) -> Condition {
         Condition::NeighborCount {
-            state: self.state,
+            material: self.material,
             comparison: CountComparison::InRange {
                 min: *range.start(),
                 max: *range.end(),
@@ -303,9 +296,9 @@ impl<C: CellState> NeighborCount<C> {
     }
 
     /// Require the neighbor count to fall outside an inclusive range.
-    pub fn not_in(self, range: RangeInclusive<u32>) -> Condition<C> {
+    pub fn not_in(self, range: RangeInclusive<u32>) -> Condition {
         Condition::NeighborCount {
-            state: self.state,
+            material: self.material,
             comparison: CountComparison::NotInRange {
                 min: *range.start(),
                 max: *range.end(),
@@ -314,41 +307,41 @@ impl<C: CellState> NeighborCount<C> {
     }
 
     /// Require the neighbor count to be at least the given value.
-    pub fn at_least(self, count: u32) -> Condition<C> {
+    pub fn at_least(self, count: u32) -> Condition {
         Condition::NeighborCount {
-            state: self.state,
+            material: self.material,
             comparison: CountComparison::AtLeast(count),
         }
     }
 
     /// Require the neighbor count to be at most the given value.
-    pub fn at_most(self, count: u32) -> Condition<C> {
+    pub fn at_most(self, count: u32) -> Condition {
         Condition::NeighborCount {
-            state: self.state,
+            material: self.material,
             comparison: CountComparison::AtMost(count),
         }
     }
 }
 
-/// A pending weighted comparison on the weighted sum of matching neighbors.
+/// A pending weighted comparison on matching neighbors.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct NeighborWeightedSum<C: CellState> {
-    state: C,
+pub struct NeighborWeightedSum {
+    material: MaterialRef,
 }
 
-impl<C: CellState> NeighborWeightedSum<C> {
+impl NeighborWeightedSum {
     /// Require an exact weighted sum.
-    pub fn eq(self, weight: Weight) -> Condition<C> {
+    pub fn eq(self, weight: Weight) -> Condition {
         Condition::NeighborWeightedSum {
-            state: self.state,
+            material: self.material,
             comparison: WeightComparison::Eq(weight),
         }
     }
 
     /// Require the weighted sum to fall inside an inclusive range.
-    pub fn in_range(self, range: RangeInclusive<Weight>) -> Condition<C> {
+    pub fn in_range(self, range: RangeInclusive<Weight>) -> Condition {
         Condition::NeighborWeightedSum {
-            state: self.state,
+            material: self.material,
             comparison: WeightComparison::InRange {
                 min: *range.start(),
                 max: *range.end(),
@@ -357,9 +350,9 @@ impl<C: CellState> NeighborWeightedSum<C> {
     }
 
     /// Require the weighted sum to fall outside an inclusive range.
-    pub fn not_in(self, range: RangeInclusive<Weight>) -> Condition<C> {
+    pub fn not_in(self, range: RangeInclusive<Weight>) -> Condition {
         Condition::NeighborWeightedSum {
-            state: self.state,
+            material: self.material,
             comparison: WeightComparison::NotInRange {
                 min: *range.start(),
                 max: *range.end(),
@@ -368,44 +361,46 @@ impl<C: CellState> NeighborWeightedSum<C> {
     }
 
     /// Require the weighted sum to be at least the given value.
-    pub fn at_least(self, weight: Weight) -> Condition<C> {
+    pub fn at_least(self, weight: Weight) -> Condition {
         Condition::NeighborWeightedSum {
-            state: self.state,
+            material: self.material,
             comparison: WeightComparison::AtLeast(weight),
         }
     }
 
     /// Require the weighted sum to be at most the given value.
-    pub fn at_most(self, weight: Weight) -> Condition<C> {
+    pub fn at_most(self, weight: Weight) -> Condition {
         Condition::NeighborWeightedSum {
-            state: self.state,
+            material: self.material,
             comparison: WeightComparison::AtMost(weight),
         }
     }
 }
 
-/// Select neighbors equal to `state`.
-pub fn neighbors<C: CellState>(state: C) -> NeighborSelector<C> {
-    NeighborSelector { state }
+/// Select neighbors equal to a specific material.
+pub fn neighbors<M: MaterialSet>(material: M) -> NeighborSelector {
+    NeighborSelector {
+        material: material.material(),
+    }
 }
 
-/// Select the center cell's attached attribute by name.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// Center-cell attribute selector.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AttributeSelector {
-    attribute: String,
+    attribute: AttributeRef,
 }
 
 impl AttributeSelector {
-    /// Require an exact attribute value.
-    pub fn eq<C: CellState>(self, value: impl Into<AttributeValue>) -> Condition<C> {
+    /// Require the attribute to equal an exact value.
+    pub fn eq(self, value: impl Into<AttributeValue>) -> Condition {
         Condition::Attribute {
             attribute: self.attribute,
             comparison: AttributeComparison::Eq(value.into()),
         }
     }
 
-    /// Require the attribute to fall inside an inclusive range.
-    pub fn in_range<C: CellState, T>(self, range: RangeInclusive<T>) -> Condition<C>
+    /// Require the attribute to lie inside an inclusive range.
+    pub fn in_range<T>(self, range: RangeInclusive<T>) -> Condition
     where
         T: Into<AttributeValue> + Copy,
     {
@@ -418,8 +413,8 @@ impl AttributeSelector {
         }
     }
 
-    /// Require the attribute to fall outside an inclusive range.
-    pub fn not_in<C: CellState, T>(self, range: RangeInclusive<T>) -> Condition<C>
+    /// Require the attribute to lie outside an inclusive range.
+    pub fn not_in<T>(self, range: RangeInclusive<T>) -> Condition
     where
         T: Into<AttributeValue> + Copy,
     {
@@ -433,7 +428,7 @@ impl AttributeSelector {
     }
 
     /// Require the attribute to be at least the given value.
-    pub fn at_least<C: CellState>(self, value: impl Into<AttributeValue>) -> Condition<C> {
+    pub fn at_least(self, value: impl Into<AttributeValue>) -> Condition {
         Condition::Attribute {
             attribute: self.attribute,
             comparison: AttributeComparison::AtLeast(value.into()),
@@ -441,30 +436,35 @@ impl AttributeSelector {
     }
 
     /// Require the attribute to be at most the given value.
-    pub fn at_most<C: CellState>(self, value: impl Into<AttributeValue>) -> Condition<C> {
+    pub fn at_most(self, value: impl Into<AttributeValue>) -> Condition {
         Condition::Attribute {
             attribute: self.attribute,
             comparison: AttributeComparison::AtMost(value.into()),
         }
     }
-}
 
-/// Select a named center-cell attribute for rule conditions.
-pub fn attr(name: impl Into<String>) -> AttributeSelector {
-    AttributeSelector {
-        attribute: name.into(),
+    /// Return the declared scalar type for this attribute.
+    pub const fn value_type(self) -> AttributeType {
+        self.attribute.value_type()
     }
 }
 
-/// Select a deterministic random stream for a rule condition.
+/// Select the center cell's attached attribute.
+pub fn attr<A: AttributeSet>(attribute: A) -> AttributeSelector {
+    AttributeSelector {
+        attribute: attribute.attribute(),
+    }
+}
+
+/// Deterministic random source selector.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RandomSource {
     stream: u32,
 }
 
 impl RandomSource {
-    /// Require a deterministic `1 / n` random hit for this cell, step, and stream.
-    pub fn one_in<C: CellState>(self, n: u32) -> Condition<C> {
+    /// Require a `1 / n` random gate.
+    pub fn one_in(self, n: u32) -> Condition {
         Condition::RandomChance {
             stream: self.stream,
             one_in: n,
@@ -472,7 +472,7 @@ impl RandomSource {
     }
 }
 
-/// Select a deterministic random stream for rule-visible randomness.
-pub fn rng(stream: u32) -> RandomSource {
+/// Start a deterministic random condition with the given stream id.
+pub const fn rng(stream: u32) -> RandomSource {
     RandomSource { stream }
 }

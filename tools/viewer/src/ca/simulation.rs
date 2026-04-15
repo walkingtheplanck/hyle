@@ -2,13 +2,13 @@
 
 use std::time::Instant;
 
-use hyle_ca_interface::{CaRuntime, CaSolverProvider};
+use hyle_ca_interface::{CaRuntime, CaSolverProvider, MaterialSet};
 
 use crate::ca::{Materials, Scenario, SimpleWorld, ViewerCell, AIR};
 
 pub struct Simulation<P>
 where
-    P: CaSolverProvider<ViewerCell>,
+    P: CaSolverProvider,
 {
     pub auto_step: bool,
     pub step_interval_ms: f64,
@@ -20,7 +20,7 @@ where
 
 impl<P> Simulation<P>
 where
-    P: CaSolverProvider<ViewerCell>,
+    P: CaSolverProvider,
 {
     pub fn new(solver: P) -> Self {
         let scenario = Scenario::default();
@@ -90,8 +90,8 @@ where
         let snapshot = self.ca.readback();
         for (x, y, z, cell) in snapshot.iter_xyz() {
             let voxel = match cell {
-                ViewerCell::Dead => AIR,
-                _ => cell.voxel(),
+                id if *id == ViewerCell::Dead.id() => AIR,
+                id => id.raw(),
             };
             world.set(x as i32, y as i32, z as i32, voxel);
         }

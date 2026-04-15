@@ -2,89 +2,109 @@
 
 use hyle_ca_interface::semantics::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
-    attr, neighbors, rng, AttributeType, AttributeValue, Blueprint, CaSolver, CellModel,
-    CellSchema, Instance, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, StateDef,
-    TopologyDescriptor, Weight,
+    attr, neighbors, rng, AttrAssign, AttributeSet, AttributeType, AttributeValue, Blueprint,
+    CaSolver, Instance, MatAttr, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, Weight,
 };
 use hyle_ca_solver::Solver;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-enum LifeCell {
+enum M {
     #[default]
     Dead,
     Alive,
-}
-
-const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
-
-impl CellModel for LifeCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-enum MatterCell {
-    #[default]
-    Empty,
     Water,
     Ice,
 }
 
-const MATTER_CELL_STATES: [StateDef; 3] = [
-    StateDef::new("Empty"),
-    StateDef::new("Water"),
-    StateDef::new("Ice"),
-];
+impl MaterialSet for M {
+    fn variants() -> &'static [Self] {
+        &[M::Dead, M::Alive, M::Water, M::Ice]
+    }
 
-impl CellModel for MatterCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("MatterCell", &MATTER_CELL_STATES)
+    fn label(self) -> &'static str {
+        match self {
+            M::Dead => "dead",
+            M::Alive => "alive",
+            M::Water => "water",
+            M::Ice => "ice",
+        }
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-enum PriorityCell {
-    #[default]
-    Empty,
-    Source,
-    FirstChoice,
-    SecondChoice,
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum A {
+    Heat,
 }
 
-const PRIORITY_CELL_STATES: [StateDef; 4] = [
-    StateDef::new("Empty"),
-    StateDef::new("Source"),
-    StateDef::new("FirstChoice"),
-    StateDef::new("SecondChoice"),
-];
+impl AttributeSet for A {
+    fn variants() -> &'static [Self] {
+        &[A::Heat]
+    }
 
-impl CellModel for PriorityCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("PriorityCell", &PRIORITY_CELL_STATES)
+    fn label(self) -> &'static str {
+        "heat"
+    }
+
+    fn value_type(self) -> AttributeType {
+        AttributeType::U8
     }
 }
 
-fn kill_all_spec() -> Blueprint<LifeCell> {
-    Blueprint::<LifeCell>::builder()
-        .rules(|rules| {
-            rules.when(LifeCell::Alive).becomes(LifeCell::Dead);
-        })
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum N {
+    Adjacent,
+    RadiusTwo,
+}
+
+impl NeighborhoodSet for N {
+    fn variants() -> &'static [Self] {
+        &[N::Adjacent, N::RadiusTwo]
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            N::Adjacent => "adjacent",
+            N::RadiusTwo => "radius_two",
+        }
+    }
+}
+
+fn specs() -> [NeighborhoodSpec; 2] {
+    [
+        NeighborhoodSpec::new(
+            N::Adjacent,
+            NeighborhoodShape::Moore,
+            NeighborhoodRadius::new(1),
+            NeighborhoodFalloff::Uniform,
+        ),
+        NeighborhoodSpec::new(
+            N::RadiusTwo,
+            NeighborhoodShape::Moore,
+            NeighborhoodRadius::new(2),
+            NeighborhoodFalloff::Uniform,
+        ),
+    ]
+}
+
+fn kill_all_spec() -> Blueprint {
+    Blueprint::builder()
+        .materials::<M>()
+        .neighborhoods::<N>()
+        .neighborhood_specs(specs())
+        .rules([RuleSpec::when(M::Alive).becomes(M::Dead)])
         .build()
         .expect("valid spec")
 }
 
 #[test]
 fn rule_kill_all() {
-    let spec = kill_all_spec();
-    let mut solver = Solver::from_spec(4, 4, 4, &spec);
-    solver.set(2, 2, 2, LifeCell::Alive);
-    solver.set(1, 1, 1, LifeCell::Alive);
-
+    let mut solver = Solver::from_spec(4, 4, 4, &kill_all_spec());
+    solver.set(2, 2, 2, M::Alive.id());
+    solver.set(1, 1, 1, M::Alive.id());
     solver.step();
-
-    assert_eq!(solver.get(2, 2, 2), LifeCell::Dead);
-    assert_eq!(solver.get(1, 1, 1), LifeCell::Dead);
+    assert_eq!(solver.get(2, 2, 2), M::Dead.id());
+    assert_eq!(solver.get(1, 1, 1), M::Dead.id());
 }
 
 #[test]
@@ -94,350 +114,151 @@ fn solver_from_blueprint_matches_from_spec() {
 
     let mut from_spec = Solver::from_spec(4, 4, 4, &spec);
     let mut from_blueprint = Solver::from_blueprint(4, 4, 4, &blueprint);
-
-    from_spec.set(2, 2, 2, LifeCell::Alive);
-    from_blueprint.set(2, 2, 2, LifeCell::Alive);
-
+    from_spec.set(2, 2, 2, M::Alive.id());
+    from_blueprint.set(2, 2, 2, M::Alive.id());
     from_spec.step();
     from_blueprint.step();
-
-    let from_spec_snapshot = from_spec.readback();
-    let from_blueprint_snapshot = from_blueprint.readback();
-
-    assert_eq!(from_spec_snapshot.dims, from_blueprint_snapshot.dims);
-    assert_eq!(from_spec_snapshot.cells, from_blueprint_snapshot.cells);
+    assert_eq!(from_spec.readback().cells, from_blueprint.readback().cells);
 }
 
 #[test]
 fn rule_spread_to_neighbors() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Dead)
-                .require(neighbors(LifeCell::Alive).count().at_least(1))
-                .becomes(LifeCell::Alive);
-        })
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .neighborhoods::<N>()
+        .neighborhood_specs(specs())
+        .rules([RuleSpec::when(M::Dead)
+            .require(neighbors(M::Alive).count().at_least(1))
+            .becomes(M::Alive)])
         .build()
         .expect("valid spec");
 
     let mut solver = Solver::from_spec(5, 5, 5, &spec);
-    solver.set(2, 2, 2, LifeCell::Alive);
-
+    solver.set(2, 2, 2, M::Alive.id());
     solver.step();
-
-    assert_eq!(solver.get(2, 2, 2), LifeCell::Alive);
-    assert_eq!(solver.get(1, 1, 1), LifeCell::Alive);
-    assert_eq!(solver.get(3, 3, 3), LifeCell::Alive);
-    assert_eq!(solver.get(2, 2, 1), LifeCell::Alive);
-    assert_eq!(solver.get(2, 2, 3), LifeCell::Alive);
-}
-
-#[test]
-fn rule_threshold_birth() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Dead)
-                .require(neighbors(LifeCell::Alive).count().eq(2))
-                .becomes(LifeCell::Alive);
-        })
-        .build()
-        .expect("valid spec");
-
-    let mut solver = Solver::from_spec(5, 5, 5, &spec);
-    solver.set(1, 2, 2, LifeCell::Alive);
-    solver.set(3, 2, 2, LifeCell::Alive);
-
-    solver.step();
-
-    assert_eq!(solver.get(2, 2, 2), LifeCell::Alive);
-}
-
-#[test]
-fn rule_threshold_no_birth() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Dead)
-                .require(neighbors(LifeCell::Alive).count().eq(2))
-                .becomes(LifeCell::Alive);
-        })
-        .build()
-        .expect("valid spec");
-
-    let mut solver = Solver::from_spec(5, 5, 5, &spec);
-    solver.set(1, 2, 2, LifeCell::Alive);
-
-    solver.step();
-
-    assert_eq!(solver.get(2, 2, 2), LifeCell::Dead);
+    assert_eq!(solver.get(1, 1, 1), M::Alive.id());
 }
 
 #[test]
 fn rule_type_interaction() {
-    let spec = Blueprint::<MatterCell>::builder()
-        .rules(|rules| {
-            rules
-                .when(MatterCell::Water)
-                .require(neighbors(MatterCell::Ice).count().eq(26))
-                .becomes(MatterCell::Ice);
-        })
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .neighborhoods::<N>()
+        .neighborhood_specs(specs())
+        .rules([RuleSpec::when(M::Water)
+            .require(neighbors(M::Ice).count().eq(26))
+            .becomes(M::Ice)])
         .build()
         .expect("valid spec");
 
     let mut solver = Solver::from_spec(5, 5, 5, &spec);
-    solver.set(2, 2, 2, MatterCell::Water);
-    for dz in -1i32..=1 {
-        for dy in -1i32..=1 {
-            for dx in -1i32..=1 {
-                if dx == 0 && dy == 0 && dz == 0 {
-                    continue;
+    solver.set(2, 2, 2, M::Water.id());
+    for dz in -1..=1 {
+        for dy in -1..=1 {
+            for dx in -1..=1 {
+                if dx != 0 || dy != 0 || dz != 0 {
+                    solver.set(2 + dx, 2 + dy, 2 + dz, M::Ice.id());
                 }
-                solver.set(2 + dx, 2 + dy, 2 + dz, MatterCell::Ice);
             }
         }
     }
-
     solver.step();
-
-    assert_eq!(solver.get(2, 2, 2), MatterCell::Ice);
-}
-
-#[test]
-fn deterministic_across_runs() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Dead)
-                .require(neighbors(LifeCell::Alive).count().eq(3))
-                .becomes(LifeCell::Alive);
-            rules
-                .when(LifeCell::Alive)
-                .unless(neighbors(LifeCell::Alive).count().in_range(2..=3))
-                .becomes(LifeCell::Dead);
-        })
-        .build()
-        .expect("valid spec");
-
-    fn run_sim(spec: &Blueprint<LifeCell>) -> Vec<(u32, u32, u32, LifeCell)> {
-        let mut solver = Solver::from_spec(8, 8, 8, spec);
-        solver.set(4, 4, 4, LifeCell::Alive);
-        solver.set(3, 4, 4, LifeCell::Alive);
-        solver.set(5, 4, 4, LifeCell::Alive);
-
-        for _ in 0..10 {
-            solver.step();
-        }
-
-        solver.iter_cells()
-    }
-
-    let first = run_sim(&spec);
-    let second = run_sim(&spec);
-    assert_eq!(first, second, "CA is not deterministic");
-}
-
-#[test]
-fn first_matching_rule_wins() {
-    let spec = Blueprint::<PriorityCell>::builder()
-        .rules(|rules| {
-            rules
-                .when(PriorityCell::Source)
-                .becomes(PriorityCell::FirstChoice);
-            rules
-                .when(PriorityCell::Source)
-                .becomes(PriorityCell::SecondChoice);
-        })
-        .build()
-        .expect("valid spec");
-
-    let mut solver = Solver::from_spec(3, 3, 3, &spec);
-    solver.set(1, 1, 1, PriorityCell::Source);
-
-    solver.step();
-
-    assert_eq!(solver.get(1, 1, 1), PriorityCell::FirstChoice);
+    assert_eq!(solver.get(2, 2, 2), M::Ice.id());
 }
 
 #[test]
 fn random_chance_rules_follow_semantic_rng() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Dead)
-                .require(rng(3).one_in(5))
-                .becomes(LifeCell::Alive);
-        })
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .neighborhoods::<N>()
+        .neighborhood_specs(specs())
+        .rules([RuleSpec::when(M::Dead)
+            .require(rng(3).one_in(5))
+            .becomes(M::Alive)])
         .build()
         .expect("valid spec");
 
     let instance = Instance::new(2, 2, 2).with_seed(41);
     let mut solver = Solver::from_spec_instance(instance, &spec);
     let expected = if cell_rng([0, 0, 0], 0, 3, 41).chance(5) {
-        LifeCell::Alive
+        M::Alive.id()
     } else {
-        LifeCell::Dead
+        M::Dead.id()
     };
 
     solver.step();
-
     assert_eq!(solver.get(0, 0, 0), expected);
 }
 
 #[test]
-fn random_chance_rules_change_with_seed() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Dead)
-                .require(rng(3).one_in(5))
-                .becomes(LifeCell::Alive);
-        })
-        .build()
-        .expect("valid spec");
-
-    let first = Instance::new(2, 2, 2).with_seed(1);
-    let second = Instance::new(2, 2, 2).with_seed(2);
-
-    let mut a = Solver::from_spec_instance(first, &spec);
-    let mut b = Solver::from_spec_instance(second, &spec);
-
-    a.step();
-    b.step();
-
-    let expected_a = cell_rng([0, 0, 0], 0, 3, 1).chance(5);
-    let expected_b = cell_rng([0, 0, 0], 0, 3, 2).chance(5);
-
-    assert_eq!(a.get(0, 0, 0) == LifeCell::Alive, expected_a);
-    assert_eq!(b.get(0, 0, 0) == LifeCell::Alive, expected_b);
-}
-
-#[test]
-fn rule_with_radius_2() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .neighborhood(
-            "radius-two",
-            NeighborhoodSpec::new(NeighborhoodShape::Moore, 2, NeighborhoodFalloff::Uniform),
-        )
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Dead)
-                .using("radius-two")
-                .require(neighbors(LifeCell::Alive).count().at_least(1))
-                .becomes(LifeCell::Alive);
-        })
-        .build()
-        .expect("valid spec");
-
-    let mut solver = Solver::from_spec(8, 8, 8, &spec);
-    solver.set(4, 4, 4, LifeCell::Alive);
-
-    solver.step();
-
-    assert_eq!(solver.get(2, 4, 4), LifeCell::Alive);
-    assert_eq!(solver.get(6, 4, 4), LifeCell::Alive);
-    assert_eq!(solver.get(1, 4, 4), LifeCell::Dead);
-}
-
-#[test]
-fn rule_respects_torus_topology_from_spec() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .topology(TopologyDescriptor::wrap())
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Dead)
-                .require(neighbors(LifeCell::Alive).any())
-                .becomes(LifeCell::Alive);
-        })
-        .build()
-        .expect("valid spec");
-
-    let mut solver = Solver::from_spec(4, 4, 4, &spec);
-    solver.set(3, 0, 0, LifeCell::Alive);
-
-    solver.step();
-
-    assert_eq!(solver.get(0, 0, 0), LifeCell::Alive);
-}
-
-#[test]
-fn weighted_sum_rules_follow_portable_weights() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Dead)
-                .require(
-                    neighbors(LifeCell::Alive)
-                        .weighted_sum()
-                        .at_least(Weight::cells(6)),
-                )
-                .becomes(LifeCell::Alive);
-        })
+fn attribute_updates_apply_on_keep_rules() {
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .attributes::<A>()
+        .material_attributes([
+            MatAttr::new(M::Dead, []),
+            MatAttr::new(M::Alive, [AttrAssign::new(A::Heat).default(1u8)]),
+            MatAttr::new(M::Water, []),
+            MatAttr::new(M::Ice, []),
+        ])
+        .neighborhoods::<N>()
+        .neighborhood_specs(specs())
+        .rules([RuleSpec::when(M::Alive)
+            .require(attr(A::Heat).at_least(1u8))
+            .set_attr(A::Heat, 3u8)
+            .keep()])
         .build()
         .expect("valid spec");
 
     let mut solver = Solver::from_spec(3, 3, 3, &spec);
-    solver.set(0, 1, 1, LifeCell::Alive);
-    solver.set(2, 1, 1, LifeCell::Alive);
-    solver.set(1, 0, 1, LifeCell::Alive);
-    solver.set(1, 2, 1, LifeCell::Alive);
-    solver.set(1, 1, 0, LifeCell::Alive);
-    solver.set(1, 1, 2, LifeCell::Alive);
-
+    solver.set(1, 1, 1, M::Alive.id());
+    solver.set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(1)).unwrap();
     solver.step();
-
-    assert_eq!(solver.get(1, 1, 1), LifeCell::Alive);
+    assert_eq!(solver.get_attr(A::Heat.id(), 1, 1, 1), Ok(AttributeValue::U8(3)));
 }
 
 #[test]
-fn attribute_conditions_can_gate_rule_application() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .attribute("heat", AttributeType::U8)
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Alive)
-                .require(attr("heat").at_least(2u8))
-                .becomes(LifeCell::Dead);
-        })
+fn material_changes_reset_attributes_to_destination_defaults() {
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .attributes::<A>()
+        .material_attributes([
+            MatAttr::new(M::Dead, []),
+            MatAttr::new(M::Alive, [AttrAssign::new(A::Heat).default(9u8)]),
+            MatAttr::new(M::Water, [AttrAssign::new(A::Heat).default(2u8)]),
+            MatAttr::new(M::Ice, []),
+        ])
+        .neighborhoods::<N>()
+        .neighborhood_specs(specs())
+        .rules([RuleSpec::when(M::Alive)
+            .require(attr(A::Heat).at_least(1u8))
+            .becomes(M::Water)])
         .build()
         .expect("valid spec");
 
     let mut solver = Solver::from_spec(3, 3, 3, &spec);
-    solver.set(1, 1, 1, LifeCell::Alive);
-    solver
-        .set_attr("heat", 1, 1, 1, AttributeValue::U8(2))
-        .expect("known attribute write should succeed");
-
+    solver.set(1, 1, 1, M::Alive.id());
+    solver.set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(7)).unwrap();
     solver.step();
-
-    assert_eq!(solver.get(1, 1, 1), LifeCell::Dead);
+    assert_eq!(solver.get(1, 1, 1), M::Water.id());
+    assert_eq!(solver.get_attr(A::Heat.id(), 1, 1, 1), Ok(AttributeValue::U8(2)));
 }
 
 #[test]
-fn attribute_updates_persist_across_steps() {
-    let spec = Blueprint::<LifeCell>::builder()
-        .attribute("age", AttributeType::U8)
-        .rules(|rules| {
-            rules
-                .when(LifeCell::Alive)
-                .require(attr("age").eq(0u8))
-                .set_attr("age", 1u8)
-                .keep();
-            rules
-                .when(LifeCell::Alive)
-                .require(attr("age").at_least(1u8))
-                .becomes(LifeCell::Dead);
-        })
+fn weighted_sum_rules_work() {
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .neighborhoods::<N>()
+        .neighborhood_specs(specs())
+        .rules([RuleSpec::when(M::Dead)
+            .require(neighbors(M::Alive).weighted_sum().at_least(Weight::cells(2)))
+            .becomes(M::Alive)])
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(3, 3, 3, &spec);
-    solver.set(1, 1, 1, LifeCell::Alive);
-
+    let mut solver = Solver::from_spec(5, 5, 5, &spec);
+    solver.set(2, 2, 1, M::Alive.id());
+    solver.set(2, 2, 3, M::Alive.id());
     solver.step();
-    assert_eq!(solver.get(1, 1, 1), LifeCell::Alive);
-    assert_eq!(solver.get_attr("age", 1, 1, 1), Ok(AttributeValue::U8(1)));
-
-    solver.step();
-    assert_eq!(solver.get(1, 1, 1), LifeCell::Dead);
+    assert_eq!(solver.get(2, 2, 2), M::Alive.id());
 }

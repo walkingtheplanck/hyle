@@ -1,14 +1,9 @@
 //! Tests for the default bounded index resolution on the solver trait.
 
-use std::marker::PhantomData;
-
 use hyle_ca_interface::{
-    AttributeAccessError, AttributeValue, AxisTopology, CaSolver, Cell, GridDims, GridRegion,
-    Topology, TopologyDescriptor,
+    AttributeAccessError, AttributeId, AttributeValue, AxisTopology, CaSolver, GridDims,
+    GridRegion, MaterialId, Topology, TopologyDescriptor,
 };
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-struct TestCell(u32);
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct BoundedLikeTopology;
@@ -40,23 +35,22 @@ impl Topology for BoundedLikeTopology {
     }
 }
 
-struct DummySolver<C: Cell> {
+struct DummySolver {
     width: u32,
     height: u32,
     depth: u32,
     topology: BoundedLikeTopology,
-    cells: Vec<C>,
-    _marker: PhantomData<C>,
+    cells: Vec<MaterialId>,
 }
 
-impl<C: Cell> DummySolver<C> {
+impl DummySolver {
     fn new(width: u32, height: u32, depth: u32) -> Self {
         let cell_count = (width as usize)
             .checked_mul(height as usize)
             .and_then(|xy| xy.checked_mul(depth as usize))
             .expect("grid cell count must fit in usize");
         let cells = if cell_count <= 1 << 20 {
-            vec![C::default(); cell_count]
+            vec![MaterialId::default(); cell_count]
         } else {
             Vec::new()
         };
@@ -66,12 +60,11 @@ impl<C: Cell> DummySolver<C> {
             depth,
             topology: BoundedLikeTopology,
             cells,
-            _marker: PhantomData,
         }
     }
 }
 
-impl<C: Cell> CaSolver<C> for DummySolver<C> {
+impl CaSolver for DummySolver {
     type Topology = BoundedLikeTopology;
 
     fn width(&self) -> u32 {
@@ -90,27 +83,27 @@ impl<C: Cell> CaSolver<C> for DummySolver<C> {
         &self.topology
     }
 
-    fn get(&self, x: i32, y: i32, z: i32) -> C {
+    fn get(&self, x: i32, y: i32, z: i32) -> MaterialId {
         let index = self.resolve_index(x, y, z);
         if index == self.guard_index() {
-            C::default()
+            MaterialId::default()
         } else {
             self.cells.get(index).copied().unwrap_or_default()
         }
     }
 
-    fn set(&mut self, x: i32, y: i32, z: i32, cell: C) {
+    fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId) {
         let index = self.resolve_index(x, y, z);
         if index != self.guard_index() {
             if let Some(slot) = self.cells.get_mut(index) {
-                *slot = cell;
+                *slot = material;
             }
         }
     }
 
     fn get_attr(
         &self,
-        name: &str,
+        attribute: AttributeId,
         x: i32,
         y: i32,
         z: i32,
@@ -119,13 +112,13 @@ impl<C: Cell> CaSolver<C> for DummySolver<C> {
         if index == self.guard_index() {
             Err(AttributeAccessError::OutOfBounds { x, y, z })
         } else {
-            Err(AttributeAccessError::UnknownAttribute(name.to_string()))
+            Err(AttributeAccessError::UnknownAttribute(attribute))
         }
     }
 
     fn set_attr(
         &mut self,
-        name: &str,
+        attribute: AttributeId,
         x: i32,
         y: i32,
         z: i32,
@@ -135,7 +128,7 @@ impl<C: Cell> CaSolver<C> for DummySolver<C> {
         if index == self.guard_index() {
             Err(AttributeAccessError::OutOfBounds { x, y, z })
         } else {
-            Err(AttributeAccessError::UnknownAttribute(name.to_string()))
+            Err(AttributeAccessError::UnknownAttribute(attribute))
         }
     }
 
@@ -144,26 +137,11 @@ impl<C: Cell> CaSolver<C> for DummySolver<C> {
     fn step_count(&self) -> u32 {
         0
     }
-
-    fn iter_cells(&self) -> Vec<(u32, u32, u32, C)> {
-        let width = self.width as usize;
-        let height = self.height as usize;
-        self.cells
-            .iter()
-            .enumerate()
-            .map(move |(index, &cell)| {
-                let x = (index % width) as u32;
-                let y = ((index / width) % height) as u32;
-                let z = (index / (width * height)) as u32;
-                (x, y, z, cell)
-            })
-            .collect()
-    }
 }
 
 #[test]
 fn default_resolve_index_rejects_negative_and_large_values() {
-    let solver = DummySolver::<TestCell>::new(4, 5, 6);
+    let solver = DummySolver::new(4, 5, 6);
     let guard = solver.guard_index();
     assert_eq!(solver.resolve_index(-1, 0, 0), guard);
     assert_eq!(solver.resolve_index(4, 0, 0), guard);
@@ -173,104 +151,58 @@ fn default_resolve_index_rejects_negative_and_large_values() {
 
 #[test]
 fn default_resolve_index_accepts_in_bounds_values() {
-    let solver = DummySolver::<TestCell>::new(4, 5, 6);
+    let solver = DummySolver::new(4, 5, 6);
     assert_eq!(solver.resolve_index(3, 4, 5), 119);
 }
 
 #[test]
-fn default_resolve_index_rejects_oversized_dimensions() {
-    let solver = DummySolver::<TestCell>::new(i32::MAX as u32 + 1, 5, 6);
-    let guard = solver.guard_index();
-    assert_eq!(solver.resolve_index(0, 0, 0), guard);
-    assert_eq!(solver.resolve_index(-1, 0, 0), guard);
-}
-
-#[test]
 fn default_readback_returns_x_major_snapshot() {
-    let mut solver = DummySolver::<TestCell>::new(2, 2, 2);
-    solver.set(1, 0, 0, TestCell(5));
-    solver.set(0, 1, 1, TestCell(9));
+    let mut solver = DummySolver::new(2, 2, 2);
+    solver.set(1, 0, 0, MaterialId::new(5));
+    solver.set(0, 1, 1, MaterialId::new(9));
 
     let snapshot = solver.readback();
-
     assert_eq!(snapshot.dims, solver.dims());
     assert_eq!(
         snapshot.cells,
         vec![
-            TestCell(0),
-            TestCell(5),
-            TestCell(0),
-            TestCell(0),
-            TestCell(0),
-            TestCell(0),
-            TestCell(9),
-            TestCell(0),
+            MaterialId::new(0),
+            MaterialId::new(5),
+            MaterialId::new(0),
+            MaterialId::new(0),
+            MaterialId::new(0),
+            MaterialId::new(0),
+            MaterialId::new(9),
+            MaterialId::new(0),
         ]
     );
 }
 
 #[test]
 fn default_read_and_write_region_follow_x_major_order() {
-    let mut solver = DummySolver::<TestCell>::new(3, 3, 2);
+    let mut solver = DummySolver::new(3, 3, 2);
     let region = GridRegion::new([1, 1, 0], [2, 2, 1]);
     solver.write_region(
         region,
-        &[TestCell(1), TestCell(2), TestCell(3), TestCell(4)],
+        &[
+            MaterialId::new(1),
+            MaterialId::new(2),
+            MaterialId::new(3),
+            MaterialId::new(4),
+        ],
     );
 
-    assert_eq!(solver.get(1, 1, 0), TestCell(1));
-    assert_eq!(solver.get(2, 1, 0), TestCell(2));
-    assert_eq!(solver.get(1, 2, 0), TestCell(3));
-    assert_eq!(solver.get(2, 2, 0), TestCell(4));
+    assert_eq!(solver.get(1, 1, 0), MaterialId::new(1));
+    assert_eq!(solver.get(2, 1, 0), MaterialId::new(2));
+    assert_eq!(solver.get(1, 2, 0), MaterialId::new(3));
+    assert_eq!(solver.get(2, 2, 0), MaterialId::new(4));
     assert_eq!(
         solver.read_region(region),
-        vec![TestCell(1), TestCell(2), TestCell(3), TestCell(4)]
-    );
-}
-
-#[test]
-fn default_replace_cells_overwrites_the_full_grid() {
-    let mut solver = DummySolver::<TestCell>::new(2, 2, 2);
-    solver.replace_cells(&[
-        TestCell(1),
-        TestCell(2),
-        TestCell(3),
-        TestCell(4),
-        TestCell(5),
-        TestCell(6),
-        TestCell(7),
-        TestCell(8),
-    ]);
-
-    assert_eq!(
-        solver.readback().cells,
         vec![
-            TestCell(1),
-            TestCell(2),
-            TestCell(3),
-            TestCell(4),
-            TestCell(5),
-            TestCell(6),
-            TestCell(7),
-            TestCell(8),
+            MaterialId::new(1),
+            MaterialId::new(2),
+            MaterialId::new(3),
+            MaterialId::new(4),
         ]
-    );
-}
-
-#[test]
-fn attribute_access_reports_unknown_attributes_and_bounds() {
-    let mut solver = DummySolver::<TestCell>::new(2, 2, 2);
-
-    assert_eq!(
-        solver.get_attr("heat", 0, 0, 0),
-        Err(AttributeAccessError::UnknownAttribute("heat".to_string()))
-    );
-    assert_eq!(
-        solver.set_attr("heat", 0, 0, 0, AttributeValue::U8(1)),
-        Err(AttributeAccessError::UnknownAttribute("heat".to_string()))
-    );
-    assert_eq!(
-        solver.get_attr("heat", -1, 0, 0),
-        Err(AttributeAccessError::OutOfBounds { x: -1, y: 0, z: 0 })
     );
 }

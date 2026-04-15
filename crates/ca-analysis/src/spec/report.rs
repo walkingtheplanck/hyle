@@ -1,7 +1,7 @@
 //! Public report types returned by spec analysis.
 
 use hyle_ca_interface::{
-    AttributeDef, CellModel, CellSchema, NeighborhoodSpec, RuleEffect, Semantics,
+    AttributeDef, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec, RuleEffect, Semantics,
     TopologyDescriptor,
 };
 
@@ -10,8 +10,8 @@ use crate::Diagnostic;
 /// Top-level summary derived from a blueprint.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpecSummary {
-    /// Declared portable cell schema.
-    pub cell_schema: CellSchema,
+    /// Declared material universe.
+    pub materials: Vec<MaterialDef>,
     /// Declared semantics version.
     pub semantics: Semantics,
     /// Declared attached per-cell attributes.
@@ -30,17 +30,17 @@ pub struct SpecSummary {
 
 /// Derived information about a single rule.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RuleAnalysis<C: CellModel> {
+pub struct RuleAnalysis {
     /// Zero-based rule index.
     pub index: usize,
-    /// State matched by the rule.
-    pub when: C,
-    /// Referenced neighborhood index.
-    pub neighborhood: usize,
+    /// Material matched by the rule.
+    pub when: MaterialId,
+    /// Referenced neighborhood id.
+    pub neighborhood: NeighborhoodId,
     /// Whether the rule has a condition.
     pub conditional: bool,
     /// Effect applied when the rule matches.
-    pub effect: RuleEffect<C>,
+    pub effect: RuleEffect,
     /// Earlier rule index that makes this rule unreachable, if any.
     pub shadowed_by: Option<usize>,
     /// Earlier rule index that duplicates this rule exactly, if any.
@@ -55,7 +55,7 @@ pub struct NeighborhoodAnalysis {
     /// Zero-based neighborhood index.
     pub index: usize,
     /// Neighborhood name.
-    pub name: String,
+    pub name: &'static str,
     /// Underlying neighborhood specification.
     pub spec: NeighborhoodSpec,
     /// Number of neighbor positions included by the neighborhood.
@@ -66,18 +66,18 @@ pub struct NeighborhoodAnalysis {
 
 /// Full analysis result for a blueprint.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SpecAnalysis<C: CellModel> {
+pub struct SpecAnalysis {
     /// High-level summary.
     pub summary: SpecSummary,
     /// Per-rule analysis in declaration order.
-    pub rules: Vec<RuleAnalysis<C>>,
+    pub rules: Vec<RuleAnalysis>,
     /// Per-neighborhood analysis in declaration order.
     pub neighborhoods: Vec<NeighborhoodAnalysis>,
     /// Diagnostics that apply at the spec, topology, or neighborhood level.
     pub diagnostics: Vec<Diagnostic>,
 }
 
-impl<C: CellModel> SpecAnalysis<C> {
+impl SpecAnalysis {
     /// Iterate all diagnostics, including rule-local ones.
     pub fn all_diagnostics(&self) -> impl Iterator<Item = &Diagnostic> {
         self.diagnostics

@@ -24,33 +24,64 @@ A 3D cellular automaton framework for Rust.
 ## Quick Start
 
 ```rust
-use hyle_ca_interface::{neighbors, Blueprint, CellModel, CellSchema, Instance, StateDef};
+use hyle_ca_interface::{
+    neighbors, Blueprint, Instance, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+};
 use hyle_ca_solver::Solver;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-enum LifeCell {
+enum Material {
     #[default]
     Dead,
     Alive,
 }
 
-const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] {
+        &[Material::Dead, Material::Alive]
+    }
 
-impl CellModel for LifeCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    fn label(self) -> &'static str {
+        match self {
+            Material::Dead => "dead",
+            Material::Alive => "alive",
+        }
     }
 }
 
-let spec = Blueprint::<LifeCell>::builder()
-    .rules(|rules| {
-        rules.when(LifeCell::Dead)
-            .require(neighbors(LifeCell::Alive).count().eq(5))
-            .becomes(LifeCell::Alive);
-        rules.when(LifeCell::Alive)
-            .unless(neighbors(LifeCell::Alive).count().in_range(4..=5))
-            .becomes(LifeCell::Dead);
-    })
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] {
+        &[Neighborhood::Adjacent]
+    }
+
+    fn label(self) -> &'static str {
+        "adjacent"
+    }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([NeighborhoodSpec::new(
+        Neighborhood::Adjacent,
+        NeighborhoodShape::Moore,
+        NeighborhoodRadius::new(1),
+        NeighborhoodFalloff::Uniform,
+    )])
+    .rules([
+        RuleSpec::when(Material::Dead)
+            .require(neighbors(Material::Alive).count().eq(5))
+            .becomes(Material::Alive),
+        RuleSpec::when(Material::Alive)
+            .require(neighbors(Material::Alive).count().in_range(4..=5).negate())
+            .becomes(Material::Dead),
+    ])
     .build()?;
 
 let mut solver = Solver::from_spec_instance(Instance::new(64, 64, 64).with_seed(7), &spec);
@@ -62,51 +93,121 @@ solver.step();
 
 ## Features
 
-### Custom Cell Types
+### Enum-Backed Materials And Attributes
 
 ```rust
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
-struct FluidCell { density: u8, velocity: [i8; 6], material: u8 }
+use hyle_ca_interface::{AttrAssign, AttributeSet, AttributeType, MatAttr, MaterialSet};
 
-let solver = Solver::<FluidCell>::new(64, 64, 64);
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+enum Material {
+    #[default]
+    Grass,
+    Fire,
+    Ash,
+}
+
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] { &[Material::Grass, Material::Fire, Material::Ash] }
+    fn label(self) -> &'static str {
+        match self {
+            Material::Grass => "grass",
+            Material::Fire => "fire",
+            Material::Ash => "ash",
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Attribute {
+    Dryness,
+    BurnAge,
+}
+
+impl AttributeSet for Attribute {
+    fn variants() -> &'static [Self] { &[Attribute::Dryness, Attribute::BurnAge] }
+    fn label(self) -> &'static str {
+        match self {
+            Attribute::Dryness => "dryness",
+            Attribute::BurnAge => "burn_age",
+        }
+    }
+    fn value_type(self) -> AttributeType { AttributeType::U8 }
+}
+
+let bindings = [
+    MatAttr::new(Material::Grass, [AttrAssign::new(Attribute::Dryness).default(3u8)]),
+    MatAttr::new(Material::Fire, [AttrAssign::new(Attribute::BurnAge).default(0u8)]),
+    MatAttr::new(Material::Ash, []),
+];
+
+assert_eq!(bindings.len(), 3);
 ```
 
 ### Variable-Radius Neighborhoods
 
 ```rust
-use hyle_ca_interface::{neighbors, Blueprint, NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
-use hyle_ca_interface::{CellModel, CellSchema, StateDef};
+use hyle_ca_interface::{
+    neighbors, Blueprint, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-enum LifeCell {
+enum Material {
     #[default]
     Dead,
     Alive,
 }
 
-const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
-
-impl CellModel for LifeCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] { &[Material::Dead, Material::Alive] }
+    fn label(self) -> &'static str {
+        match self {
+            Material::Dead => "dead",
+            Material::Alive => "alive",
+        }
     }
 }
 
-let spec = Blueprint::<LifeCell>::builder()
-    .neighborhood(
-        "far",
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+    Far,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] { &[Neighborhood::Adjacent, Neighborhood::Far] }
+    fn label(self) -> &'static str {
+        match self {
+            Neighborhood::Adjacent => "adjacent",
+            Neighborhood::Far => "far",
+        }
+    }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([
         NeighborhoodSpec::new(
+            Neighborhood::Adjacent,
             NeighborhoodShape::Moore,
-            3,
+            NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
         ),
-    )
-    .rules(|rules| {
-        rules.when(LifeCell::Dead)
-            .using("far")
-            .require(neighbors(LifeCell::Alive).count().at_least(1))
-            .becomes(LifeCell::Alive);
-    })
+        NeighborhoodSpec::new(
+            Neighborhood::Far,
+            NeighborhoodShape::Moore,
+            NeighborhoodRadius::new(3),
+            NeighborhoodFalloff::Uniform,
+        ),
+    ])
+    .default_neighborhood(Neighborhood::Adjacent)
+    .rules([
+        RuleSpec::when(Material::Dead)
+            .using(Neighborhood::Far)
+            .require(neighbors(Material::Alive).count().at_least(1))
+            .becomes(Material::Alive),
+    ])
     .build()?;
 # Ok::<(), hyle_ca_interface::BuildError>(())
 ```
@@ -114,12 +215,9 @@ let spec = Blueprint::<LifeCell>::builder()
 ### Torus Topology
 
 ```rust
-use hyle_ca_solver::TorusTopology;
+use hyle_ca_solver::{Solver, TorusTopology};
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
-struct TestCell(u32);
-
-let solver = Solver::<TestCell>::with_topology(64, 64, 64, TorusTopology);
+let solver = Solver::with_topology(64, 64, 64, TorusTopology);
 ```
 
 Reads, writes, and rule neighborhoods all wrap across grid edges.
@@ -161,7 +259,7 @@ cargo run --release -p hyle-viewer
 - [x] **Declarative blueprint specs** - Portable builder API and canonical spec shared across solver implementations
 - [x] **Named neighborhoods** - Reusable neighborhood definitions referenced by rules
 - [x] **Descriptor-backed topology** - Uploadable topology descriptors with bounded and torus behavior
-- [ ] **State/schema metadata** - Declare the valid state space more explicitly so tools can analyze specs without guessing
+- [x] **Enum-backed material metadata** - Declare materials, attributes, and neighborhoods explicitly so tools can analyze specs without guessing
 - [ ] **Spec serialization** - Save and load automaton specs and grid patterns in a stable portable format
 - [ ] **Stricter validation** - Catch invalid random gates, impossible thresholds, and other malformed specs earlier
 - [ ] **Solver-specific support checks** - Keep any execution-limit or solver support checks in solver crates instead of the shared analysis layer

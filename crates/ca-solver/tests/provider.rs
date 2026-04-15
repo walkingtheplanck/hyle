@@ -1,55 +1,110 @@
 use hyle_ca_interface::{
-    neighbors, AttributeType, AttributeValue, Blueprint, CaRuntime, CaSolverProvider, CellModel,
-    CellSchema, GridRegion, Instance,
+    neighbors, AttrAssign, AttributeSet, AttributeType, AttributeValue, Blueprint, CaRuntime,
+    CaSolverProvider, GridRegion, Instance, MatAttr, MaterialSet,
+    NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
+    RuleSpec,
 };
 use hyle_ca_solver::CpuSolverProvider;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-struct TestCell(u32);
+enum M {
+    #[default]
+    Dead,
+    Alive,
+    Other,
+}
 
-impl CellModel for TestCell {
-    fn schema() -> CellSchema {
-        CellSchema::opaque("TestCell")
+impl MaterialSet for M {
+    fn variants() -> &'static [Self] {
+        &[M::Dead, M::Alive, M::Other]
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            M::Dead => "dead",
+            M::Alive => "alive",
+            M::Other => "other",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum A {
+    Heat,
+}
+
+impl AttributeSet for A {
+    fn variants() -> &'static [Self] {
+        &[A::Heat]
+    }
+
+    fn label(self) -> &'static str {
+        "heat"
+    }
+
+    fn value_type(self) -> AttributeType {
+        AttributeType::U8
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum N {
+    Adjacent,
+}
+
+impl NeighborhoodSet for N {
+    fn variants() -> &'static [Self] {
+        &[N::Adjacent]
+    }
+
+    fn label(self) -> &'static str {
+        "adjacent"
     }
 }
 
 #[test]
 fn cpu_provider_builds_runtime() {
-    let spec = Blueprint::<TestCell>::builder()
-        .attribute("heat", AttributeType::U8)
-        .rules(|rules| {
-            rules
-                .when(TestCell(0))
-                .require(neighbors(TestCell(1)).count().eq(3))
-                .becomes(TestCell(1));
-            rules
-                .when(TestCell(1))
-                .unless(neighbors(TestCell(1)).count().in_range(2..=3))
-                .becomes(TestCell(0));
-        })
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .attributes::<A>()
+        .material_attributes([
+            MatAttr::new(M::Dead, []),
+            MatAttr::new(M::Alive, [AttrAssign::new(A::Heat).default(0u8)]),
+            MatAttr::new(M::Other, []),
+        ])
+        .neighborhoods::<N>()
+        .neighborhood_specs([NeighborhoodSpec::new(
+            N::Adjacent,
+            NeighborhoodShape::Moore,
+            NeighborhoodRadius::new(1),
+            NeighborhoodFalloff::Uniform,
+        )])
+        .rules([RuleSpec::when(M::Dead)
+            .require(neighbors(M::Alive).count().eq(3))
+            .becomes(M::Alive)])
         .build()
         .expect("test blueprint should build");
 
     let provider = CpuSolverProvider::new();
     let mut runtime = provider.build(Instance::new(4, 4, 4).with_seed(7), &spec);
 
-    runtime.set(1, 1, 1, TestCell(1));
+    runtime.set(1, 1, 1, M::Alive.id());
     runtime.write_region(
         GridRegion::new([0, 0, 0], [2, 1, 1]),
-        &[TestCell(2), TestCell(3)],
+        &[M::Other.id(), M::Alive.id()],
     );
     runtime
-        .set_attr("heat", 1, 1, 1, AttributeValue::U8(4))
+        .set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(4))
         .expect("runtime attribute writes should succeed");
     runtime.step();
 
     let snapshot = runtime.readback();
     assert_eq!(runtime.dims().width, 4);
-    assert_eq!(snapshot.get([1, 0, 0]), Some(&TestCell(3)));
+    assert_eq!(snapshot.get([1, 0, 0]), Some(&M::Alive.id()));
     assert_eq!(
         runtime.read_region(GridRegion::new([0, 0, 0], [2, 1, 1])),
-        vec![TestCell(2), TestCell(3)]
+        vec![M::Other.id(), M::Alive.id()]
     );
-    assert_eq!(runtime.get_attr("heat", 1, 1, 1), Ok(AttributeValue::U8(4)));
+    assert_eq!(runtime.get_attr(A::Heat.id(), 1, 1, 1), Ok(AttributeValue::U8(4)));
     assert_eq!(runtime.step_count(), 1);
 }

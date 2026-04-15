@@ -1,66 +1,77 @@
 //! Builder types for authoring portable blueprints.
 
+use std::any::TypeId;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use crate::{
-    AttributeComparison, AttributeDef, AttributeType, AttributeValue, CellModel, NeighborhoodSpec,
-    TopologyDescriptor,
+use crate::contracts::{
+    AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef, AttributeRef, AttributeSet,
+    AttributeType, AttributeValue, Blueprint, Condition, MaterialAttributeBinding, MaterialDef,
+    MaterialRef, MaterialSet, NeighborhoodId, NeighborhoodRef, NeighborhoodSet, NeighborhoodSpec,
+    ResolvedCondition, Rule, RuleEffect, Semantics, TopologyDescriptor,
 };
-
-use super::{
-    AttributeAssignment, Blueprint, Condition, NamedNeighborhood, Rule, RuleEffect, Semantics,
-};
-
-const ADJACENT_NEIGHBORHOOD: &str = "adjacent";
 
 /// Errors raised while building a [`Blueprint`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BuildError {
-    /// An attribute name was empty.
-    EmptyAttributeName,
-    /// An attribute name was registered more than once.
-    DuplicateAttribute(String),
-    /// A rule referenced an empty attribute name in a condition.
-    EmptyConditionAttribute,
-    /// A rule referenced an unknown attribute name in a condition.
-    UnknownConditionAttribute(String),
-    /// A rule attempted to update an empty attribute name.
-    EmptyRuleAttributeUpdate,
-    /// A rule attempted to update an unknown attribute name.
-    UnknownRuleAttributeUpdate(String),
-    /// A rule attempted to update the same attribute more than once.
-    DuplicateRuleAttributeUpdate(String),
-    /// A rule used an attribute value whose scalar type does not match the declaration.
+    /// No material set was registered.
+    MissingMaterials,
+    /// A material label was duplicated inside one material set.
+    DuplicateMaterialLabel(&'static str),
+    /// A material-scoped assignment references a different material set.
+    MismatchedMaterial(&'static str),
+    /// Two `MatAttr` entries referenced the same material.
+    DuplicateMaterialAssignment(&'static str),
+    /// No attribute set was registered before using attributes.
+    MissingAttributes,
+    /// An attribute label was duplicated inside one attribute set.
+    DuplicateAttributeLabel(&'static str),
+    /// A rule or assignment references a different attribute set.
+    MismatchedAttribute(&'static str),
+    /// A material attempted to attach the same attribute more than once.
+    DuplicateMaterialAttribute {
+        /// Material name.
+        material: &'static str,
+        /// Attribute name.
+        attribute: &'static str,
+    },
+    /// A provided default does not match the declared attribute type.
     AttributeTypeMismatch {
-        /// Referenced attribute name.
-        attribute: String,
+        /// Attribute name.
+        attribute: &'static str,
         /// Declared scalar type.
         expected: AttributeType,
-        /// Actual scalar type provided by the rule.
+        /// Provided scalar type.
         actual: AttributeType,
     },
-    /// A rule used an unsupported comparison for the attribute's scalar type.
+    /// An attribute comparison is not valid for the declared attribute type.
     UnsupportedAttributeComparison {
-        /// Referenced attribute name.
-        attribute: String,
-        /// Comparison kind used by the rule.
+        /// Attribute name.
+        attribute: &'static str,
+        /// Comparison kind.
         comparison: &'static str,
         /// Declared scalar type.
         value_type: AttributeType,
     },
-    /// A neighborhood name was empty.
-    EmptyNeighborhoodName,
-    /// The default neighborhood name was empty.
-    EmptyDefaultNeighborhood,
-    /// A rule referenced an empty neighborhood name.
-    EmptyRuleNeighborhood,
-    /// A neighborhood name was registered more than once.
-    DuplicateNeighborhood(String),
-    /// The default neighborhood name does not exist.
-    UnknownDefaultNeighborhood(String),
-    /// A rule references a neighborhood name that does not exist.
-    UnknownRuleNeighborhood(String),
+    /// A rule references an attribute not attached to its source material.
+    MissingMaterialAttribute {
+        /// Material name.
+        material: &'static str,
+        /// Attribute name.
+        attribute: &'static str,
+    },
+    /// No neighborhood set was registered before using neighborhoods.
+    MissingNeighborhoods,
+    /// A neighborhood label was duplicated inside one neighborhood set.
+    DuplicateNeighborhoodLabel(&'static str),
+    /// A neighborhood definition references a different neighborhood set.
+    MismatchedNeighborhood(&'static str),
+    /// Two neighborhood specs referenced the same neighborhood.
+    DuplicateNeighborhoodSpec(&'static str),
+    /// One registered neighborhood did not receive a specification.
+    MissingNeighborhoodSpec(&'static str),
+    /// A rule referenced a neighborhood from a different neighborhood set.
+    UnknownRuleNeighborhood(&'static str),
     /// A random condition requested an invalid denominator.
     InvalidRandomChance {
         /// Random stream identifier used by the invalid condition.
@@ -73,27 +84,29 @@ pub enum BuildError {
 impl Display for BuildError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuildError::EmptyAttributeName => {
-                write!(f, "attribute name must not be empty")
+            BuildError::MissingMaterials => write!(f, "materials::<M>() must be called before build"),
+            BuildError::DuplicateMaterialLabel(label) => {
+                write!(f, "duplicate material label in material set: {label}")
             }
-            BuildError::DuplicateAttribute(name) => {
-                write!(f, "duplicate attribute name: {name}")
+            BuildError::MismatchedMaterial(label) => {
+                write!(f, "material '{label}' belongs to a different material set")
             }
-            BuildError::EmptyConditionAttribute => {
-                write!(f, "rule condition attribute name must not be empty")
+            BuildError::DuplicateMaterialAssignment(label) => {
+                write!(f, "material attributes were assigned more than once for '{label}'")
             }
-            BuildError::UnknownConditionAttribute(name) => {
-                write!(f, "rule condition references unknown attribute: {name}")
+            BuildError::MissingAttributes => {
+                write!(f, "attributes::<A>() must be called before using attributes")
             }
-            BuildError::EmptyRuleAttributeUpdate => {
-                write!(f, "rule attribute update name must not be empty")
+            BuildError::DuplicateAttributeLabel(label) => {
+                write!(f, "duplicate attribute label in attribute set: {label}")
             }
-            BuildError::UnknownRuleAttributeUpdate(name) => {
-                write!(f, "rule updates unknown attribute: {name}")
+            BuildError::MismatchedAttribute(label) => {
+                write!(f, "attribute '{label}' belongs to a different attribute set")
             }
-            BuildError::DuplicateRuleAttributeUpdate(name) => {
-                write!(f, "rule updates attribute more than once: {name}")
-            }
+            BuildError::DuplicateMaterialAttribute { material, attribute } => write!(
+                f,
+                "material '{material}' attaches attribute '{attribute}' more than once"
+            ),
             BuildError::AttributeTypeMismatch {
                 attribute,
                 expected,
@@ -112,27 +125,31 @@ impl Display for BuildError {
                 "attribute '{attribute}' does not support comparison '{comparison}' for {:?}",
                 value_type
             ),
-            BuildError::EmptyNeighborhoodName => {
-                write!(f, "neighborhood name must not be empty")
+            BuildError::MissingMaterialAttribute { material, attribute } => write!(
+                f,
+                "material '{material}' does not carry attribute '{attribute}'"
+            ),
+            BuildError::MissingNeighborhoods => {
+                write!(f, "neighborhoods::<N>() must be called before build")
             }
-            BuildError::EmptyDefaultNeighborhood => {
-                write!(f, "default neighborhood name must not be empty")
+            BuildError::DuplicateNeighborhoodLabel(label) => {
+                write!(f, "duplicate neighborhood label in neighborhood set: {label}")
             }
-            BuildError::EmptyRuleNeighborhood => {
-                write!(f, "rule neighborhood name must not be empty")
+            BuildError::MismatchedNeighborhood(label) => {
+                write!(f, "neighborhood '{label}' belongs to a different neighborhood set")
             }
-            BuildError::DuplicateNeighborhood(name) => {
-                write!(f, "duplicate neighborhood name: {name}")
+            BuildError::DuplicateNeighborhoodSpec(label) => {
+                write!(f, "neighborhood '{label}' was configured more than once")
             }
-            BuildError::UnknownDefaultNeighborhood(name) => {
-                write!(f, "unknown default neighborhood: {name}")
+            BuildError::MissingNeighborhoodSpec(label) => {
+                write!(f, "neighborhood '{label}' is missing a specification")
             }
-            BuildError::UnknownRuleNeighborhood(name) => {
-                write!(f, "rule references unknown neighborhood: {name}")
+            BuildError::UnknownRuleNeighborhood(label) => {
+                write!(f, "rule references neighborhood '{label}' from a different set")
             }
             BuildError::InvalidRandomChance { stream, one_in } => write!(
                 f,
-                "random condition on stream {stream} must use a non-zero denominator, got {one_in}"
+                "random stream {stream} requires a positive denominator, got {one_in}"
             ),
         }
     }
@@ -140,27 +157,141 @@ impl Display for BuildError {
 
 impl Error for BuildError {}
 
-/// Typed blueprint builder.
-pub struct BlueprintBuilder<C: CellModel> {
-    semantics: Semantics,
-    topology: TopologyDescriptor,
-    attributes: Vec<AttributeDef>,
-    neighborhoods: Vec<NamedNeighborhood>,
-    default_neighborhood: String,
-    rules: Vec<PendingRule<C>>,
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct MaterialRegistry {
+    owner: TypeId,
+    default_material: crate::contracts::MaterialId,
+    materials: Vec<MaterialDef>,
 }
 
-impl<C: CellModel> BlueprintBuilder<C> {
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct AttributeRegistry {
+    owner: TypeId,
+    attributes: Vec<AttributeDef>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct NeighborhoodRegistry {
+    owner: TypeId,
+    default_neighborhood: NeighborhoodId,
+    expected_names: Vec<&'static str>,
+}
+
+/// One material-to-attribute attachment entry in the blueprint schema.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MatAttr {
+    material: MaterialRef,
+    attributes: Vec<AttrAssign>,
+}
+
+impl MatAttr {
+    /// Construct a new material attribute attachment entry.
+    pub fn new<M, I>(material: M, attributes: I) -> Self
+    where
+        M: MaterialSet,
+        I: IntoIterator<Item = AttrAssign>,
+    {
+        Self {
+            material: material.material(),
+            attributes: attributes.into_iter().collect(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct PendingAttributeUpdate {
+    attribute: AttributeRef,
+    value: AttributeValue,
+}
+
+/// Author-time rule item used by [`BlueprintBuilder::rules`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuleSpec {
+    when: MaterialRef,
+    neighborhood: Option<NeighborhoodRef>,
+    condition: Option<Condition>,
+    attribute_updates: Vec<PendingAttributeUpdate>,
+    effect: RuleEffect,
+}
+
+impl RuleSpec {
+    /// Start a new rule for the given source material.
+    pub fn when<M: MaterialSet>(material: M) -> Self {
+        Self {
+            when: material.material(),
+            neighborhood: None,
+            condition: None,
+            attribute_updates: Vec::new(),
+            effect: RuleEffect::Keep,
+        }
+    }
+
+    /// Override the neighborhood used by this rule.
+    pub fn using<N: NeighborhoodSet>(mut self, neighborhood: N) -> Self {
+        self.neighborhood = Some(neighborhood.neighborhood());
+        self
+    }
+
+    /// Conjoin an additional condition.
+    pub fn require(mut self, condition: Condition) -> Self {
+        self.condition = Some(match self.condition.take() {
+            Some(existing) => existing.and(condition),
+            None => condition,
+        });
+        self
+    }
+
+    /// Make the rule keep the current material.
+    pub fn keep(mut self) -> Self {
+        self.effect = RuleEffect::Keep;
+        self
+    }
+
+    /// Make the rule become a different material.
+    pub fn becomes<M: MaterialSet>(mut self, material: M) -> Self {
+        self.effect = RuleEffect::Become(material.id());
+        self
+    }
+
+    /// Write one attribute when the rule matches.
+    pub fn set_attr<A: AttributeSet>(
+        mut self,
+        attribute: A,
+        value: impl Into<AttributeValue>,
+    ) -> Self {
+        self.attribute_updates.push(PendingAttributeUpdate {
+            attribute: attribute.attribute(),
+            value: value.into(),
+        });
+        self
+    }
+}
+
+/// Typed blueprint builder.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BlueprintBuilder {
+    semantics: Semantics,
+    topology: TopologyDescriptor,
+    materials: Option<MaterialRegistry>,
+    attributes: Option<AttributeRegistry>,
+    material_attributes: Vec<MatAttr>,
+    neighborhoods: Option<NeighborhoodRegistry>,
+    neighborhood_specs: Vec<NeighborhoodSpec>,
+    default_neighborhood: Option<NeighborhoodRef>,
+    rules: Vec<RuleSpec>,
+}
+
+impl BlueprintBuilder {
     pub(crate) fn new() -> Self {
         Self {
             semantics: Semantics::V1,
             topology: TopologyDescriptor::bounded(),
-            attributes: Vec::new(),
-            neighborhoods: vec![NamedNeighborhood::new(
-                ADJACENT_NEIGHBORHOOD,
-                NeighborhoodSpec::adjacent(),
-            )],
-            default_neighborhood: ADJACENT_NEIGHBORHOOD.to_string(),
+            materials: None,
+            attributes: None,
+            material_attributes: Vec::new(),
+            neighborhoods: None,
+            neighborhood_specs: Vec::new(),
+            default_neighborhood: None,
             rules: Vec::new(),
         }
     }
@@ -171,355 +302,463 @@ impl<C: CellModel> BlueprintBuilder<C> {
         self
     }
 
-    /// Register a reusable attached per-cell attribute with a zero default.
-    pub fn attribute(mut self, name: impl Into<String>, value_type: AttributeType) -> Self {
-        self.attributes.push(AttributeDef::new(name, value_type));
+    /// Register the enum-backed material universe for this blueprint.
+    pub fn materials<M: MaterialSet>(mut self) -> Self {
+        self.materials = Some(MaterialRegistry {
+            owner: TypeId::of::<M>(),
+            default_material: M::default_material(),
+            materials: M::variants()
+                .iter()
+                .copied()
+                .map(|material| MaterialDef::new(material.id(), material.label(), Vec::new()))
+                .collect(),
+        });
         self
     }
 
-    /// Register a reusable attached per-cell attribute with an explicit default.
-    pub fn attribute_with_default(
-        mut self,
-        name: impl Into<String>,
-        default: AttributeValue,
-    ) -> Self {
-        self.attributes
-            .push(AttributeDef::with_default(name, default));
+    /// Register the enum-backed attribute universe for this blueprint.
+    pub fn attributes<A: AttributeSet>(mut self) -> Self {
+        self.attributes = Some(AttributeRegistry {
+            owner: TypeId::of::<A>(),
+            attributes: A::variants()
+                .iter()
+                .copied()
+                .map(|attribute| {
+                    AttributeDef::new(attribute.id(), attribute.label(), attribute.value_type())
+                })
+                .collect(),
+        });
         self
     }
 
-    /// Register a reusable attached per-cell attribute descriptor.
-    pub fn attribute_def(mut self, attribute: AttributeDef) -> Self {
-        self.attributes.push(attribute);
+    /// Attach attributes to materials with material-specific defaults.
+    pub fn material_attributes<I>(mut self, assignments: I) -> Self
+    where
+        I: IntoIterator<Item = MatAttr>,
+    {
+        self.material_attributes = assignments.into_iter().collect();
         self
     }
 
-    /// Register a reusable named neighborhood.
-    pub fn neighborhood(mut self, name: impl Into<String>, spec: NeighborhoodSpec) -> Self {
-        self.neighborhoods.push(NamedNeighborhood::new(name, spec));
+    /// Register the enum-backed neighborhood universe for this blueprint.
+    pub fn neighborhoods<N: NeighborhoodSet>(mut self) -> Self {
+        self.neighborhoods = Some(NeighborhoodRegistry {
+            owner: TypeId::of::<N>(),
+            default_neighborhood: N::default_neighborhood(),
+            expected_names: N::variants().iter().map(|value| value.label()).collect(),
+        });
         self
     }
 
-    /// Set the default neighborhood used by rules that do not override it.
-    pub fn default_neighborhood(mut self, name: impl Into<String>) -> Self {
-        self.default_neighborhood = name.into();
+    /// Override the default neighborhood used by rules without `using(...)`.
+    pub fn default_neighborhood<N: NeighborhoodSet>(mut self, neighborhood: N) -> Self {
+        self.default_neighborhood = Some(neighborhood.neighborhood());
         self
     }
 
-    /// Add rules through the DSL-shaped rule builder.
-    pub fn rules(mut self, build: impl FnOnce(&mut RulesBuilder<C>)) -> Self {
-        let mut rules = RulesBuilder::new();
-        build(&mut rules);
-        self.rules.extend(rules.finish());
+    /// Provide one spec for each declared neighborhood.
+    pub fn neighborhood_specs<I>(mut self, neighborhoods: I) -> Self
+    where
+        I: IntoIterator<Item = NeighborhoodSpec>,
+    {
+        self.neighborhood_specs = neighborhoods.into_iter().collect();
+        self
+    }
+
+    /// Provide the ordered rules for this blueprint.
+    pub fn rules<I>(mut self, rules: I) -> Self
+    where
+        I: IntoIterator<Item = RuleSpec>,
+    {
+        self.rules = rules.into_iter().collect();
         self
     }
 
     /// Validate and build the portable blueprint.
-    pub fn build(self) -> Result<Blueprint<C>, BuildError> {
-        if self.default_neighborhood.is_empty() {
-            return Err(BuildError::EmptyDefaultNeighborhood);
-        }
+    pub fn build(self) -> Result<Blueprint, BuildError> {
+        let mut materials = self.materials.ok_or(BuildError::MissingMaterials)?;
+        validate_unique_material_labels(&materials.materials)?;
 
-        let mut attribute_names = Vec::with_capacity(self.attributes.len());
-        for attribute in &self.attributes {
-            if attribute.name.is_empty() {
-                return Err(BuildError::EmptyAttributeName);
+        let attributes = match self.attributes {
+            Some(attributes) => {
+                validate_unique_attribute_labels(&attributes.attributes)?;
+                Some(attributes)
             }
-            if attribute_names
-                .iter()
-                .any(|name: &String| name == &attribute.name)
-            {
-                return Err(BuildError::DuplicateAttribute(attribute.name.clone()));
-            }
-            attribute_names.push(attribute.name.clone());
-        }
+            None => None,
+        };
 
-        let mut names = Vec::with_capacity(self.neighborhoods.len());
-        for neighborhood in &self.neighborhoods {
-            if neighborhood.name.is_empty() {
-                return Err(BuildError::EmptyNeighborhoodName);
-            }
-            if names.iter().any(|name: &String| name == &neighborhood.name) {
-                return Err(BuildError::DuplicateNeighborhood(neighborhood.name.clone()));
-            }
-            names.push(neighborhood.name.clone());
-        }
+        apply_material_attributes(&mut materials, attributes.as_ref(), &self.material_attributes)?;
 
-        let default_neighborhood = names
-            .iter()
-            .position(|name| name == &self.default_neighborhood)
-            .ok_or_else(|| {
-                BuildError::UnknownDefaultNeighborhood(self.default_neighborhood.clone())
-            })?;
+        let neighborhoods = self.neighborhoods.ok_or(BuildError::MissingNeighborhoods)?;
+        let (neighborhood_specs, default_neighborhood) =
+            validate_neighborhoods(&neighborhoods, &self.neighborhood_specs, self.default_neighborhood)?;
 
-        let mut rules = Vec::with_capacity(self.rules.len());
-        for rule in self.rules {
-            validate_condition(rule.condition.as_ref(), &self.attributes)?;
-            validate_attribute_updates(&rule.attribute_updates, &self.attributes)?;
-            let neighborhood_name = rule
-                .neighborhood
-                .unwrap_or_else(|| self.default_neighborhood.clone());
-            if neighborhood_name.is_empty() {
-                return Err(BuildError::EmptyRuleNeighborhood);
-            }
-            let neighborhood = names
-                .iter()
-                .position(|name| name == &neighborhood_name)
-                .ok_or_else(|| BuildError::UnknownRuleNeighborhood(neighborhood_name.clone()))?;
-            rules.push(Rule {
-                when: rule.when,
-                neighborhood,
-                condition: rule.condition,
-                attribute_updates: rule.attribute_updates,
-                effect: rule.effect,
-            });
-        }
+        let rules = self
+            .rules
+            .into_iter()
+            .map(|rule| {
+                build_rule(
+                    rule,
+                    &materials,
+                    attributes.as_ref(),
+                    &neighborhoods,
+                    default_neighborhood,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(Blueprint::new(
-            C::schema(),
             self.semantics,
             self.topology,
-            self.attributes,
-            self.neighborhoods,
+            materials.default_material,
+            materials.materials,
+            attributes.map_or_else(Vec::new, |registry| registry.attributes),
+            neighborhood_specs,
             default_neighborhood,
             rules,
         ))
     }
 }
 
-fn validate_condition<C: CellModel>(
-    condition: Option<&Condition<C>>,
-    attributes: &[AttributeDef],
+fn validate_unique_material_labels(materials: &[MaterialDef]) -> Result<(), BuildError> {
+    for (index, material) in materials.iter().enumerate() {
+        if materials[index + 1..]
+            .iter()
+            .any(|candidate| candidate.name == material.name)
+        {
+            return Err(BuildError::DuplicateMaterialLabel(material.name));
+        }
+    }
+    Ok(())
+}
+
+fn validate_unique_attribute_labels(attributes: &[AttributeDef]) -> Result<(), BuildError> {
+    for (index, attribute) in attributes.iter().enumerate() {
+        if attributes[index + 1..]
+            .iter()
+            .any(|candidate| candidate.name == attribute.name)
+        {
+            return Err(BuildError::DuplicateAttributeLabel(attribute.name));
+        }
+    }
+    Ok(())
+}
+
+fn apply_material_attributes(
+    materials: &mut MaterialRegistry,
+    attributes: Option<&AttributeRegistry>,
+    assignments: &[MatAttr],
 ) -> Result<(), BuildError> {
-    let Some(condition) = condition else {
-        return Ok(());
+    let mut seen_materials = vec![false; materials.materials.len()];
+
+    for assignment in assignments {
+        if assignment.material.owner() != materials.owner {
+            return Err(BuildError::MismatchedMaterial(assignment.material.label()));
+        }
+
+        let material_index = assignment.material.id().index();
+        if seen_materials[material_index] {
+            return Err(BuildError::DuplicateMaterialAssignment(
+                assignment.material.label(),
+            ));
+        }
+        seen_materials[material_index] = true;
+
+        let material = &mut materials.materials[material_index];
+        let mut seen_attributes = Vec::new();
+
+        for attribute in &assignment.attributes {
+            let registry = attributes.ok_or(BuildError::MissingAttributes)?;
+            if attribute.attribute.owner() != registry.owner {
+                return Err(BuildError::MismatchedAttribute(attribute.attribute.label()));
+            }
+
+            if seen_attributes
+                .iter()
+                .any(|candidate: &AttributeRef| candidate.id() == attribute.attribute.id())
+            {
+                return Err(BuildError::DuplicateMaterialAttribute {
+                    material: material.name,
+                    attribute: attribute.attribute.label(),
+                });
+            }
+            seen_attributes.push(attribute.attribute);
+
+            if attribute.default.value_type() != attribute.attribute.value_type() {
+                return Err(BuildError::AttributeTypeMismatch {
+                    attribute: attribute.attribute.label(),
+                    expected: attribute.attribute.value_type(),
+                    actual: attribute.default.value_type(),
+                });
+            }
+
+            material.attributes.push(MaterialAttributeBinding::new(
+                attribute.attribute.id(),
+                attribute.default,
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_neighborhoods(
+    registry: &NeighborhoodRegistry,
+    specs: &[NeighborhoodSpec],
+    default_override: Option<NeighborhoodRef>,
+) -> Result<(Vec<NeighborhoodSpec>, NeighborhoodId), BuildError> {
+    let mut resolved = vec![None; registry.expected_names.len()];
+
+    for spec in specs {
+        if spec.id().index() >= resolved.len() {
+            return Err(BuildError::MismatchedNeighborhood(spec.name()));
+        }
+
+        let expected_name = registry.expected_names[spec.id().index()];
+        if expected_name != spec.name() {
+            return Err(BuildError::MismatchedNeighborhood(spec.name()));
+        }
+        if resolved[spec.id().index()].is_some() {
+            return Err(BuildError::DuplicateNeighborhoodSpec(spec.name()));
+        }
+        resolved[spec.id().index()] = Some(*spec);
+    }
+
+    let mut neighborhoods = Vec::with_capacity(resolved.len());
+    for (index, spec) in resolved.into_iter().enumerate() {
+        let spec = spec.ok_or(BuildError::MissingNeighborhoodSpec(
+            registry.expected_names[index],
+        ))?;
+        neighborhoods.push(spec);
+    }
+
+    let default_neighborhood = match default_override {
+        Some(reference) => {
+            if reference.owner() != registry.owner {
+                return Err(BuildError::UnknownRuleNeighborhood(reference.label()));
+            }
+            reference.id()
+        }
+        None => registry.default_neighborhood,
     };
 
+    Ok((neighborhoods, default_neighborhood))
+}
+
+fn build_rule(
+    rule: RuleSpec,
+    materials: &MaterialRegistry,
+    attributes: Option<&AttributeRegistry>,
+    neighborhoods: &NeighborhoodRegistry,
+    default_neighborhood: NeighborhoodId,
+) -> Result<Rule, BuildError> {
+    if rule.when.owner() != materials.owner {
+        return Err(BuildError::MismatchedMaterial(rule.when.label()));
+    }
+
+    let target_material = match rule.effect {
+        RuleEffect::Keep => rule.when.id(),
+        RuleEffect::Become(target) => target,
+    };
+
+    let neighborhood = match rule.neighborhood {
+        Some(reference) => {
+            if reference.owner() != neighborhoods.owner {
+                return Err(BuildError::UnknownRuleNeighborhood(reference.label()));
+            }
+            reference.id()
+        }
+        None => default_neighborhood,
+    };
+
+    let condition = rule
+        .condition
+        .as_ref()
+        .map(|condition| validate_condition(condition, rule.when, materials, attributes))
+        .transpose()?;
+
+    let mut seen_updates = Vec::new();
+    let mut attribute_updates = Vec::with_capacity(rule.attribute_updates.len());
+    for update in &rule.attribute_updates {
+        let registry = attributes.ok_or(BuildError::MissingAttributes)?;
+        if update.attribute.owner() != registry.owner {
+            return Err(BuildError::MismatchedAttribute(update.attribute.label()));
+        }
+        if seen_updates
+            .iter()
+            .any(|attribute: &AttributeRef| attribute.id() == update.attribute.id())
+        {
+            return Err(BuildError::DuplicateMaterialAttribute {
+                material: materials.materials[target_material.index()].name,
+                attribute: update.attribute.label(),
+            });
+        }
+        seen_updates.push(update.attribute);
+
+        if update.value.value_type() != update.attribute.value_type() {
+            return Err(BuildError::AttributeTypeMismatch {
+                attribute: update.attribute.label(),
+                expected: update.attribute.value_type(),
+                actual: update.value.value_type(),
+            });
+        }
+        ensure_material_has_attribute(materials, target_material, update.attribute)?;
+        attribute_updates.push(AttributeAssignment::new(update.attribute.id(), update.value));
+    }
+
+    Ok(Rule {
+        when: rule.when.id(),
+        neighborhood,
+        condition,
+        attribute_updates,
+        effect: rule.effect,
+    })
+}
+
+fn validate_condition(
+    condition: &Condition,
+    when: MaterialRef,
+    materials: &MaterialRegistry,
+    attributes: Option<&AttributeRegistry>,
+) -> Result<ResolvedCondition, BuildError> {
     match condition {
-        Condition::NeighborCount { .. } | Condition::NeighborWeightedSum { .. } => Ok(()),
+        Condition::NeighborCount {
+            material,
+            comparison,
+        } => {
+            if material.owner() != materials.owner {
+                return Err(BuildError::MismatchedMaterial(material.label()));
+            }
+            Ok(ResolvedCondition::NeighborCount {
+                material: material.id(),
+                comparison: *comparison,
+            })
+        }
+        Condition::NeighborWeightedSum {
+            material,
+            comparison,
+        } => {
+            if material.owner() != materials.owner {
+                return Err(BuildError::MismatchedMaterial(material.label()));
+            }
+            Ok(ResolvedCondition::NeighborWeightedSum {
+                material: material.id(),
+                comparison: *comparison,
+            })
+        }
         Condition::RandomChance { stream, one_in } => {
             if *one_in == 0 {
-                Err(BuildError::InvalidRandomChance {
+                return Err(BuildError::InvalidRandomChance {
                     stream: *stream,
                     one_in: *one_in,
-                })
-            } else {
-                Ok(())
+                });
             }
+            Ok(ResolvedCondition::RandomChance {
+                stream: *stream,
+                one_in: *one_in,
+            })
         }
         Condition::Attribute {
             attribute,
             comparison,
-        } => validate_attribute_condition(attribute, *comparison, attributes),
-        Condition::And(conditions) | Condition::Or(conditions) => {
-            for condition in conditions {
-                validate_condition(Some(condition), attributes)?;
+        } => {
+            let registry = attributes.ok_or(BuildError::MissingAttributes)?;
+            if attribute.owner() != registry.owner {
+                return Err(BuildError::MismatchedAttribute(attribute.label()));
             }
-            Ok(())
+
+            ensure_material_has_attribute(materials, when.id(), *attribute)?;
+            validate_attribute_comparison(*attribute, *comparison)?;
+
+            Ok(ResolvedCondition::Attribute {
+                attribute: attribute.id(),
+                comparison: *comparison,
+            })
         }
-        Condition::Not(condition) => validate_condition(Some(condition), attributes),
+        Condition::And(conditions) => Ok(ResolvedCondition::And(
+            conditions
+                .iter()
+                .map(|condition| validate_condition(condition, when, materials, attributes))
+                .collect::<Result<Vec<_>, _>>()?,
+        )),
+        Condition::Or(conditions) => Ok(ResolvedCondition::Or(
+            conditions
+                .iter()
+                .map(|condition| validate_condition(condition, when, materials, attributes))
+                .collect::<Result<Vec<_>, _>>()?,
+        )),
+        Condition::Not(condition) => Ok(ResolvedCondition::Not(Box::new(validate_condition(
+            condition, when, materials, attributes,
+        )?))),
     }
 }
 
-fn validate_attribute_condition(
-    attribute: &str,
-    comparison: AttributeComparison,
-    attributes: &[AttributeDef],
+fn ensure_material_has_attribute(
+    materials: &MaterialRegistry,
+    material: crate::contracts::MaterialId,
+    attribute: AttributeRef,
 ) -> Result<(), BuildError> {
-    if attribute.is_empty() {
-        return Err(BuildError::EmptyConditionAttribute);
-    }
-
-    let attribute_def = attributes
+    if materials.materials[material.index()]
+        .attributes
         .iter()
-        .find(|candidate| candidate.name == attribute)
-        .ok_or_else(|| BuildError::UnknownConditionAttribute(attribute.to_string()))?;
+        .any(|binding| binding.attribute == attribute.id())
+    {
+        Ok(())
+    } else {
+        Err(BuildError::MissingMaterialAttribute {
+            material: materials.materials[material.index()].name,
+            attribute: attribute.label(),
+        })
+    }
+}
+
+fn validate_attribute_comparison(
+    attribute: AttributeRef,
+    comparison: AttributeComparison,
+) -> Result<(), BuildError> {
+    let expected = attribute.value_type();
+    let validate_value = |value: AttributeValue| -> Result<(), BuildError> {
+        if value.value_type() != expected {
+            Err(BuildError::AttributeTypeMismatch {
+                attribute: attribute.label(),
+                expected,
+                actual: value.value_type(),
+            })
+        } else {
+            Ok(())
+        }
+    };
 
     match comparison {
-        AttributeComparison::Eq(value) => {
-            validate_attribute_value(attribute, attribute_def.value_type, value)?;
+        AttributeComparison::Eq(value)
+        | AttributeComparison::AtLeast(value)
+        | AttributeComparison::AtMost(value) => {
+            validate_value(value)?;
         }
         AttributeComparison::InRange { min, max }
         | AttributeComparison::NotInRange { min, max } => {
-            validate_attribute_ordered_value(attribute, attribute_def.value_type, min, "in_range")?;
-            validate_attribute_ordered_value(attribute, attribute_def.value_type, max, "in_range")?;
-        }
-        AttributeComparison::AtLeast(value) => {
-            validate_attribute_ordered_value(
-                attribute,
-                attribute_def.value_type,
-                value,
-                "at_least",
-            )?;
-        }
-        AttributeComparison::AtMost(value) => {
-            validate_attribute_ordered_value(
-                attribute,
-                attribute_def.value_type,
-                value,
-                "at_most",
-            )?;
+            validate_value(min)?;
+            validate_value(max)?;
         }
     }
 
-    Ok(())
-}
-
-fn validate_attribute_updates(
-    updates: &[AttributeAssignment],
-    attributes: &[AttributeDef],
-) -> Result<(), BuildError> {
-    let mut seen = Vec::with_capacity(updates.len());
-    for update in updates {
-        if update.attribute.is_empty() {
-            return Err(BuildError::EmptyRuleAttributeUpdate);
-        }
-        if seen.iter().any(|name: &String| name == &update.attribute) {
-            return Err(BuildError::DuplicateRuleAttributeUpdate(
-                update.attribute.clone(),
-            ));
-        }
-
-        let attribute_def = attributes
-            .iter()
-            .find(|candidate| candidate.name == update.attribute)
-            .ok_or_else(|| BuildError::UnknownRuleAttributeUpdate(update.attribute.clone()))?;
-
-        validate_attribute_value(&update.attribute, attribute_def.value_type, update.value)?;
-        seen.push(update.attribute.clone());
-    }
-    Ok(())
-}
-
-fn validate_attribute_value(
-    attribute: &str,
-    expected: AttributeType,
-    value: AttributeValue,
-) -> Result<(), BuildError> {
-    let actual = value.value_type();
-    if actual != expected {
-        Err(BuildError::AttributeTypeMismatch {
-            attribute: attribute.to_string(),
-            expected,
-            actual,
-        })
-    } else {
-        Ok(())
-    }
-}
-
-fn validate_attribute_ordered_value(
-    attribute: &str,
-    expected: AttributeType,
-    value: AttributeValue,
-    comparison: &'static str,
-) -> Result<(), BuildError> {
-    validate_attribute_value(attribute, expected, value)?;
     if expected.is_boolean() {
-        Err(BuildError::UnsupportedAttributeComparison {
-            attribute: attribute.to_string(),
-            comparison,
-            value_type: expected,
-        })
+        match comparison {
+            AttributeComparison::Eq(_) => Ok(()),
+            AttributeComparison::InRange { .. } => Ok(()),
+            AttributeComparison::NotInRange { .. } => Ok(()),
+            AttributeComparison::AtLeast(_) => Err(BuildError::UnsupportedAttributeComparison {
+                attribute: attribute.label(),
+                comparison: "at_least",
+                value_type: expected,
+            }),
+            AttributeComparison::AtMost(_) => Err(BuildError::UnsupportedAttributeComparison {
+                attribute: attribute.label(),
+                comparison: "at_most",
+                value_type: expected,
+            }),
+        }
     } else {
         Ok(())
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct PendingRule<C: CellModel> {
-    when: C,
-    neighborhood: Option<String>,
-    condition: Option<Condition<C>>,
-    attribute_updates: Vec<AttributeAssignment>,
-    effect: RuleEffect<C>,
-}
-
-/// Builder for an ordered list of rules.
-pub struct RulesBuilder<C: CellModel> {
-    rules: Vec<PendingRule<C>>,
-}
-
-impl<C: CellModel> RulesBuilder<C> {
-    fn new() -> Self {
-        Self { rules: Vec::new() }
-    }
-
-    /// Start a new rule that applies to cells exactly equal to `state`.
-    pub fn when(&mut self, state: C) -> RuleBuilder<'_, C> {
-        RuleBuilder {
-            rules: self,
-            when: state,
-            neighborhood: None,
-            condition: None,
-            attribute_updates: Vec::new(),
-        }
-    }
-
-    fn finish(self) -> Vec<PendingRule<C>> {
-        self.rules
-    }
-}
-
-/// Builder for one rule clause.
-pub struct RuleBuilder<'a, C: CellModel> {
-    rules: &'a mut RulesBuilder<C>,
-    when: C,
-    neighborhood: Option<String>,
-    condition: Option<Condition<C>>,
-    attribute_updates: Vec<AttributeAssignment>,
-}
-
-impl<'a, C: CellModel> RuleBuilder<'a, C> {
-    /// Override the default neighborhood for this rule.
-    pub fn using(mut self, name: impl Into<String>) -> Self {
-        self.neighborhood = Some(name.into());
-        self
-    }
-
-    /// Add a required condition to this rule.
-    pub fn require(mut self, condition: Condition<C>) -> Self {
-        self.condition = Some(match self.condition.take() {
-            Some(existing) => existing.and(condition),
-            None => condition,
-        });
-        self
-    }
-
-    /// Add a negated condition to this rule.
-    pub fn unless(self, condition: Condition<C>) -> Self {
-        self.require(condition.negate())
-    }
-
-    /// Overwrite an attached attribute when this rule matches.
-    pub fn set_attr(
-        mut self,
-        attribute: impl Into<String>,
-        value: impl Into<AttributeValue>,
-    ) -> Self {
-        self.attribute_updates
-            .push(AttributeAssignment::new(attribute, value));
-        self
-    }
-
-    /// Keep the center cell unchanged when this rule matches.
-    pub fn keep(self) -> &'a mut RulesBuilder<C> {
-        self.finish(RuleEffect::Keep)
-    }
-
-    /// Replace the center cell with `state` when this rule matches.
-    pub fn becomes(self, state: C) -> &'a mut RulesBuilder<C> {
-        self.finish(RuleEffect::Become(state))
-    }
-
-    fn finish(self, effect: RuleEffect<C>) -> &'a mut RulesBuilder<C> {
-        self.rules.rules.push(PendingRule {
-            when: self.when,
-            neighborhood: self.neighborhood,
-            condition: self.condition,
-            attribute_updates: self.attribute_updates,
-            effect,
-        });
-        self.rules
     }
 }

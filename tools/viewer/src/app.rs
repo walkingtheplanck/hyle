@@ -7,13 +7,13 @@ use eframe::egui;
 use glam::Vec3;
 use hyle_ca_interface::CaSolverProvider;
 
-use crate::ca::{viewer_world, Materials, Scenario, SimpleWorld, Simulation, ViewerCell};
+use crate::ca::{viewer_world, Materials, Scenario, SimpleWorld, Simulation};
 use crate::input::InputState;
 use crate::rendering::{draw_toolbar, render, Camera, GpuRaytracer};
 
 pub struct ViewerApp<P>
 where
-    P: CaSolverProvider<ViewerCell>,
+    P: CaSolverProvider,
 {
     world: SimpleWorld,
     materials: Materials,
@@ -28,7 +28,7 @@ where
 
 impl<P> ViewerApp<P>
 where
-    P: CaSolverProvider<ViewerCell>,
+    P: CaSolverProvider,
 {
     pub fn new(cc: &eframe::CreationContext, provider: P) -> Self {
         let render_state = cc
@@ -78,7 +78,7 @@ where
 
 impl<P> eframe::App for ViewerApp<P>
 where
-    P: CaSolverProvider<ViewerCell>,
+    P: CaSolverProvider,
 {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let dt_ms = self.last_frame.elapsed().as_secs_f64() * 1000.0;
@@ -153,7 +153,7 @@ where
 
 impl<P> ViewerApp<P>
 where
-    P: CaSolverProvider<ViewerCell>,
+    P: CaSolverProvider,
 {
     fn apply_scenario(
         &mut self,

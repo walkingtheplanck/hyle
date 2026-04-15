@@ -1,27 +1,75 @@
+use crate::contracts::{NeighborhoodId, NeighborhoodRef, NeighborhoodSet};
+
 /// Fixed-point scale used for deterministic neighborhood weights.
 pub const WEIGHT_SCALE: u32 = 1024;
+
+/// Declarative neighborhood radius wrapper.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NeighborhoodRadius(u32);
+
+impl NeighborhoodRadius {
+    /// Construct a new neighborhood radius.
+    pub const fn new(radius: u32) -> Self {
+        Self(radius)
+    }
+
+    /// Return the raw numeric radius.
+    pub const fn get(self) -> u32 {
+        self.0
+    }
+}
 
 /// Declarative description of how a rule samples nearby cells.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NeighborhoodSpec {
+    id: NeighborhoodId,
+    name: &'static str,
     shape: NeighborhoodShape,
-    radius: u32,
+    radius: NeighborhoodRadius,
     falloff: NeighborhoodFalloff,
 }
 
 impl NeighborhoodSpec {
     /// Construct a new neighborhood specification.
-    pub const fn new(shape: NeighborhoodShape, radius: u32, falloff: NeighborhoodFalloff) -> Self {
+    pub fn new<N: NeighborhoodSet>(
+        neighborhood: N,
+        shape: NeighborhoodShape,
+        radius: NeighborhoodRadius,
+        falloff: NeighborhoodFalloff,
+    ) -> Self {
         Self {
+            id: neighborhood.id(),
+            name: neighborhood.label(),
             shape,
             radius,
             falloff,
         }
     }
 
-    /// Construct the standard adjacent neighborhood: radius-1 Moore, unweighted.
-    pub const fn adjacent() -> Self {
-        Self::new(NeighborhoodShape::Moore, 1, NeighborhoodFalloff::Uniform)
+    /// Construct a neighborhood specification from an already typed-erased reference.
+    pub const fn from_ref(
+        neighborhood: NeighborhoodRef,
+        shape: NeighborhoodShape,
+        radius: NeighborhoodRadius,
+        falloff: NeighborhoodFalloff,
+    ) -> Self {
+        Self {
+            id: neighborhood.id(),
+            name: neighborhood.label(),
+            shape,
+            radius,
+            falloff,
+        }
+    }
+
+    /// Return the neighborhood identifier.
+    pub const fn id(&self) -> NeighborhoodId {
+        self.id
+    }
+
+    /// Return the human-readable neighborhood name.
+    pub const fn name(&self) -> &'static str {
+        self.name
     }
 
     /// Return the declared neighborhood shape.
@@ -30,7 +78,7 @@ impl NeighborhoodSpec {
     }
 
     /// Return the declared neighborhood radius.
-    pub const fn radius(&self) -> u32 {
+    pub const fn radius(&self) -> NeighborhoodRadius {
         self.radius
     }
 

@@ -1,9 +1,13 @@
 mod attribute;
 mod grid;
+mod material;
 mod neighborhood;
 mod topology;
 
-pub use attribute::{AttributeDef, AttributeType, AttributeValue};
+pub use attribute::{AttributeDef, AttributeType, AttributeValue, MaterialAttributeBinding};
 pub use grid::{GridDims, GridRegion, GridSnapshot};
-pub use neighborhood::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec, WEIGHT_SCALE};
+pub use material::MaterialDef;
+pub use neighborhood::{
+    NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodShape, NeighborhoodSpec, WEIGHT_SCALE,
+};
 pub use topology::{AxisTopology, TopologyDescriptor};

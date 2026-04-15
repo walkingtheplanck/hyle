@@ -3,8 +3,8 @@
 Shared interfaces, contracts, and descriptors for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
 This crate defines the shared public interface layer. Depend on it to:
-- define custom cell types
-- author portable blueprints with `Blueprint::<C>::builder()`
+- define enum-backed material, attribute, and neighborhood sets
+- author portable blueprints with `Blueprint::builder()`
 - implement new solver implementations against the shared `CaSolver` trait
 - centralize backend construction through `CaRuntime` and `CaSolverProvider`
 
@@ -15,13 +15,13 @@ interpretation helpers live in this crate under `hyle_ca_interface::semantics`.
 It has **zero dependencies** and is split conceptually into:
 - `contracts` for declarative blueprint and descriptor data
 - `semantics` for interpreted blueprint, neighborhood, and topology meaning
-- `runtime` for running-simulation interfaces and shared runtime types such as `Cell`, `Instance`, `Topology`, `CaSolver`, `CaRuntime`, `CaSolverProvider`, and `ValidatedSolver`
+- `runtime` for running-simulation interfaces and shared runtime types such as `MaterialId`, `Instance`, `Topology`, `CaSolver`, `CaRuntime`, `CaSolverProvider`, and `ValidatedSolver`
 
 ## Key Types
 
 | Type | Role |
 |------|------|
-| [`Cell`] | Marker trait for runtime cell state |
+| [`MaterialSet`] / [`AttributeSet`] / [`NeighborhoodSet`] | Enum-backed registries for portable blueprint authoring |
 | [`Instance`] | Runtime dimensions and deterministic seed for one solver run |
 | [`Blueprint`] | Declarative blueprint builder and canonical contract |
 | [`CaSolver`] | Trait that all solver implementations implement |
@@ -55,34 +55,64 @@ the intended consumer-facing path.
 ## Building a Portable Blueprint
 
 ```rust
-use hyle_ca_interface::{neighbors, Blueprint, CellModel, CellSchema, StateDef, TopologyDescriptor};
+use hyle_ca_interface::{
+    neighbors, Blueprint, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec, TopologyDescriptor,
+};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-enum LifeCell {
+enum Material {
     #[default]
     Dead,
     Alive,
 }
 
-const LIFE_CELL_STATES: [StateDef; 2] = [StateDef::new("Dead"), StateDef::new("Alive")];
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] {
+        &[Material::Dead, Material::Alive]
+    }
 
-impl CellModel for LifeCell {
-    fn schema() -> CellSchema {
-        CellSchema::enumeration("LifeCell", &LIFE_CELL_STATES)
+    fn label(self) -> &'static str {
+        match self {
+            Material::Dead => "dead",
+            Material::Alive => "alive",
+        }
     }
 }
 
-let spec = Blueprint::<LifeCell>::builder()
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] {
+        &[Neighborhood::Adjacent]
+    }
+
+    fn label(self) -> &'static str {
+        "adjacent"
+    }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
     .topology(TopologyDescriptor::bounded())
-    .attribute("heat", hyle_ca_interface::AttributeType::U8)
-    .rules(|rules| {
-        rules.when(LifeCell::Dead)
-            .require(neighbors(LifeCell::Alive).count().eq(3))
-            .becomes(LifeCell::Alive);
-        rules.when(LifeCell::Alive)
-            .unless(neighbors(LifeCell::Alive).count().in_range(2..=3))
-            .becomes(LifeCell::Dead);
-    })
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([NeighborhoodSpec::new(
+        Neighborhood::Adjacent,
+        NeighborhoodShape::Moore,
+        NeighborhoodRadius::new(1),
+        NeighborhoodFalloff::Uniform,
+    )])
+    .rules([
+        RuleSpec::when(Material::Dead)
+            .require(neighbors(Material::Alive).count().eq(3))
+            .becomes(Material::Alive),
+        RuleSpec::when(Material::Alive)
+            .require(neighbors(Material::Alive).count().in_range(2..=3).negate())
+            .becomes(Material::Dead),
+    ])
     .build()?;
 # Ok::<(), hyle_ca_interface::BuildError>(())
 ```
@@ -95,25 +125,97 @@ If no rule matches, the center cell is kept unchanged.
 Blueprints can declare named attached per-cell attributes and use them in rules:
 
 ```rust
-use hyle_ca_interface::{attr, AttributeType, AttributeValue, Blueprint, CellModel, CellSchema};
+use hyle_ca_interface::{
+    attr, AttrAssign, AttributeSet, AttributeType, AttributeValue, Blueprint, MatAttr,
+    MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape,
+    NeighborhoodSpec, RuleSpec,
+};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-struct TestCell(u8);
-
-impl CellModel for TestCell {
-    fn schema() -> CellSchema { CellSchema::opaque("TestCell") }
+enum Material {
+    #[default]
+    Idle,
+    Hot,
 }
 
-let spec = Blueprint::<TestCell>::builder()
-    .attribute("heat", AttributeType::U8)
-    .attribute_with_default("charged", AttributeValue::Bool(true))
-    .rules(|rules| {
-        rules
-            .when(TestCell(1))
-            .require(attr("heat").at_least(2u8))
-            .set_attr("heat", 0u8)
-            .keep();
-    })
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] {
+        &[Material::Idle, Material::Hot]
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Material::Idle => "idle",
+            Material::Hot => "hot",
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Attribute {
+    Heat,
+    Charged,
+}
+
+impl AttributeSet for Attribute {
+    fn variants() -> &'static [Self] {
+        &[Attribute::Heat, Attribute::Charged]
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Attribute::Heat => "heat",
+            Attribute::Charged => "charged",
+        }
+    }
+
+    fn value_type(self) -> AttributeType {
+        match self {
+            Attribute::Heat => AttributeType::U8,
+            Attribute::Charged => AttributeType::Bool,
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] {
+        &[Neighborhood::Adjacent]
+    }
+
+    fn label(self) -> &'static str {
+        "adjacent"
+    }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
+    .attributes::<Attribute>()
+    .material_attributes([
+        MatAttr::new(Material::Idle, []),
+        MatAttr::new(
+            Material::Hot,
+            [
+                AttrAssign::new(Attribute::Heat).default(2u8),
+                AttrAssign::new(Attribute::Charged).default(true),
+            ],
+        ),
+    ])
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([NeighborhoodSpec::new(
+        Neighborhood::Adjacent,
+        NeighborhoodShape::Moore,
+        NeighborhoodRadius::new(1),
+        NeighborhoodFalloff::Uniform,
+    )])
+    .rules([RuleSpec::when(Material::Hot)
+        .require(attr(Attribute::Heat).at_least(2u8))
+        .set_attr(Attribute::Heat, 0u8)
+        .keep()])
     .build()?;
 
 assert_eq!(spec.attributes().len(), 2);
@@ -129,17 +231,21 @@ Consumers such as viewers can depend on the centralized runtime/provider seam
 instead of naming a concrete solver type directly:
 
 ```ignore
-use hyle_ca_interface::{Blueprint, CaRuntime, CaSolverProvider, CellModel, CellSchema, Instance};
+use hyle_ca_interface::{Blueprint, CaRuntime, CaSolverProvider, Instance, MaterialSet};
 use hyle_ca_solver::CpuSolverProvider;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-struct TestCell(u32);
-
-impl CellModel for TestCell {
-    fn schema() -> CellSchema { CellSchema::opaque("TestCell") }
+enum Material {
+    #[default]
+    Empty,
 }
 
-let spec = Blueprint::<TestCell>::builder().build()?;
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] { &[Material::Empty] }
+    fn label(self) -> &'static str { "empty" }
+}
+
+let spec = Blueprint::builder().materials::<Material>().build()?;
 let provider = CpuSolverProvider::new();
 let runtime = provider.build(Instance::new(16, 16, 16), &spec);
 
@@ -148,38 +254,54 @@ let runtime = provider.build(Instance::new(16, 16, 16), &spec);
 
 This keeps backend selection localized to one construction site while preserving static dispatch.
 
-## Defining a Custom Cell
+## Defining Symbol Sets
 
 ```rust
-use hyle_ca_interface::{CellModel, CellSchema};
+use hyle_ca_interface::{AttributeSet, AttributeType, MaterialSet};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-struct FluidCell {
-    density: u8,
-    velocity: [i8; 6],
-    material: u8,
+enum Material {
+    #[default]
+    Empty,
+    Fluid,
 }
 
-impl CellModel for FluidCell {
-    fn schema() -> CellSchema {
-        CellSchema::opaque("FluidCell")
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] {
+        &[Material::Empty, Material::Fluid]
     }
+
+    fn label(self) -> &'static str {
+        match self {
+            Material::Empty => "empty",
+            Material::Fluid => "fluid",
+        }
+    }
+}
+ 
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Attribute {
+    Density,
+}
+
+impl AttributeSet for Attribute {
+    fn variants() -> &'static [Self] { &[Attribute::Density] }
+    fn label(self) -> &'static str { "density" }
+    fn value_type(self) -> AttributeType { AttributeType::U8 }
 }
 ```
 
-Any `CellState` automatically implements the runtime `Cell` marker trait.
-Blueprint builders require `CellModel` so the spec carries portable schema
-metadata. The default solver requires `Eq` so it can match exact cell states
-from a `Blueprint`.
+Materials stay compact and discrete for solver performance. Extra per-cell data
+belongs in blueprint attributes, which solvers can store as SoA channels.
 
 ## Grid Descriptors
 
 ```rust
-use hyle_ca_interface::{GridDims, GridRegion, GridSnapshot};
+use hyle_ca_interface::{GridDims, GridRegion, GridSnapshot, MaterialId};
 
 let dims = GridDims::new(8, 8, 8);
 let region = GridRegion::new([2, 2, 2], [2, 2, 2]);
-let snapshot = GridSnapshot::new(dims, vec![0u32; dims.cell_count()]);
+let snapshot = GridSnapshot::new(dims, vec![MaterialId::default(); dims.cell_count()]);
 
 assert!(dims.contains_region(region));
 assert_eq!(snapshot.cells.len(), dims.cell_count());
@@ -202,18 +324,42 @@ input always produces the same output across all solvers.
 
 ## Declarative Neighborhoods
 
-```rust
-use hyle_ca_interface::{NeighborhoodFalloff, NeighborhoodShape, NeighborhoodSpec};
+```ignore
+use hyle_ca_interface::{
+    NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
+};
 
-let adjacent = NeighborhoodSpec::adjacent();
-let far = NeighborhoodSpec::new(
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+    Far,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] { &[Neighborhood::Adjacent, Neighborhood::Far] }
+    fn label(self) -> &'static str {
+        match self {
+            Neighborhood::Adjacent => "adjacent",
+            Neighborhood::Far => "far",
+        }
+    }
+}
+
+let adjacent = NeighborhoodSpec::new(
+    Neighborhood::Adjacent,
     NeighborhoodShape::Moore,
-    2,
+    NeighborhoodRadius::new(1),
+    NeighborhoodFalloff::Uniform,
+);
+let far = NeighborhoodSpec::new(
+    Neighborhood::Far,
+    NeighborhoodShape::Moore,
+    NeighborhoodRadius::new(2),
     NeighborhoodFalloff::Uniform,
 );
 
-assert_eq!(adjacent.radius(), 1);
-assert_eq!(far.radius(), 2);
+assert_eq!(adjacent.radius().get(), 1);
+assert_eq!(far.radius().get(), 2);
 assert_eq!(far.shape(), NeighborhoodShape::Moore);
 assert_eq!(far.falloff(), NeighborhoodFalloff::Uniform);
 ```
@@ -223,10 +369,29 @@ so CPU and GPU backends can agree on the same values exactly.
 
 Weighted predicates use the same portable units:
 
-```rust
-use hyle_ca_interface::{neighbors, Weight};
+```ignore
+use hyle_ca_interface::{neighbors, MaterialSet, Weight};
 
-let condition = neighbors(1u8).weighted_sum().at_least(Weight::cells(2));
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+enum Material {
+    #[default]
+    Dead,
+    Alive,
+}
+
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] { &[Material::Dead, Material::Alive] }
+    fn label(self) -> &'static str {
+        match self {
+            Material::Dead => "dead",
+            Material::Alive => "alive",
+        }
+    }
+}
+
+let condition = neighbors(Material::Alive)
+    .weighted_sum()
+    .at_least(Weight::cells(2));
 ```
 
 ## Topology
