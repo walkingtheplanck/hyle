@@ -1,7 +1,7 @@
 //! Object-safe runtime interface for consumers that only need to drive a simulation.
 
 use crate::{
-    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, Cell, CellAttributeValue,
+    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, CellAttributeValue, CellId,
     CellQueryError, GridDims, GridRegion, GridSnapshot, MaterialDef, MaterialId, NeighborhoodId,
     NeighborhoodSpec, TransitionCount,
 };
@@ -29,30 +29,30 @@ pub trait CaRuntime: Send {
     fn neighborhood_specs(&self) -> &[NeighborhoodSpec];
 
     /// Resolve one logical cell handle from grid coordinates.
-    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<Cell>;
+    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId>;
 
     /// Decode a cell handle back into its canonical grid position.
-    fn cell_position(&self, cell: Cell) -> Result<[u32; 3], CellQueryError>;
+    fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError>;
 
     /// Read one material from a resolved cell handle.
-    fn material(&self, cell: Cell) -> Result<MaterialId, CellQueryError>;
+    fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError>;
 
     /// Read one attached attribute from a resolved cell handle.
     fn attribute(
         &self,
-        cell: Cell,
+        cell: CellId,
         attribute: AttributeId,
     ) -> Result<AttributeValue, CellQueryError>;
 
     /// Read all declared attached attributes from a resolved cell handle.
-    fn attributes(&self, cell: Cell) -> Result<Vec<CellAttributeValue>, CellQueryError>;
+    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError>;
 
     /// Resolve all neighbors around one cell for the given neighborhood.
     fn neighbors(
         &self,
-        cell: Cell,
+        cell: CellId,
         neighborhood: NeighborhoodId,
-    ) -> Result<Vec<Cell>, CellQueryError>;
+    ) -> Result<Vec<CellId>, CellQueryError>;
 
     /// Set a material at the given coordinate.
     fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId);
@@ -128,35 +128,35 @@ where
         CaSolver::neighborhood_specs(self)
     }
 
-    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<Cell> {
+    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId> {
         CaSolver::cell_at(self, x, y, z)
     }
 
-    fn cell_position(&self, cell: Cell) -> Result<[u32; 3], CellQueryError> {
+    fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError> {
         CaSolver::cell_position(self, cell)
     }
 
-    fn material(&self, cell: Cell) -> Result<MaterialId, CellQueryError> {
+    fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError> {
         CaSolver::material(self, cell)
     }
 
     fn attribute(
         &self,
-        cell: Cell,
+        cell: CellId,
         attribute: AttributeId,
     ) -> Result<AttributeValue, CellQueryError> {
         CaSolver::attribute(self, cell, attribute)
     }
 
-    fn attributes(&self, cell: Cell) -> Result<Vec<CellAttributeValue>, CellQueryError> {
+    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
         CaSolver::attributes(self, cell)
     }
 
     fn neighbors(
         &self,
-        cell: Cell,
+        cell: CellId,
         neighborhood: NeighborhoodId,
-    ) -> Result<Vec<Cell>, CellQueryError> {
+    ) -> Result<Vec<CellId>, CellQueryError> {
         CaSolver::neighbors(self, cell, neighborhood)
     }
 

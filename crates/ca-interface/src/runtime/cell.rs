@@ -4,9 +4,9 @@ use crate::{AttributeAccessError, AttributeId, AttributeValue, NeighborhoodId};
 
 /// Opaque handle to one logical cell in the active runtime grid.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Cell(u32);
+pub struct CellId(u32);
 
-impl Cell {
+impl CellId {
     /// Construct a cell handle from its raw runtime value.
     pub const fn new(raw: u32) -> Self {
         Self(raw)
@@ -42,8 +42,8 @@ impl CellAttributeValue {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CellQueryError {
     /// The requested cell handle does not belong to the active runtime.
-    UnknownCell(Cell),
-    /// The requested neighborhood id is not declared on the active blueprint.
+    UnknownCell(CellId),
+    /// The requested neighborhood id is not declared on the active schema.
     UnknownNeighborhood(NeighborhoodId),
     /// The underlying attribute lookup failed.
     Attribute(AttributeAccessError),

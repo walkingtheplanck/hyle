@@ -8,5 +8,5 @@ pub use crate::contracts::{
     TopologyDescriptor, Weight,
 };
 pub use crate::{
-    AttributeAccessError, CaRuntime, CaSolverProvider, Cell, CellQueryError, Instance, Rng,
+    AttributeAccessError, CaRuntime, CaSolverProvider, CellId, CellQueryError, Instance, Rng,
 };

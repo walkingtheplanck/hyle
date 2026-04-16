@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use hyle_ca_interface::semantics::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
-    AttributeAccessError, AttributeId, AttributeValue, Blueprint, CaSolver, Cell,
-    CellAttributeValue, CellQueryError, GridRegion, GridSnapshot, MaterialDef, MaterialId,
+    AttributeAccessError, AttributeId, AttributeValue, Blueprint, CaSolver, CellAttributeValue,
+    CellId, CellQueryError, GridRegion, GridSnapshot, MaterialDef, MaterialId,
     NeighborhoodId, NeighborhoodSpec, RuleEffect, Topology, TransitionCount, Instance,
 };
 
@@ -205,7 +205,7 @@ impl<T: Topology> Solver<T> {
             .collect();
     }
 
-    fn decode_cell(&self, cell: Cell) -> Option<[u32; 3]> {
+    fn decode_cell(&self, cell: CellId) -> Option<[u32; 3]> {
         if cell.raw() as usize >= self.grid.cell_count() {
             return None;
         }
@@ -332,11 +332,11 @@ impl<T: Topology> CaSolver for Solver<T> {
             .unwrap_or(&[])
     }
 
-    fn cell_position(&self, cell: Cell) -> Result<[u32; 3], CellQueryError> {
+    fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError> {
         self.decode_cell(cell).ok_or(CellQueryError::UnknownCell(cell))
     }
 
-    fn material(&self, cell: Cell) -> Result<MaterialId, CellQueryError> {
+    fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError> {
         self.decode_cell(cell)
             .map(|_| self.grid.cells[cell.raw() as usize])
             .ok_or(CellQueryError::UnknownCell(cell))
@@ -384,7 +384,7 @@ impl<T: Topology> CaSolver for Solver<T> {
 
     fn attribute(
         &self,
-        cell: Cell,
+        cell: CellId,
         attribute: AttributeId,
     ) -> Result<AttributeValue, CellQueryError> {
         if !self.attributes.contains(attribute) {
@@ -399,7 +399,7 @@ impl<T: Topology> CaSolver for Solver<T> {
         Ok(self.attributes.get(attribute, cell.raw() as usize))
     }
 
-    fn attributes(&self, cell: Cell) -> Result<Vec<CellAttributeValue>, CellQueryError> {
+    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
         if cell.raw() as usize >= self.grid.cell_count() {
             return Err(CellQueryError::UnknownCell(cell));
         }
@@ -418,9 +418,9 @@ impl<T: Topology> CaSolver for Solver<T> {
 
     fn neighbors(
         &self,
-        cell: Cell,
+        cell: CellId,
         neighborhood: NeighborhoodId,
-    ) -> Result<Vec<Cell>, CellQueryError> {
+    ) -> Result<Vec<CellId>, CellQueryError> {
         let schema = self
             .schema
             .as_ref()
@@ -442,7 +442,7 @@ impl<T: Topology> CaSolver for Solver<T> {
                 z as i32 + offset.dz,
             );
             if neighbor_idx != self.grid.guard_idx() {
-                cells.push(Cell::new(neighbor_idx as u32));
+                cells.push(CellId::new(neighbor_idx as u32));
             }
         }
 

@@ -11,7 +11,7 @@ mod topology;
 
 pub use attribute_access::AttributeAccessError;
 pub use ca_runtime::CaRuntime;
-pub use cell::{Cell, CellAttributeValue, CellQueryError};
+pub use cell::{CellAttributeValue, CellId, CellQueryError};
 pub use instance::Instance;
 pub use provider::CaSolverProvider;
 pub use solver::{CaSolver, ValidatedSolver};

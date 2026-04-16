@@ -2,9 +2,9 @@
 
 use crate::semantics;
 use crate::{
-    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, Cell, CellAttributeValue,
-    CellQueryError, GridDims, GridRegion, GridSnapshot, MaterialDef, MaterialId, NeighborhoodId,
-    NeighborhoodSpec, Topology, TransitionCount,
+    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, CellAttributeValue, CellId,
+    CellQueryError, GridDims, GridRegion, GridSnapshot, MaterialDef, MaterialId,
+    NeighborhoodId, NeighborhoodSpec, Topology, TransitionCount,
 };
 
 /// The common interface shared by all CA solvers (CPU, GPU, etc.).
@@ -107,13 +107,13 @@ pub trait CaSolver {
     }
 
     /// Resolve one logical cell handle from grid coordinates.
-    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<Cell> {
+    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId> {
         let index = self.resolve_index(x, y, z);
-        (index != self.guard_index()).then(|| Cell::new(index as u32))
+        (index != self.guard_index()).then(|| CellId::new(index as u32))
     }
 
     /// Decode a cell handle back into its canonical grid position.
-    fn cell_position(&self, cell: Cell) -> Result<[u32; 3], CellQueryError> {
+    fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError> {
         if cell.index() >= self.cell_count() {
             return Err(CellQueryError::UnknownCell(cell));
         }
@@ -127,7 +127,7 @@ pub trait CaSolver {
     }
 
     /// Read one material from a resolved cell handle.
-    fn material(&self, cell: Cell) -> Result<MaterialId, CellQueryError> {
+    fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError> {
         let [x, y, z] = self.cell_position(cell)?;
         Ok(self.get(x as i32, y as i32, z as i32))
     }
@@ -135,7 +135,7 @@ pub trait CaSolver {
     /// Read one attached attribute from a resolved cell handle.
     fn attribute(
         &self,
-        cell: Cell,
+        cell: CellId,
         attribute: AttributeId,
     ) -> Result<AttributeValue, CellQueryError> {
         let [x, y, z] = self.cell_position(cell)?;
@@ -144,7 +144,7 @@ pub trait CaSolver {
     }
 
     /// Read all declared attached attributes from a resolved cell handle.
-    fn attributes(&self, cell: Cell) -> Result<Vec<CellAttributeValue>, CellQueryError> {
+    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
         let mut values = Vec::with_capacity(self.attribute_defs().len());
         for attribute in self.attribute_defs() {
             values.push(CellAttributeValue::new(
@@ -158,9 +158,9 @@ pub trait CaSolver {
     /// Resolve all neighbors around one cell for the given neighborhood.
     fn neighbors(
         &self,
-        cell: Cell,
+        cell: CellId,
         neighborhood: NeighborhoodId,
-    ) -> Result<Vec<Cell>, CellQueryError> {
+    ) -> Result<Vec<CellId>, CellQueryError> {
         let spec = self
             .neighborhood_specs()
             .iter()

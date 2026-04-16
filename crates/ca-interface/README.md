@@ -15,7 +15,7 @@ interpretation helpers live in this crate under `hyle_ca_interface::semantics`.
 It has **zero dependencies** and is split conceptually into:
 - `contracts` for declarative blueprint and descriptor data
 - `semantics` for interpreted blueprint, neighborhood, and topology meaning
-- `runtime` for running-simulation interfaces and shared runtime types such as `Cell`, `MaterialId`, `Instance`, `Topology`, `CaSolver`, `CaRuntime`, `CaSolverProvider`, and `ValidatedSolver`
+- `runtime` for running-simulation interfaces and shared runtime types such as `CellId`, `MaterialId`, `Instance`, `Topology`, `CaSolver`, `CaRuntime`, `CaSolverProvider`, and `ValidatedSolver`
 
 ## Key Types
 
@@ -30,7 +30,7 @@ It has **zero dependencies** and is split conceptually into:
 | [`NeighborhoodSpec`] | Declarative neighborhood description shared across solvers |
 | [`Weight`] | Fixed-point weight threshold used by weighted neighborhood predicates |
 | [`Rng`] | Shared deterministic random-number primitive parameterized by seed, position, step, and stream |
-| [`Cell`] | Opaque runtime handle to one logical cell for query-oriented tooling |
+| [`CellId`] | Opaque runtime handle to one logical cell for query-oriented tooling |
 | [`Topology`] / [`TopologyDescriptor`] | Boundary behavior traits and descriptors |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 

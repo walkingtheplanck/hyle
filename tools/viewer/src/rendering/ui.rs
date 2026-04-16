@@ -113,7 +113,7 @@ pub fn draw_cell_analysis_window(
                         analysis.resolved_position[1],
                         analysis.resolved_position[2]
                     ));
-                    ui.label(format!("Cell: {}", analysis.cell.raw()));
+                    ui.label(format!("CellId: {}", analysis.cell.raw()));
                     ui.label(format!("Material: {}", analysis.material.name));
                     ui.separator();
 

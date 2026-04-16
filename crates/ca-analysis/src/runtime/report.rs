@@ -1,7 +1,8 @@
 //! Public report types returned by runtime analysis.
 
 use hyle_ca_interface::{
-    AttributeId, AttributeType, AttributeValue, Cell, MaterialId, NeighborhoodId, TransitionCount,
+    AttributeId, AttributeType, AttributeValue, CellId, MaterialId, NeighborhoodId,
+    TransitionCount,
 };
 
 /// Population count for one material after a completed step.
@@ -88,7 +89,7 @@ pub struct CellReport {
     /// Position requested by the caller.
     pub requested_position: [i32; 3],
     /// Resolved runtime cell handle.
-    pub cell: Cell,
+    pub cell: CellId,
     /// Canonical in-bounds cell position.
     pub resolved_position: [u32; 3],
     /// Current material on the cell.

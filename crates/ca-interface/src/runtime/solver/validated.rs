@@ -1,7 +1,7 @@
 //! Debug-only wrapper that validates all `CaSolver` contracts at runtime.
 
 use crate::{
-    AttributeAccessError, AttributeId, AttributeValue, CaSolver, Cell, CellAttributeValue,
+    AttributeAccessError, AttributeId, AttributeValue, CaSolver, CellAttributeValue, CellId,
     CellQueryError, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec, TransitionCount,
 };
 
@@ -164,35 +164,35 @@ where
         self.inner.neighborhood_specs()
     }
 
-    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<Cell> {
+    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId> {
         self.inner.cell_at(x, y, z)
     }
 
-    fn cell_position(&self, cell: Cell) -> Result<[u32; 3], CellQueryError> {
+    fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError> {
         self.inner.cell_position(cell)
     }
 
-    fn material(&self, cell: Cell) -> Result<MaterialId, CellQueryError> {
+    fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError> {
         self.inner.material(cell)
     }
 
     fn attribute(
         &self,
-        cell: Cell,
+        cell: CellId,
         attribute: AttributeId,
     ) -> Result<AttributeValue, CellQueryError> {
         self.inner.attribute(cell, attribute)
     }
 
-    fn attributes(&self, cell: Cell) -> Result<Vec<CellAttributeValue>, CellQueryError> {
+    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
         self.inner.attributes(cell)
     }
 
     fn neighbors(
         &self,
-        cell: Cell,
+        cell: CellId,
         neighborhood: NeighborhoodId,
-    ) -> Result<Vec<Cell>, CellQueryError> {
+    ) -> Result<Vec<CellId>, CellQueryError> {
         self.inner.neighbors(cell, neighborhood)
     }
 
