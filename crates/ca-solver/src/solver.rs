@@ -1,11 +1,13 @@
 //! Default CPU solver - double-buffered, single-threaded.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use hyle_ca_interface::semantics::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
-    AttributeAccessError, AttributeId, AttributeValue, Blueprint, CaSolver, GridRegion,
-    GridSnapshot, Instance, MaterialId, RuleEffect, StepReport, Topology, TransitionCount,
+    AttributeAccessError, AttributeId, AttributeValue, Blueprint, CaSolver, Cell,
+    CellAttributeValue, CellQueryError, GridRegion, GridSnapshot, MaterialDef, MaterialId,
+    NeighborhoodId, NeighborhoodSpec, RuleEffect, Topology, TransitionCount, Instance,
 };
 
 use crate::attributes::AttributeStore;
@@ -13,15 +15,23 @@ use crate::grid::{resolve_index, Grid};
 use crate::program::CompiledProgram;
 use crate::{BoundedTopology, DescriptorTopology};
 
+struct RuntimeSchema {
+    resolved: ResolvedBlueprint,
+    neighborhood_specs: Vec<NeighborhoodSpec>,
+}
+
 /// Default 3D cellular blueprint solver.
 pub struct Solver<T: Topology = BoundedTopology> {
     grid: Grid,
     attributes: AttributeStore,
+    schema: Option<Arc<RuntimeSchema>>,
     material_defaults: Vec<Vec<AttributeValue>>,
     topology: T,
     program: Option<CompiledProgram>,
     step_count: u32,
     seed: u64,
+    last_changed_cells: u64,
+    last_transitions: Vec<TransitionCount>,
 }
 
 impl Solver<BoundedTopology> {
@@ -62,11 +72,14 @@ impl Solver<BoundedTopology> {
                 default_material,
             ),
             attributes: AttributeStore::new(instance.dims().cell_count() + 1, &[]),
+            schema: None,
             material_defaults: Vec::new(),
             topology,
             program: None,
             step_count: 0,
             seed: instance.seed(),
+            last_changed_cells: 0,
+            last_transitions: Vec::new(),
         }
     }
 }
@@ -84,8 +97,12 @@ impl Solver<DescriptorTopology> {
 
     /// Create a solver from a runtime instance and interpreted blueprint.
     pub fn from_blueprint_instance(instance: Instance, blueprint: &ResolvedBlueprint) -> Self {
-        let material_defaults = compile_material_defaults(blueprint);
-        let default_material = blueprint.default_material();
+        let schema = Arc::new(RuntimeSchema {
+            resolved: blueprint.clone(),
+            neighborhood_specs: blueprint.neighborhoods().iter().map(|item| item.spec()).collect(),
+        });
+        let material_defaults = compile_material_defaults(&schema.resolved);
+        let default_material = schema.resolved.default_material();
 
         let mut solver = Solver {
             grid: Grid::new(
@@ -96,13 +113,16 @@ impl Solver<DescriptorTopology> {
             ),
             attributes: AttributeStore::new(
                 instance.dims().cell_count() + 1,
-                blueprint.attributes(),
+                schema.resolved.attributes(),
             ),
+            schema: Some(schema),
             material_defaults,
             topology: DescriptorTopology::new(blueprint.topology().descriptor()),
             program: Some(CompiledProgram::from_blueprint(blueprint)),
             step_count: 0,
             seed: instance.seed(),
+            last_changed_cells: 0,
+            last_transitions: Vec::new(),
         };
 
         // Ensure freshly allocated cells use the blueprint defaults for the default material.
@@ -138,11 +158,14 @@ impl<T: Topology> Solver<T> {
         Solver {
             grid: self.grid,
             attributes: self.attributes,
+            schema: self.schema,
             material_defaults: self.material_defaults,
             topology,
             program: self.program,
             step_count: self.step_count,
             seed: self.seed,
+            last_changed_cells: self.last_changed_cells,
+            last_transitions: self.last_transitions,
         }
     }
 
@@ -158,39 +181,42 @@ impl<T: Topology> Solver<T> {
 }
 
 impl<T: Topology> Solver<T> {
-    fn build_step_report(&self) -> StepReport {
-        let mut populations = Vec::new();
+    fn record_step_metrics(&mut self) {
         let mut transitions = BTreeMap::<(u16, u16), u64>::new();
-        let mut changed_cells = 0u64;
+        self.last_changed_cells = 0;
 
         for index in 0..self.grid.cell_count() {
             let before = self.grid.cells[index];
             let after = self.grid.cells_next[index];
 
-            if populations.len() <= after.index() {
-                populations.resize(after.index() + 1, 0);
-            }
-            populations[after.index()] += 1;
-
             if before != after {
-                changed_cells += 1;
+                self.last_changed_cells += 1;
                 *transitions.entry((before.raw(), after.raw())).or_default() += 1;
             }
         }
 
-        StepReport::new(
-            self.step_count + 1,
-            changed_cells,
-            populations,
-            transitions
-                .into_iter()
-                .map(|((from, to), count)| TransitionCount {
-                    from: MaterialId::new(from),
-                    to: MaterialId::new(to),
-                    count,
-                })
-                .collect(),
-        )
+        self.last_transitions = transitions
+            .into_iter()
+            .map(|((from, to), count)| TransitionCount {
+                from: MaterialId::new(from),
+                to: MaterialId::new(to),
+                count,
+            })
+            .collect();
+    }
+
+    fn decode_cell(&self, cell: Cell) -> Option<[u32; 3]> {
+        if cell.raw() as usize >= self.grid.cell_count() {
+            return None;
+        }
+
+        let width = self.grid.width as usize;
+        let height = self.grid.height as usize;
+        let index = cell.raw() as usize;
+        let x = index % width;
+        let y = (index / width) % height;
+        let z = index / (width * height);
+        Some([x as u32, y as u32, z as u32])
     }
 
     fn step_program(&mut self) {
@@ -285,6 +311,37 @@ impl<T: Topology> CaSolver for Solver<T> {
         self.grid.set(&self.topology, x, y, z, material);
     }
 
+    fn material_defs(&self) -> &[MaterialDef] {
+        self.schema
+            .as_ref()
+            .map(|schema| schema.resolved.materials())
+            .unwrap_or(&[])
+    }
+
+    fn attribute_defs(&self) -> &[hyle_ca_interface::AttributeDef] {
+        self.schema
+            .as_ref()
+            .map(|schema| schema.resolved.attributes())
+            .unwrap_or(&[])
+    }
+
+    fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
+        self.schema
+            .as_ref()
+            .map(|schema| schema.neighborhood_specs.as_slice())
+            .unwrap_or(&[])
+    }
+
+    fn cell_position(&self, cell: Cell) -> Result<[u32; 3], CellQueryError> {
+        self.decode_cell(cell).ok_or(CellQueryError::UnknownCell(cell))
+    }
+
+    fn material(&self, cell: Cell) -> Result<MaterialId, CellQueryError> {
+        self.decode_cell(cell)
+            .map(|_| self.grid.cells[cell.raw() as usize])
+            .ok_or(CellQueryError::UnknownCell(cell))
+    }
+
     fn get_attr(
         &self,
         attribute: AttributeId,
@@ -325,28 +382,104 @@ impl<T: Topology> CaSolver for Solver<T> {
         Ok(())
     }
 
+    fn attribute(
+        &self,
+        cell: Cell,
+        attribute: AttributeId,
+    ) -> Result<AttributeValue, CellQueryError> {
+        if !self.attributes.contains(attribute) {
+            return Err(CellQueryError::from(AttributeAccessError::UnknownAttribute(
+                attribute,
+            )));
+        }
+        if cell.raw() as usize >= self.grid.cell_count() {
+            return Err(CellQueryError::UnknownCell(cell));
+        }
+
+        Ok(self.attributes.get(attribute, cell.raw() as usize))
+    }
+
+    fn attributes(&self, cell: Cell) -> Result<Vec<CellAttributeValue>, CellQueryError> {
+        if cell.raw() as usize >= self.grid.cell_count() {
+            return Err(CellQueryError::UnknownCell(cell));
+        }
+
+        Ok(self
+            .attribute_defs()
+            .iter()
+            .map(|attribute| {
+                CellAttributeValue::new(
+                    attribute.id,
+                    self.attributes.get(attribute.id, cell.raw() as usize),
+                )
+            })
+            .collect())
+    }
+
+    fn neighbors(
+        &self,
+        cell: Cell,
+        neighborhood: NeighborhoodId,
+    ) -> Result<Vec<Cell>, CellQueryError> {
+        let schema = self
+            .schema
+            .as_ref()
+            .ok_or(CellQueryError::UnknownNeighborhood(neighborhood))?;
+        let interpreted = schema
+            .resolved
+            .neighborhoods()
+            .iter()
+            .find(|item| item.spec().id() == neighborhood)
+            .ok_or(CellQueryError::UnknownNeighborhood(neighborhood))?;
+        let [x, y, z] = self.decode_cell(cell).ok_or(CellQueryError::UnknownCell(cell))?;
+        let mut cells = Vec::new();
+
+        for offset in interpreted.neighborhood().offsets() {
+            let neighbor_idx = self.grid.resolve_idx(
+                &self.topology,
+                x as i32 + offset.dx,
+                y as i32 + offset.dy,
+                z as i32 + offset.dz,
+            );
+            if neighbor_idx != self.grid.guard_idx() {
+                cells.push(Cell::new(neighbor_idx as u32));
+            }
+        }
+
+        Ok(cells)
+    }
+
     fn step(&mut self) {
         self.grid.prepare_step();
         self.attributes.prepare_step();
         self.step_program();
+        self.record_step_metrics();
         self.grid.swap();
         self.attributes.swap();
         self.step_count += 1;
-    }
-
-    fn step_report(&mut self) -> StepReport {
-        self.grid.prepare_step();
-        self.attributes.prepare_step();
-        self.step_program();
-        let report = self.build_step_report();
-        self.grid.swap();
-        self.attributes.swap();
-        self.step_count += 1;
-        report
     }
 
     fn step_count(&self) -> u32 {
         self.step_count
+    }
+
+    fn last_changed_cells(&self) -> u64 {
+        self.last_changed_cells
+    }
+
+    fn populations(&self) -> Vec<u64> {
+        let mut populations = Vec::new();
+        for material in self.grid.cells.iter().take(self.grid.cell_count()).copied() {
+            if populations.len() <= material.index() {
+                populations.resize(material.index() + 1, 0);
+            }
+            populations[material.index()] += 1;
+        }
+        populations
+    }
+
+    fn last_transitions(&self) -> &[TransitionCount] {
+        &self.last_transitions
     }
 
     fn iter_cells(&self) -> Vec<(u32, u32, u32, MaterialId)> {

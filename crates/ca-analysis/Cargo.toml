@@ -13,3 +13,6 @@ exclude = ["tests/"]
 
 [dependencies]
 hyle-ca-interface = { path = "../ca-interface", version = "0.1.0" }
+
+[dev-dependencies]
+hyle-ca-solver = { path = "../ca-solver", version = "0.1.0" }

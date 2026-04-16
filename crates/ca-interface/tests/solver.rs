@@ -2,7 +2,7 @@
 
 use hyle_ca_interface::{
     AttributeAccessError, AttributeId, AttributeValue, AxisTopology, CaSolver, GridDims,
-    GridRegion, MaterialId, StepReport, Topology, TopologyDescriptor,
+    GridRegion, MaterialId, Topology, TopologyDescriptor, TransitionCount,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -134,20 +134,16 @@ impl CaSolver for DummySolver {
 
     fn step(&mut self) {}
 
-    fn step_report(&mut self) -> StepReport {
-        let mut populations = Vec::new();
-        for material in &self.cells {
-            if populations.len() <= material.index() {
-                populations.resize(material.index() + 1, 0);
-            }
-            populations[material.index()] += 1;
-        }
-
-        StepReport::new(1, 0, populations, Vec::new())
-    }
-
     fn step_count(&self) -> u32 {
         0
+    }
+
+    fn last_changed_cells(&self) -> u64 {
+        0
+    }
+
+    fn last_transitions(&self) -> &[TransitionCount] {
+        &[]
     }
 }
 

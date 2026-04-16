@@ -91,31 +91,68 @@ assert_eq!(analysis.summary.rule_count, 1);
 - material populations and material-to-material transitions
 
 ```rust
-use hyle_ca_analysis::analyze_step_report;
-use hyle_ca_interface::{MaterialId, StepReport, TransitionCount};
+use hyle_ca_analysis::analyze_runtime;
+use hyle_ca_interface::{
+    Blueprint, CaSolver, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+};
+use hyle_ca_solver::Solver;
 
-let step = StepReport::new(
-    4,
-    3,
-    vec![6, 2],
-    vec![
-        TransitionCount {
-            from: MaterialId::new(0),
-            to: MaterialId::new(1),
-            count: 2,
-        },
-        TransitionCount {
-            from: MaterialId::new(1),
-            to: MaterialId::new(0),
-            count: 1,
-        },
-    ],
-);
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+enum Material {
+    #[default]
+    Dead,
+    Alive,
+}
 
-let runtime = analyze_step_report(&step, &[MaterialId::new(1)]);
-assert_eq!(runtime.living_cells, 2);
-assert_eq!(runtime.born_cells, 2);
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] {
+        &[Material::Dead, Material::Alive]
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Material::Dead => "dead",
+            Material::Alive => "alive",
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] {
+        &[Neighborhood::Adjacent]
+    }
+
+    fn label(self) -> &'static str {
+        "adjacent"
+    }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([NeighborhoodSpec::new(
+        Neighborhood::Adjacent,
+        NeighborhoodShape::Moore,
+        NeighborhoodRadius::new(1),
+        NeighborhoodFalloff::Uniform,
+    )])
+    .rules([RuleSpec::when(Material::Alive).becomes(Material::Dead)])
+    .build()?;
+
+let mut solver = Solver::from_spec(2, 2, 2, &spec);
+solver.set(0, 0, 0, Material::Alive.id());
+solver.step();
+
+let runtime = analyze_runtime(&solver, &[Material::Alive.id()]);
+assert_eq!(runtime.living_cells, 0);
 assert_eq!(runtime.died_cells, 1);
+# Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
 ## Relationship To Other Crates

@@ -1,7 +1,8 @@
 //! Debug-only wrapper that validates all `CaSolver` contracts at runtime.
 
 use crate::{
-    AttributeAccessError, AttributeId, AttributeValue, CaSolver, MaterialId, StepReport,
+    AttributeAccessError, AttributeId, AttributeValue, CaSolver, Cell, CellAttributeValue,
+    CellQueryError, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec, TransitionCount,
 };
 
 /// Wrapper that validates `CaSolver` contracts on every operation.
@@ -151,6 +152,50 @@ where
         }
     }
 
+    fn material_defs(&self) -> &[MaterialDef] {
+        self.inner.material_defs()
+    }
+
+    fn attribute_defs(&self) -> &[crate::AttributeDef] {
+        self.inner.attribute_defs()
+    }
+
+    fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
+        self.inner.neighborhood_specs()
+    }
+
+    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<Cell> {
+        self.inner.cell_at(x, y, z)
+    }
+
+    fn cell_position(&self, cell: Cell) -> Result<[u32; 3], CellQueryError> {
+        self.inner.cell_position(cell)
+    }
+
+    fn material(&self, cell: Cell) -> Result<MaterialId, CellQueryError> {
+        self.inner.material(cell)
+    }
+
+    fn attribute(
+        &self,
+        cell: Cell,
+        attribute: AttributeId,
+    ) -> Result<AttributeValue, CellQueryError> {
+        self.inner.attribute(cell, attribute)
+    }
+
+    fn attributes(&self, cell: Cell) -> Result<Vec<CellAttributeValue>, CellQueryError> {
+        self.inner.attributes(cell)
+    }
+
+    fn neighbors(
+        &self,
+        cell: Cell,
+        neighborhood: NeighborhoodId,
+    ) -> Result<Vec<Cell>, CellQueryError> {
+        self.inner.neighbors(cell, neighborhood)
+    }
+
     fn get_attr(
         &self,
         attribute: AttributeId,
@@ -183,25 +228,20 @@ where
         );
     }
 
-    fn step_report(&mut self) -> StepReport {
-        let before = self.inner.step_count();
-        let report = self.inner.step_report();
-        let after = self.inner.step_count();
-        assert_eq!(
-            after,
-            before + 1,
-            "contract violation: step_count was {before}, after step_report() it is {after}"
-        );
-        assert_eq!(
-            report.step, after,
-            "contract violation: step_report() returned step {}, but step_count() is {}",
-            report.step, after
-        );
-        report
-    }
-
     fn step_count(&self) -> u32 {
         self.inner.step_count()
+    }
+
+    fn last_changed_cells(&self) -> u64 {
+        self.inner.last_changed_cells()
+    }
+
+    fn populations(&self) -> Vec<u64> {
+        self.inner.populations()
+    }
+
+    fn last_transitions(&self) -> &[TransitionCount] {
+        self.inner.last_transitions()
     }
 
     fn readback(&self) -> crate::GridSnapshot<MaterialId> {

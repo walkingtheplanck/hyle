@@ -881,6 +881,7 @@ name = "hyle-ca-analysis"
 version = "0.1.0"
 dependencies = [
  "hyle-ca-interface",
+ "hyle-ca-solver",
 ]
 
 [[package]]

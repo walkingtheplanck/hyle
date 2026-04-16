@@ -7,4 +7,6 @@ pub use crate::contracts::{
     NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
     TopologyDescriptor, Weight,
 };
-pub use crate::{AttributeAccessError, CaRuntime, CaSolverProvider, Instance, Rng, StepReport};
+pub use crate::{
+    AttributeAccessError, CaRuntime, CaSolverProvider, Cell, CellQueryError, Instance, Rng,
+};

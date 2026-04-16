@@ -1,15 +1,20 @@
 //! Entry points for runtime report analysis.
 
-use hyle_ca_interface::{MaterialId, StepReport};
+use hyle_ca_interface::{CaRuntime, MaterialId};
 
 use super::{MaterialPopulation, RuntimeReport};
 
-/// Analyze one low-level step report and derive higher-level runtime counters.
-pub fn analyze_step_report(step_report: &StepReport, alive_materials: &[MaterialId]) -> RuntimeReport {
+/// Analyze the latest completed runtime step and derive higher-level counters.
+pub fn analyze_runtime<R: CaRuntime>(runtime: &R, alive_materials: &[MaterialId]) -> RuntimeReport {
+    let step = runtime.step_count();
+    let changed_cells = runtime.last_changed_cells();
+    let populations = runtime.populations();
+    let total_cells: u64 = populations.iter().sum();
+    let transitions = runtime.last_transitions().to_vec();
     let mut born_cells = 0u64;
     let mut died_cells = 0u64;
 
-    for transition in &step_report.transitions {
+    for transition in &transitions {
         let from_alive = alive_materials.contains(&transition.from);
         let to_alive = alive_materials.contains(&transition.to);
 
@@ -21,18 +26,17 @@ pub fn analyze_step_report(step_report: &StepReport, alive_materials: &[Material
     }
 
     RuntimeReport {
-        step: step_report.step,
-        total_cells: step_report.total_cells(),
-        changed_cells: step_report.changed_cells,
-        stable_cells: step_report.total_cells() - step_report.changed_cells,
+        step,
+        total_cells,
+        changed_cells,
+        stable_cells: total_cells - changed_cells,
         living_cells: alive_materials
             .iter()
-            .map(|material| step_report.population(*material))
+            .map(|material| runtime.population(*material))
             .sum(),
         born_cells,
         died_cells,
-        populations: step_report
-            .populations
+        populations: populations
             .iter()
             .enumerate()
             .filter_map(|(index, count)| {
@@ -46,6 +50,6 @@ pub fn analyze_step_report(step_report: &StepReport, alive_materials: &[Material
                 }
             })
             .collect(),
-        transitions: step_report.transitions.clone(),
+        transitions,
     }
 }

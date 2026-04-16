@@ -2,13 +2,12 @@
 
 use std::time::Instant;
 
-use hyle_ca_interface::{CaRuntime, CaSolverProvider, MaterialSet, StepReport};
+use hyle_ca_interface::{CaRuntime, CaSolverProvider, MaterialSet};
 
 use crate::ca::{Materials, Scenario, SimpleWorld, ViewerCell, AIR};
 
 pub struct StepOutcome {
     pub stepped: bool,
-    pub report: Option<StepReport>,
 }
 
 pub struct Simulation<P>
@@ -50,6 +49,10 @@ where
         self.scenario.materials()
     }
 
+    pub fn runtime(&self) -> &P::Runtime {
+        &self.ca
+    }
+
     fn build_ca(solver: &P, scenario: Scenario) -> P::Runtime {
         let spec = scenario.blueprint();
         solver.build(scenario.instance(), &spec)
@@ -67,17 +70,10 @@ where
     }
 
     pub fn step(&mut self, world: &mut SimpleWorld, with_report: bool) -> StepOutcome {
-        let report = if with_report {
-            Some(self.ca.step_report())
-        } else {
-            self.ca.step();
-            None
-        };
+        let _ = with_report;
+        self.ca.step();
         self.sync_to_world(world);
-        StepOutcome {
-            stepped: true,
-            report,
-        }
+        StepOutcome { stepped: true }
     }
 
     pub fn reset(&mut self, world: &mut SimpleWorld) {
@@ -91,17 +87,13 @@ where
         if !self.auto_step {
             return StepOutcome {
                 stepped: false,
-                report: None,
             };
         }
         if self.last_step.elapsed().as_secs_f64() * 1000.0 >= self.step_interval_ms {
             self.last_step = Instant::now();
             self.step(world, with_report)
         } else {
-            StepOutcome {
-                stepped: false,
-                report: None,
-            }
+            StepOutcome { stepped: false }
         }
     }
 

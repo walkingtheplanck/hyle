@@ -5,7 +5,7 @@ use std::time::Instant;
 
 use eframe::egui;
 use glam::Vec3;
-use hyle_ca_analysis::{analyze_spec, analyze_step_report, RuntimeReport, SpecAnalysis};
+use hyle_ca_analysis::{analyze_runtime, analyze_spec, RuntimeReport, SpecAnalysis};
 use hyle_ca_interface::{CaSolverProvider, MaterialSet};
 
 use crate::ca::{viewer_world, Materials, Scenario, SimpleWorld, Simulation};
@@ -108,7 +108,7 @@ where
             .maybe_auto_step(&mut self.world, self.show_runtime_analysis);
         if auto_step.stepped {
             self.world_dirty = true;
-            self.update_runtime_analysis(auto_step.report);
+            self.update_runtime_analysis();
         }
 
         let actions = self.input.handle_keyboard(ctx, &mut self.camera);
@@ -147,7 +147,9 @@ where
         if toolbar.step_requested {
             let step = self.sim.step(&mut self.world, self.show_runtime_analysis);
             self.world_dirty = true;
-            self.update_runtime_analysis(step.report);
+            if step.stepped {
+                self.update_runtime_analysis();
+            }
         }
         if toolbar.reset_requested {
             self.sim.reset(&mut self.world);
@@ -204,11 +206,7 @@ where
         self.world_dirty = true;
     }
 
-    fn update_runtime_analysis(&mut self, report: Option<hyle_ca_interface::StepReport>) {
-        let Some(report) = report else {
-            return;
-        };
-
+    fn update_runtime_analysis(&mut self) {
         let alive_materials = self
             .sim
             .scenario()
@@ -216,6 +214,6 @@ where
             .iter()
             .map(|material| material.id())
             .collect::<Vec<_>>();
-        self.runtime_analysis = Some(analyze_step_report(&report, &alive_materials));
+        self.runtime_analysis = Some(analyze_runtime(self.sim.runtime(), &alive_materials));
     }
 }

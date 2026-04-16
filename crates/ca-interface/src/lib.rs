@@ -19,7 +19,7 @@ pub use contracts::{
     RuleSpec, Semantics, TopologyDescriptor, Weight, WeightComparison, WEIGHT_SCALE,
 };
 pub use runtime::{
-    AttributeAccessError, CaRuntime, CaSolver, CaSolverProvider, Instance, StepReport, Topology,
-    TransitionCount, ValidatedSolver,
+    AttributeAccessError, CaRuntime, CaSolver, CaSolverProvider, Cell, CellAttributeValue,
+    CellQueryError, Instance, Topology, TransitionCount, ValidatedSolver,
 };
 pub use semantics::Rng;

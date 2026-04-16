@@ -1,8 +1,9 @@
 //! Object-safe runtime interface for consumers that only need to drive a simulation.
 
 use crate::{
-    AttributeAccessError, AttributeId, AttributeValue, GridDims, GridRegion, GridSnapshot,
-    MaterialId, StepReport,
+    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, Cell, CellAttributeValue,
+    CellQueryError, GridDims, GridRegion, GridSnapshot, MaterialDef, MaterialId, NeighborhoodId,
+    NeighborhoodSpec, TransitionCount,
 };
 
 use super::solver::CaSolver;
@@ -18,8 +19,40 @@ pub trait CaRuntime: Send {
     /// Advance the simulation by one step.
     fn step(&mut self);
 
-    /// Advance the simulation by one step and return a low-level report.
-    fn step_report(&mut self) -> StepReport;
+    /// Material descriptors declared on the active blueprint, if available.
+    fn material_defs(&self) -> &[MaterialDef];
+
+    /// Attribute descriptors declared on the active blueprint, if available.
+    fn attribute_defs(&self) -> &[AttributeDef];
+
+    /// Neighborhood specs declared on the active blueprint, if available.
+    fn neighborhood_specs(&self) -> &[NeighborhoodSpec];
+
+    /// Resolve one logical cell handle from grid coordinates.
+    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<Cell>;
+
+    /// Decode a cell handle back into its canonical grid position.
+    fn cell_position(&self, cell: Cell) -> Result<[u32; 3], CellQueryError>;
+
+    /// Read one material from a resolved cell handle.
+    fn material(&self, cell: Cell) -> Result<MaterialId, CellQueryError>;
+
+    /// Read one attached attribute from a resolved cell handle.
+    fn attribute(
+        &self,
+        cell: Cell,
+        attribute: AttributeId,
+    ) -> Result<AttributeValue, CellQueryError>;
+
+    /// Read all declared attached attributes from a resolved cell handle.
+    fn attributes(&self, cell: Cell) -> Result<Vec<CellAttributeValue>, CellQueryError>;
+
+    /// Resolve all neighbors around one cell for the given neighborhood.
+    fn neighbors(
+        &self,
+        cell: Cell,
+        neighborhood: NeighborhoodId,
+    ) -> Result<Vec<Cell>, CellQueryError>;
 
     /// Set a material at the given coordinate.
     fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId);
@@ -57,6 +90,18 @@ pub trait CaRuntime: Send {
 
     /// Number of completed steps.
     fn step_count(&self) -> u32;
+
+    /// Number of cells whose material changed during the latest completed step.
+    fn last_changed_cells(&self) -> u64;
+
+    /// Population of one material in the current grid state.
+    fn population(&self, material: MaterialId) -> u64;
+
+    /// Full current per-material population table.
+    fn populations(&self) -> Vec<u64>;
+
+    /// Material-to-material transition counts from the latest completed step.
+    fn last_transitions(&self) -> &[TransitionCount];
 }
 
 impl<T> CaRuntime for T
@@ -71,8 +116,48 @@ where
         CaSolver::step(self);
     }
 
-    fn step_report(&mut self) -> StepReport {
-        CaSolver::step_report(self)
+    fn material_defs(&self) -> &[MaterialDef] {
+        CaSolver::material_defs(self)
+    }
+
+    fn attribute_defs(&self) -> &[AttributeDef] {
+        CaSolver::attribute_defs(self)
+    }
+
+    fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
+        CaSolver::neighborhood_specs(self)
+    }
+
+    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<Cell> {
+        CaSolver::cell_at(self, x, y, z)
+    }
+
+    fn cell_position(&self, cell: Cell) -> Result<[u32; 3], CellQueryError> {
+        CaSolver::cell_position(self, cell)
+    }
+
+    fn material(&self, cell: Cell) -> Result<MaterialId, CellQueryError> {
+        CaSolver::material(self, cell)
+    }
+
+    fn attribute(
+        &self,
+        cell: Cell,
+        attribute: AttributeId,
+    ) -> Result<AttributeValue, CellQueryError> {
+        CaSolver::attribute(self, cell, attribute)
+    }
+
+    fn attributes(&self, cell: Cell) -> Result<Vec<CellAttributeValue>, CellQueryError> {
+        CaSolver::attributes(self, cell)
+    }
+
+    fn neighbors(
+        &self,
+        cell: Cell,
+        neighborhood: NeighborhoodId,
+    ) -> Result<Vec<Cell>, CellQueryError> {
+        CaSolver::neighbors(self, cell, neighborhood)
     }
 
     fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId) {
@@ -118,5 +203,21 @@ where
 
     fn step_count(&self) -> u32 {
         CaSolver::step_count(self)
+    }
+
+    fn last_changed_cells(&self) -> u64 {
+        CaSolver::last_changed_cells(self)
+    }
+
+    fn population(&self, material: MaterialId) -> u64 {
+        CaSolver::population(self, material)
+    }
+
+    fn populations(&self) -> Vec<u64> {
+        CaSolver::populations(self)
+    }
+
+    fn last_transitions(&self) -> &[TransitionCount] {
+        CaSolver::last_transitions(self)
     }
 }
