@@ -2,7 +2,10 @@
 
 use hyle_ca_interface::{CaRuntime, MaterialId};
 
-use super::{MaterialPopulation, RuntimeReport};
+use super::{
+    AttributeView, CellReport, MaterialPopulation, MaterialView, NeighborhoodMaterialCount,
+    NeighborhoodReport, RuntimeReport,
+};
 
 /// Analyze the latest completed runtime step and derive higher-level counters.
 pub fn analyze_runtime<R: CaRuntime>(runtime: &R, alive_materials: &[MaterialId]) -> RuntimeReport {
@@ -52,4 +55,87 @@ pub fn analyze_runtime<R: CaRuntime>(runtime: &R, alive_materials: &[MaterialId]
             .collect(),
         transitions,
     }
+}
+
+/// Analyze one selected cell position and derive a structured cell report.
+pub fn analyze_cell<R: CaRuntime>(runtime: &R, position: [i32; 3]) -> Option<CellReport> {
+    let cell = runtime.cell_at(position[0], position[1], position[2])?;
+    let resolved_position = runtime.cell_position(cell).ok()?;
+    let material_id = runtime.material(cell).ok()?;
+    let material = runtime
+        .material_defs()
+        .iter()
+        .find(|candidate| candidate.id == material_id)
+        .map(|candidate| MaterialView {
+            id: candidate.id,
+            name: candidate.name,
+        })
+        .unwrap_or(MaterialView {
+            id: material_id,
+            name: "unknown",
+        });
+    let attributes = runtime
+        .attributes(cell)
+        .ok()?
+        .into_iter()
+        .map(|entry| {
+            let attribute = runtime
+                .attribute_defs()
+                .iter()
+                .find(|candidate| candidate.id == entry.attribute)
+                .expect("runtime attribute query must reference declared attributes");
+            AttributeView {
+                id: attribute.id,
+                name: attribute.name,
+                value_type: attribute.value_type,
+                value: entry.value,
+            }
+        })
+        .collect();
+
+    let neighborhoods = runtime
+        .neighborhood_specs()
+        .iter()
+        .filter_map(|spec| {
+            let neighbors = runtime.neighbors(cell, spec.id()).ok()?;
+            let mut counts = std::collections::BTreeMap::<u16, u64>::new();
+
+            for neighbor in &neighbors {
+                let material = runtime.material(*neighbor).ok()?;
+                *counts.entry(material.raw()).or_default() += 1;
+            }
+
+            Some(NeighborhoodReport {
+                id: spec.id(),
+                name: spec.name(),
+                neighbor_count: neighbors.len(),
+                materials: counts
+                    .into_iter()
+                    .map(|(raw, count)| {
+                        let material = MaterialId::new(raw);
+                        let name = runtime
+                            .material_defs()
+                            .iter()
+                            .find(|candidate| candidate.id == material)
+                            .map(|candidate| candidate.name)
+                            .unwrap_or("unknown");
+                        NeighborhoodMaterialCount {
+                            material,
+                            name,
+                            count,
+                        }
+                    })
+                    .collect(),
+            })
+        })
+        .collect();
+
+    Some(CellReport {
+        requested_position: position,
+        cell,
+        resolved_position,
+        material,
+        attributes,
+        neighborhoods,
+    })
 }

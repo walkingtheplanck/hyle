@@ -1,7 +1,7 @@
 //! Minimal UI — top toolbar with scene selection, sim controls, and FPS.
 
 use eframe::egui;
-use hyle_ca_analysis::{RuntimeReport, SpecAnalysis};
+use hyle_ca_analysis::{CellReport, RuntimeReport, SpecAnalysis};
 use hyle_ca_interface::MaterialSet;
 
 use crate::ca::{Scenario, ViewerCell};
@@ -19,6 +19,7 @@ pub fn draw_toolbar(
     step_interval_ms: &mut f64,
     show_runtime_analysis: &mut bool,
     show_static_analysis: &mut bool,
+    show_cell_analysis: &mut bool,
     fps: f64,
     viewport_size: (u32, u32),
 ) -> ToolbarActions {
@@ -41,6 +42,7 @@ pub fn draw_toolbar(
             ui.checkbox(auto_step, "Auto");
             ui.checkbox(show_runtime_analysis, "Runtime Analysis");
             ui.checkbox(show_static_analysis, "Static Analysis");
+            ui.checkbox(show_cell_analysis, "Cell Analysis");
 
             if *auto_step {
                 let mut interval_f = *step_interval_ms as f32;
@@ -74,6 +76,75 @@ pub fn draw_toolbar(
     });
 
     actions
+}
+
+pub fn draw_cell_analysis_window(
+    ctx: &egui::Context,
+    open: &mut bool,
+    position: &mut [i32; 3],
+    analysis: Option<&CellReport>,
+) {
+    egui::Window::new("Cell Analysis")
+        .open(open)
+        .resizable(true)
+        .default_width(380.0)
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("x");
+                ui.add(egui::DragValue::new(&mut position[0]).speed(1));
+                ui.label("y");
+                ui.add(egui::DragValue::new(&mut position[1]).speed(1));
+                ui.label("z");
+                ui.add(egui::DragValue::new(&mut position[2]).speed(1));
+            });
+            ui.separator();
+
+            match analysis {
+                Some(analysis) => {
+                    ui.label(format!(
+                        "Requested: {}, {}, {}",
+                        analysis.requested_position[0],
+                        analysis.requested_position[1],
+                        analysis.requested_position[2]
+                    ));
+                    ui.label(format!(
+                        "Resolved: {}, {}, {}",
+                        analysis.resolved_position[0],
+                        analysis.resolved_position[1],
+                        analysis.resolved_position[2]
+                    ));
+                    ui.label(format!("Cell: {}", analysis.cell.raw()));
+                    ui.label(format!("Material: {}", analysis.material.name));
+                    ui.separator();
+
+                    ui.collapsing("Attributes", |ui| {
+                        if analysis.attributes.is_empty() {
+                            ui.label("No attributes.");
+                        } else {
+                            for attribute in &analysis.attributes {
+                                ui.label(format!("{} = {:?}", attribute.name, attribute.value));
+                            }
+                        }
+                    });
+
+                    ui.collapsing("Neighborhoods", |ui| {
+                        for neighborhood in &analysis.neighborhoods {
+                            ui.label(format!(
+                                "{} | {} neighbor(s)",
+                                neighborhood.name, neighborhood.neighbor_count
+                            ));
+                            for material in &neighborhood.materials {
+                                ui.label(format!("{}: {}", material.name, material.count));
+                            }
+                            ui.separator();
+                        }
+                    });
+                }
+                None => {
+                    ui.label("The requested position is outside the current runtime bounds.");
+                }
+            }
+        });
 }
 
 pub fn draw_static_analysis_window(

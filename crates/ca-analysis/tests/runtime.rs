@@ -1,4 +1,4 @@
-use hyle_ca_analysis::analyze_runtime;
+use hyle_ca_analysis::{analyze_cell, analyze_runtime};
 use hyle_ca_interface::{
     Blueprint, CaSolver, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
     NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
@@ -70,4 +70,37 @@ fn runtime_analysis_tracks_living_birth_and_death_counts() {
     assert_eq!(report.born_cells, 0);
     assert_eq!(report.died_cells, 2);
     assert_eq!(report.populations.len(), 1);
+}
+
+#[test]
+fn cell_analysis_reports_material_attributes_and_neighborhoods() {
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .neighborhoods::<N>()
+        .neighborhood_specs([NeighborhoodSpec::new(
+            N::Adjacent,
+            NeighborhoodShape::Moore,
+            NeighborhoodRadius::new(1),
+            NeighborhoodFalloff::Uniform,
+        )])
+        .rules([RuleSpec::when(M::Alive).keep()])
+        .build()
+        .expect("valid spec");
+
+    let mut solver = Solver::from_spec(3, 3, 3, &spec);
+    solver.set(1, 1, 1, M::Alive.id());
+    solver.set(2, 1, 1, M::Alive.id());
+
+    let report = analyze_cell(&solver, [1, 1, 1]).expect("in-bounds cell");
+
+    assert_eq!(report.material.name, "alive");
+    assert_eq!(report.resolved_position, [1, 1, 1]);
+    assert!(report.attributes.is_empty());
+    assert_eq!(report.neighborhoods.len(), 1);
+    assert_eq!(report.neighborhoods[0].name, "adjacent");
+    assert_eq!(report.neighborhoods[0].neighbor_count, 26);
+    assert!(report.neighborhoods[0]
+        .materials
+        .iter()
+        .any(|material| material.name == "alive" && material.count == 1));
 }

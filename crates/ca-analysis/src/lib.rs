@@ -6,5 +6,8 @@ mod runtime;
 mod spec;
 
 pub use diagnostic::{Diagnostic, Severity, Subject};
-pub use runtime::{analyze_runtime, MaterialPopulation, RuntimeReport};
+pub use runtime::{
+    analyze_cell, analyze_runtime, AttributeView, CellReport, MaterialPopulation, MaterialView,
+    NeighborhoodMaterialCount, NeighborhoodReport, RuntimeReport,
+};
 pub use spec::{analyze_spec, NeighborhoodAnalysis, RuleAnalysis, SpecAnalysis, SpecSummary};

@@ -7,6 +7,7 @@ This crate builds on [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-inte
 - static spec summaries
 - rule and neighborhood diagnostics
 - runtime report analysis over completed solver steps
+- single-cell reports over runtime query APIs
 
 It intentionally does **not** execute simulations. Solvers consume the same
 contracts directly; this crate helps inspect them consistently.
@@ -152,6 +153,75 @@ solver.step();
 let runtime = analyze_runtime(&solver, &[Material::Alive.id()]);
 assert_eq!(runtime.living_cells, 0);
 assert_eq!(runtime.died_cells, 1);
+# Ok::<(), hyle_ca_interface::BuildError>(())
+```
+
+### Cell Analysis
+
+- current material and attached attributes for one selected position
+- resolved in-bounds cell handle and canonical position
+- neighborhood-by-neighborhood material summaries around the selected cell
+
+```rust
+use hyle_ca_analysis::analyze_cell;
+use hyle_ca_interface::{
+    Blueprint, CaSolver, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec,
+};
+use hyle_ca_solver::Solver;
+
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+enum Material {
+    #[default]
+    Dead,
+    Alive,
+}
+
+impl MaterialSet for Material {
+    fn variants() -> &'static [Self] {
+        &[Material::Dead, Material::Alive]
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Material::Dead => "dead",
+            Material::Alive => "alive",
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Neighborhood {
+    Adjacent,
+}
+
+impl NeighborhoodSet for Neighborhood {
+    fn variants() -> &'static [Self] {
+        &[Neighborhood::Adjacent]
+    }
+
+    fn label(self) -> &'static str {
+        "adjacent"
+    }
+}
+
+let spec = Blueprint::builder()
+    .materials::<Material>()
+    .neighborhoods::<Neighborhood>()
+    .neighborhood_specs([NeighborhoodSpec::new(
+        Neighborhood::Adjacent,
+        NeighborhoodShape::Moore,
+        NeighborhoodRadius::new(1),
+        NeighborhoodFalloff::Uniform,
+    )])
+    .build()?;
+
+let mut solver = Solver::from_spec(3, 3, 3, &spec);
+solver.set(1, 1, 1, Material::Alive.id());
+
+let report = analyze_cell(&solver, [1, 1, 1]).expect("cell exists");
+assert_eq!(report.material.name, "alive");
+assert_eq!(report.neighborhoods[0].name, "adjacent");
 # Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 

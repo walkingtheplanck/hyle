@@ -5,14 +5,14 @@ use std::time::Instant;
 
 use eframe::egui;
 use glam::Vec3;
-use hyle_ca_analysis::{analyze_runtime, analyze_spec, RuntimeReport, SpecAnalysis};
+use hyle_ca_analysis::{analyze_cell, analyze_runtime, analyze_spec, CellReport, RuntimeReport, SpecAnalysis};
 use hyle_ca_interface::{CaSolverProvider, MaterialSet};
 
 use crate::ca::{viewer_world, Materials, Scenario, SimpleWorld, Simulation};
 use crate::input::InputState;
 use crate::rendering::{
-    draw_runtime_analysis_window, draw_static_analysis_window, draw_toolbar, render, Camera,
-    GpuRaytracer,
+    draw_cell_analysis_window, draw_runtime_analysis_window, draw_static_analysis_window,
+    draw_toolbar, render, Camera, GpuRaytracer,
 };
 
 pub struct ViewerApp<P>
@@ -28,8 +28,11 @@ where
     world_dirty: bool,
     show_runtime_analysis: bool,
     show_static_analysis: bool,
+    show_cell_analysis: bool,
     static_analysis: SpecAnalysis,
     runtime_analysis: Option<RuntimeReport>,
+    inspected_position: [i32; 3],
+    cell_analysis: Option<CellReport>,
     frame_times: VecDeque<f64>,
     last_frame: Instant,
 }
@@ -69,8 +72,11 @@ where
             world_dirty: true,
             show_runtime_analysis: false,
             show_static_analysis: false,
+            show_cell_analysis: false,
             static_analysis,
             runtime_analysis: None,
+            inspected_position: [0, 0, 0],
+            cell_analysis: None,
             frame_times: VecDeque::with_capacity(60),
             last_frame: Instant::now(),
         }
@@ -131,6 +137,7 @@ where
             &mut self.sim.step_interval_ms,
             &mut self.show_runtime_analysis,
             &mut self.show_static_analysis,
+            &mut self.show_cell_analysis,
             fps,
             approx_vp,
         );
@@ -182,6 +189,15 @@ where
                 self.runtime_analysis.as_ref(),
             );
         }
+        if self.show_cell_analysis {
+            self.update_cell_analysis();
+            draw_cell_analysis_window(
+                ctx,
+                &mut self.show_cell_analysis,
+                &mut self.inspected_position,
+                self.cell_analysis.as_ref(),
+            );
+        }
     }
 }
 
@@ -201,6 +217,7 @@ where
         self.materials = self.sim.materials();
         self.static_analysis = analyze_spec(&self.sim.scenario().blueprint());
         self.runtime_analysis = None;
+        self.cell_analysis = None;
         self.gpu
             .upload_palette(&render_state.device, &render_state.queue, &self.materials);
         self.world_dirty = true;
@@ -215,5 +232,9 @@ where
             .map(|material| material.id())
             .collect::<Vec<_>>();
         self.runtime_analysis = Some(analyze_runtime(self.sim.runtime(), &alive_materials));
+    }
+
+    fn update_cell_analysis(&mut self) {
+        self.cell_analysis = analyze_cell(self.sim.runtime(), self.inspected_position);
     }
 }
