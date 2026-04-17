@@ -6,7 +6,7 @@ use crate::ca::world::{Material, Materials};
 
 use super::{crystal_forge, fire_cycle, life_4555, tube_garden, weighted_bloom};
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, MaterialSet)]
 #[repr(u16)]
 pub(crate) enum ViewerCell {
     #[default]
@@ -34,40 +34,6 @@ impl ViewerCell {
 
     pub fn palette_len() -> usize {
         <Self as MaterialSet>::variants().len()
-    }
-}
-
-impl MaterialSet for ViewerCell {
-    fn variants() -> &'static [Self] {
-        &[
-            ViewerCell::Dead,
-            ViewerCell::Alive,
-            ViewerCell::Bloom,
-            ViewerCell::Crystal,
-            ViewerCell::Hot,
-            ViewerCell::Grass,
-            ViewerCell::Fire,
-            ViewerCell::Ember,
-            ViewerCell::Ash,
-            ViewerCell::Stone,
-            ViewerCell::Wall,
-        ]
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            ViewerCell::Dead => "dead",
-            ViewerCell::Alive => "alive",
-            ViewerCell::Bloom => "bloom",
-            ViewerCell::Crystal => "crystal",
-            ViewerCell::Hot => "hot",
-            ViewerCell::Grass => "grass",
-            ViewerCell::Fire => "fire",
-            ViewerCell::Ember => "ember",
-            ViewerCell::Ash => "ash",
-            ViewerCell::Stone => "stone",
-            ViewerCell::Wall => "wall",
-        }
     }
 }
 

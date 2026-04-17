@@ -21,24 +21,11 @@ use hyle_ca_interface::{
     NeighborhoodShape, NeighborhoodSpec, RuleSpec,
 };
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, MaterialSet)]
 enum Material {
     #[default]
     Dead,
     Alive,
-}
-
-impl MaterialSet for Material {
-    fn variants() -> &'static [Self] {
-        &[Material::Dead, Material::Alive]
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Material::Dead => "dead",
-            Material::Alive => "alive",
-        }
-    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]

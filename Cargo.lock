@@ -887,6 +887,18 @@ dependencies = [
 [[package]]
 name = "hyle-ca-interface"
 version = "0.1.0"
+dependencies = [
+ "hyle-ca-interface-derive",
+]
+
+[[package]]
+name = "hyle-ca-interface-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "hyle-ca-solver"

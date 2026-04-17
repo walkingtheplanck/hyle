@@ -12,3 +12,4 @@ categories = ["game-development", "algorithms"]
 exclude = ["tests/"]
 
 [dependencies]
+hyle-ca-interface-derive = { path = "../ca-interface-derive", version = "0.1.0" }

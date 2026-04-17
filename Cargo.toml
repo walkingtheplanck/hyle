@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/ca-analysis",
+    "crates/ca-interface-derive",
     "crates/ca-interface",
     "crates/ca-solver",
 

@@ -1,0 +1,15 @@
+[package]
+name = "hyle-ca-interface-derive"
+version = "0.1.0"
+edition = "2021"
+description = "Proc-macro derives for the Hyle CA interface."
+license = "GPL-3.0-only"
+repository = "https://github.com/walkingtheplanck/hyle"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }

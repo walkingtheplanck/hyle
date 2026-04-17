@@ -7,24 +7,11 @@ use hyle_ca_interface::{
 };
 use hyle_ca_solver::{DescriptorTopology, Solver, TorusTopology};
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, MaterialSet)]
 enum M {
     #[default]
     Dead,
     Alive,
-}
-
-impl MaterialSet for M {
-    fn variants() -> &'static [Self] {
-        &[M::Dead, M::Alive]
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            M::Dead => "dead",
-            M::Alive => "alive",
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -5,24 +5,11 @@ use hyle_ca_interface::{
 };
 use hyle_ca_solver::Solver;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, MaterialSet)]
 enum M {
     #[default]
     Dead,
     Alive,
-}
-
-impl MaterialSet for M {
-    fn variants() -> &'static [Self] {
-        &[M::Dead, M::Alive]
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            M::Dead => "dead",
-            M::Alive => "alive",
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -93,7 +80,7 @@ fn cell_analysis_reports_material_attributes_and_neighborhoods() {
 
     let report = analyze_cell(&runtime, [1, 1, 1]).expect("in-bounds cell");
 
-    assert_eq!(report.material.name, "alive");
+    assert_eq!(report.material.name, "Alive");
     assert_eq!(report.resolved_position, [1, 1, 1]);
     assert!(report.attributes.is_empty());
     assert_eq!(report.neighborhoods.len(), 1);
@@ -102,5 +89,5 @@ fn cell_analysis_reports_material_attributes_and_neighborhoods() {
     assert!(report.neighborhoods[0]
         .materials
         .iter()
-        .any(|material| material.name == "alive" && material.count == 1));
+        .any(|material| material.name == "Alive" && material.count == 1));
 }

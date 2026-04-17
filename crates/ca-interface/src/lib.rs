@@ -1,6 +1,8 @@
 #![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
 
+extern crate self as hyle_ca_interface;
+
 mod handles;
 mod schema;
 /// Common framework imports for schema authoring and runtime setup.
@@ -9,6 +11,7 @@ mod runtime;
 /// Canonical resolved forms derived from declarative schemas.
 pub mod resolved;
 
+pub use hyle_ca_interface_derive::MaterialSet;
 pub use handles::{AttributeId, CellId, MaterialId, NeighborhoodId, RngStreamId};
 pub use schema::{
     attr, neighbors, rng, AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef,
