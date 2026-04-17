@@ -18,8 +18,8 @@ instances through the shared `CaSolverProvider` interface.
 
 ```rust
 use hyle_ca_interface::{
-    neighbors, Blueprint, CaSolver, Instance, MaterialSet, NeighborhoodFalloff,
-    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+    neighbors, Blueprint, Instance, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, SolverExecution,
 };
 use hyle_ca_solver::Solver;
 
@@ -73,8 +73,8 @@ solver.step();
 
 ```rust
 use hyle_ca_interface::{
-    Blueprint, CaRuntime, CaSolverProvider, Instance, MaterialSet, NeighborhoodFalloff,
-    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
+    Blueprint, CaSolverProvider, Instance, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuntimeStepping,
 };
 use hyle_ca_solver::CpuSolverProvider;
 
@@ -138,8 +138,8 @@ Use named neighborhoods in the spec, then reference them from rules:
 
 ```rust
 use hyle_ca_interface::{
-    neighbors, Blueprint, CaSolver, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
-    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+    neighbors, Blueprint, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec, SolverExecution,
 };
 use hyle_ca_solver::Solver;
 

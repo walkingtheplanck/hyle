@@ -81,8 +81,8 @@ assert_eq!(analysis.summary.rule_count, 1);
 ```rust
 use hyle_ca_analysis::analyze_runtime;
 use hyle_ca_interface::{
-    Blueprint, CaRuntime, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
-    NeighborhoodShape, NeighborhoodSpec, RuleSpec, Runtime,
+    Blueprint, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec, Runtime, RuntimeGrid, RuntimeStepping,
 };
 use hyle_ca_solver::Solver;
 
@@ -152,8 +152,8 @@ assert_eq!(report.died_cells, 1);
 ```rust
 use hyle_ca_analysis::analyze_cell;
 use hyle_ca_interface::{
-    Blueprint, CaRuntime, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
-    NeighborhoodShape, NeighborhoodSpec, Runtime,
+    Blueprint, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, Runtime, RuntimeGrid,
 };
 use hyle_ca_solver::Solver;
 

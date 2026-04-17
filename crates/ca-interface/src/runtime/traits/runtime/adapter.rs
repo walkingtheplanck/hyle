@@ -6,9 +6,12 @@ use crate::{
     NeighborhoodId, NeighborhoodSpec, TransitionCount,
 };
 
+use crate::runtime::traits::{
+    SolverAttributes, SolverCells, SolverExecution, SolverGrid, SolverMetadata, SolverMetrics,
+};
+
 use super::{
     RuntimeAttributes, RuntimeCells, RuntimeGrid, RuntimeMetadata, RuntimeMetrics, RuntimeStepping,
-    SolverAttributes, SolverCells, SolverExecution, SolverGrid, SolverMetadata, SolverMetrics,
 };
 
 /// Standard consumer-facing runtime backed by one concrete solver.
