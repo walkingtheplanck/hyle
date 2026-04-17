@@ -14,20 +14,82 @@ pub trait CaRuntime: Send {
     /// Logical grid dimensions.
     fn dims(&self) -> GridDims;
 
+    /// Number of logical cells in the current grid.
+    fn cell_count(&self) -> usize {
+        self.dims().cell_count()
+    }
+
     /// Advance the simulation by one step.
     fn step(&mut self);
 
     /// Material descriptors declared on the active schema, if available.
     fn material_defs(&self) -> &[MaterialDef];
 
+    /// Resolve one material descriptor by identifier.
+    fn material_def(&self, material: MaterialId) -> Option<&MaterialDef> {
+        self.material_defs()
+            .iter()
+            .find(|definition| definition.id == material)
+    }
+
     /// Attribute descriptors declared on the active schema, if available.
     fn attribute_defs(&self) -> &[AttributeDef];
+
+    /// Resolve one attribute descriptor by identifier.
+    fn attribute_def(&self, attribute: AttributeId) -> Option<&AttributeDef> {
+        self.attribute_defs()
+            .iter()
+            .find(|definition| definition.id == attribute)
+    }
 
     /// Neighborhood specs declared on the active schema, if available.
     fn neighborhood_specs(&self) -> &[NeighborhoodSpec];
 
+    /// Resolve one neighborhood spec by identifier.
+    fn neighborhood_spec(&self, neighborhood: NeighborhoodId) -> Option<&NeighborhoodSpec> {
+        self.neighborhood_specs()
+            .iter()
+            .find(|spec| spec.id() == neighborhood)
+    }
+
     /// Resolve one logical cell handle from grid coordinates.
     fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId>;
+
+    /// Return `true` when the given cell handle belongs to the active runtime.
+    fn contains_cell(&self, cell: CellId) -> bool {
+        self.cell_position(cell).is_ok()
+    }
+
+    /// Resolve every logical cell handle in the active grid in x-major order.
+    fn cells(&self) -> Vec<CellId> {
+        self.cells_in_region(self.dims().as_region())
+    }
+
+    /// Resolve all logical cell handles in one in-bounds region in x-major order.
+    fn cells_in_region(&self, region: GridRegion) -> Vec<CellId> {
+        let dims = self.dims();
+        assert!(
+            dims.contains_region(region),
+            "region must lie within runtime dimensions"
+        );
+
+        let [ox, oy, oz] = region.origin;
+        let [sx, sy, sz] = region.size;
+        let mut cells = Vec::with_capacity(region.cell_count());
+
+        for z in oz..oz + sz {
+            for y in oy..oy + sy {
+                for x in ox..ox + sx {
+                    let cell = self
+                        .cell_at(x as i32, y as i32, z as i32)
+                        .expect("in-bounds region coordinates must resolve to cells");
+                    cells.push(cell);
+                }
+            }
+        }
+
+        cells
+    }
 
     /// Decode a cell handle back into its canonical grid position.
     fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError>;
@@ -51,6 +113,18 @@ pub trait CaRuntime: Send {
         cell: CellId,
         neighborhood: NeighborhoodId,
     ) -> Result<Vec<CellId>, CellQueryError>;
+
+    /// Resolve all neighbors and read their current materials.
+    fn neighbor_materials(
+        &self,
+        cell: CellId,
+        neighborhood: NeighborhoodId,
+    ) -> Result<Vec<(CellId, MaterialId)>, CellQueryError> {
+        self.neighbors(cell, neighborhood)?
+            .into_iter()
+            .map(|neighbor| Ok((neighbor, self.material(neighbor)?)))
+            .collect()
+    }
 
     /// Set a material at the given coordinate.
     fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId);

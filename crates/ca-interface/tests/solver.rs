@@ -1,8 +1,10 @@
 //! Tests for the default bounded index resolution on the solver trait.
 
 use hyle_ca_interface::{
-    AttributeAccessError, AttributeId, AttributeValue, AxisTopology, CaSolver, GridDims,
-    GridRegion, MaterialId, Topology, TopologyDescriptor, TransitionCount,
+    AttributeAccessError, AttributeDef, AttributeId, AttributeType, AttributeValue, AxisTopology,
+    CaSolver, CellId, GridDims, GridRegion, MaterialDef, MaterialId, NeighborhoodFalloff,
+    NeighborhoodId, NeighborhoodRadius, NeighborhoodShape, NeighborhoodSpec, Topology,
+    TopologyDescriptor, TransitionCount,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -41,6 +43,9 @@ struct DummySolver {
     depth: u32,
     topology: BoundedLikeTopology,
     cells: Vec<MaterialId>,
+    material_defs: Vec<MaterialDef>,
+    attribute_defs: Vec<AttributeDef>,
+    neighborhood_specs: Vec<NeighborhoodSpec>,
 }
 
 impl DummySolver {
@@ -60,7 +65,37 @@ impl DummySolver {
             depth,
             topology: BoundedLikeTopology,
             cells,
+            material_defs: vec![
+                MaterialDef::new(MaterialId::new(0), "dead", Vec::new()),
+                MaterialDef::new(MaterialId::new(1), "alive", Vec::new()),
+            ],
+            attribute_defs: vec![AttributeDef::new(
+                AttributeId::new(0),
+                "heat",
+                AttributeType::U8,
+            )],
+            neighborhood_specs: vec![NeighborhoodSpec::from_ref(
+                hyle_ca_interface::NeighborhoodRef::new(AdjacentNeighborhood::Adjacent),
+                NeighborhoodShape::Moore,
+                NeighborhoodRadius::new(1),
+                NeighborhoodFalloff::Uniform,
+            )],
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AdjacentNeighborhood {
+    Adjacent,
+}
+
+impl hyle_ca_interface::NeighborhoodSet for AdjacentNeighborhood {
+    fn variants() -> &'static [Self] {
+        &[Self::Adjacent]
+    }
+
+    fn label(self) -> &'static str {
+        "adjacent"
     }
 }
 
@@ -133,6 +168,18 @@ impl CaSolver for DummySolver {
     }
 
     fn step(&mut self) {}
+
+    fn material_defs(&self) -> &[MaterialDef] {
+        &self.material_defs
+    }
+
+    fn attribute_defs(&self) -> &[AttributeDef] {
+        &self.attribute_defs
+    }
+
+    fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
+        &self.neighborhood_specs
+    }
 
     fn step_count(&self) -> u32 {
         0
@@ -213,4 +260,46 @@ fn default_read_and_write_region_follow_x_major_order() {
             MaterialId::new(4),
         ]
     );
+}
+
+#[test]
+fn metadata_queries_resolve_by_id() {
+    let solver = DummySolver::new(2, 2, 2);
+
+    assert_eq!(
+        solver.material_def(MaterialId::new(1)).map(|definition| definition.name),
+        Some("alive")
+    );
+    assert_eq!(
+        solver
+            .attribute_def(AttributeId::new(0))
+            .map(|definition| definition.name),
+        Some("heat")
+    );
+    assert_eq!(
+        solver
+            .neighborhood_spec(NeighborhoodId::new(0))
+            .map(|spec| spec.name()),
+        Some("adjacent")
+    );
+}
+
+#[test]
+fn default_cell_queries_enumerate_regions_and_neighbors() {
+    let mut solver = DummySolver::new(3, 3, 1);
+    solver.set(1, 1, 0, MaterialId::new(1));
+    solver.set(2, 1, 0, MaterialId::new(1));
+
+    let center = solver.cell_at(1, 1, 0).expect("center cell must resolve");
+    assert!(solver.contains_cell(center));
+    assert!(!solver.contains_cell(CellId::new(99)));
+    assert_eq!(solver.cells().len(), 9);
+    assert_eq!(solver.cells_in_region(GridRegion::new([1, 1, 0], [2, 1, 1])).len(), 2);
+
+    let neighbors = solver
+        .neighbor_materials(center, NeighborhoodId::new(0))
+        .expect("known neighborhood must resolve");
+    assert!(neighbors
+        .iter()
+        .any(|(_, material)| *material == MaterialId::new(1)));
 }

@@ -42,6 +42,11 @@ pub trait CaSolver {
         GridDims::new(self.width(), self.height(), self.depth())
     }
 
+    /// Number of logical cells in the current grid.
+    fn cell_count(&self) -> usize {
+        self.dims().cell_count()
+    }
+
     /// Deterministic run seed used for semantic randomness.
     fn seed(&self) -> u64 {
         0
@@ -49,11 +54,6 @@ pub trait CaSolver {
 
     /// Topology policy used to resolve coordinates for reads, writes, and steps.
     fn topology(&self) -> &Self::Topology;
-
-    /// Number of logical cells in the current grid.
-    fn cell_count(&self) -> usize {
-        self.dims().cell_count()
-    }
 
     /// One-past-the-end logical cell index used as the "no cell" sentinel.
     fn guard_index(&self) -> usize {
@@ -96,9 +96,23 @@ pub trait CaSolver {
         &[]
     }
 
+    /// Resolve one material descriptor by identifier.
+    fn material_def(&self, material: MaterialId) -> Option<&MaterialDef> {
+        self.material_defs()
+            .iter()
+            .find(|definition| definition.id == material)
+    }
+
     /// Attribute descriptors declared on the active schema, if available.
     fn attribute_defs(&self) -> &[AttributeDef] {
         &[]
+    }
+
+    /// Resolve one attribute descriptor by identifier.
+    fn attribute_def(&self, attribute: AttributeId) -> Option<&AttributeDef> {
+        self.attribute_defs()
+            .iter()
+            .find(|definition| definition.id == attribute)
     }
 
     /// Neighborhood specs declared on the active schema, if available.
@@ -106,10 +120,53 @@ pub trait CaSolver {
         &[]
     }
 
+    /// Resolve one neighborhood spec by identifier.
+    fn neighborhood_spec(&self, neighborhood: NeighborhoodId) -> Option<&NeighborhoodSpec> {
+        self.neighborhood_specs()
+            .iter()
+            .find(|spec| spec.id() == neighborhood)
+    }
+
     /// Resolve one logical cell handle from grid coordinates.
     fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId> {
         let index = self.resolve_index(x, y, z);
         (index != self.guard_index()).then(|| CellId::new(index as u32))
+    }
+
+    /// Return `true` when the given cell handle belongs to the active solver.
+    fn contains_cell(&self, cell: CellId) -> bool {
+        self.cell_position(cell).is_ok()
+    }
+
+    /// Resolve every logical cell handle in the active grid in x-major order.
+    fn cells(&self) -> Vec<CellId> {
+        self.cells_in_region(self.dims().as_region())
+    }
+
+    /// Resolve all logical cell handles in one in-bounds region in x-major order.
+    fn cells_in_region(&self, region: GridRegion) -> Vec<CellId> {
+        let dims = self.dims();
+        assert!(
+            dims.contains_region(region),
+            "region must lie within solver dimensions"
+        );
+
+        let [ox, oy, oz] = region.origin;
+        let [sx, sy, sz] = region.size;
+        let mut cells = Vec::with_capacity(region.cell_count());
+
+        for z in oz..oz + sz {
+            for y in oy..oy + sy {
+                for x in ox..ox + sx {
+                    let cell = self
+                        .cell_at(x as i32, y as i32, z as i32)
+                        .expect("in-bounds region coordinates must resolve to cells");
+                    cells.push(cell);
+                }
+            }
+        }
+
+        cells
     }
 
     /// Decode a cell handle back into its canonical grid position.
@@ -179,6 +236,18 @@ pub trait CaSolver {
         }
 
         Ok(cells)
+    }
+
+    /// Resolve all neighbors and read their current materials.
+    fn neighbor_materials(
+        &self,
+        cell: CellId,
+        neighborhood: NeighborhoodId,
+    ) -> Result<Vec<(CellId, MaterialId)>, CellQueryError> {
+        self.neighbors(cell, neighborhood)?
+            .into_iter()
+            .map(|neighbor| Ok((neighbor, self.material(neighbor)?)))
+            .collect()
     }
 
     /// Advance the simulation by one logical step.
