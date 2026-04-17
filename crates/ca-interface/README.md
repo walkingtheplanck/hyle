@@ -25,7 +25,7 @@ It has **zero dependencies** and is split conceptually into:
 | [`Instance`] | Runtime dimensions and deterministic seed for one solver run |
 | [`Blueprint`] | Declarative blueprint builder and canonical contract |
 | [`CaSolver`] | Trait that all solver implementations implement |
-| [`CaRuntime`] / [`CaSolverProvider`] | Concrete runtime and factory interfaces that keep backend selection localized |
+| [`CaRuntime`] / [`Runtime`] / [`CaSolverProvider`] | Consumer-facing runtime trait, standard runtime wrapper, and factory interface |
 | [`GridDims`] / [`GridRegion`] / [`GridSnapshot`] | Solver-neutral grid descriptors and bulk transfer types |
 | [`NeighborhoodSpec`] | Declarative neighborhood description shared across solvers |
 | [`Weight`] | Fixed-point weight threshold used by weighted neighborhood predicates |
@@ -229,7 +229,8 @@ supports center-cell attribute predicates and rule-driven attribute writes.
 ## Decoupled Runtime Construction
 
 Consumers such as viewers can depend on the centralized runtime/provider seam
-instead of naming a concrete solver type directly:
+instead of naming a concrete solver type directly. Providers return the
+standard [`Runtime<S>`] wrapper over a concrete solver:
 
 ```ignore
 use hyle_ca_interface::{Blueprint, CaRuntime, CaSolverProvider, Instance, MaterialSet};

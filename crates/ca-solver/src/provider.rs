@@ -1,6 +1,6 @@
 //! Provider adapters for constructing runtimes from blueprints.
 
-use hyle_ca_interface::{Blueprint, CaSolverProvider, Instance};
+use hyle_ca_interface::{Blueprint, CaSolverProvider, Instance, Runtime};
 
 use crate::{DescriptorTopology, Solver};
 
@@ -16,9 +16,9 @@ impl CpuSolverProvider {
 }
 
 impl CaSolverProvider for CpuSolverProvider {
-    type Runtime = Solver<DescriptorTopology>;
+    type Runtime = Runtime<Solver<DescriptorTopology>>;
 
     fn build(&self, instance: Instance, blueprint: &Blueprint) -> Self::Runtime {
-        Solver::from_spec_instance(instance, blueprint)
+        Runtime::new(Solver::from_spec_instance(instance, blueprint))
     }
 }

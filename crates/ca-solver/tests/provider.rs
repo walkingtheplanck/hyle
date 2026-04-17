@@ -1,5 +1,6 @@
 use hyle_ca_interface::{
     neighbors, AttrAssign, AttributeSet, AttributeType, AttributeValue, Blueprint, CaRuntime,
+    CaSolver,
     CaSolverProvider, GridRegion, Instance, MatAttr, MaterialSet,
     NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
     RuleSpec,
@@ -87,6 +88,7 @@ fn cpu_provider_builds_runtime() {
 
     let provider = CpuSolverProvider::new();
     let mut runtime = provider.build(Instance::new(4, 4, 4).with_seed(7), &spec);
+    assert_eq!(runtime.solver().dims().width, 4);
 
     runtime.set(1, 1, 1, M::Alive.id());
     runtime.write_region(

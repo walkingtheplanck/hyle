@@ -1,7 +1,7 @@
 use hyle_ca_analysis::{analyze_cell, analyze_runtime};
 use hyle_ca_interface::{
-    Blueprint, CaSolver, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
-    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+    Blueprint, CaRuntime, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec, Runtime,
 };
 use hyle_ca_solver::Solver;
 
@@ -55,12 +55,12 @@ fn runtime_analysis_tracks_living_birth_and_death_counts() {
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(2, 2, 2, &spec);
-    solver.set(0, 0, 0, M::Alive.id());
-    solver.set(1, 1, 1, M::Alive.id());
-    solver.step();
+    let mut runtime = Runtime::new(Solver::from_spec(2, 2, 2, &spec));
+    runtime.set(0, 0, 0, M::Alive.id());
+    runtime.set(1, 1, 1, M::Alive.id());
+    runtime.step();
 
-    let report = analyze_runtime(&solver, &[M::Alive.id()]);
+    let report = analyze_runtime(&runtime, &[M::Alive.id()]);
 
     assert_eq!(report.step, 1);
     assert_eq!(report.total_cells, 8);
@@ -87,11 +87,11 @@ fn cell_analysis_reports_material_attributes_and_neighborhoods() {
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(3, 3, 3, &spec);
-    solver.set(1, 1, 1, M::Alive.id());
-    solver.set(2, 1, 1, M::Alive.id());
+    let mut runtime = Runtime::new(Solver::from_spec(3, 3, 3, &spec));
+    runtime.set(1, 1, 1, M::Alive.id());
+    runtime.set(2, 1, 1, M::Alive.id());
 
-    let report = analyze_cell(&solver, [1, 1, 1]).expect("in-bounds cell");
+    let report = analyze_cell(&runtime, [1, 1, 1]).expect("in-bounds cell");
 
     assert_eq!(report.material.name, "alive");
     assert_eq!(report.resolved_position, [1, 1, 1]);

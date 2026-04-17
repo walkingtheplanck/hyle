@@ -7,5 +7,5 @@ mod topology;
 
 pub use model::{Instance, TransitionCount};
 pub use query::{AttributeAccessError, CellAttributeValue, CellId, CellQueryError};
-pub use traits::{CaRuntime, CaSolver, CaSolverProvider, ValidatedSolver};
+pub use traits::{CaRuntime, CaSolver, CaSolverProvider, Runtime, ValidatedSolver};
 pub use topology::Topology;

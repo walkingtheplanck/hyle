@@ -94,8 +94,8 @@ assert_eq!(analysis.summary.rule_count, 1);
 ```rust
 use hyle_ca_analysis::analyze_runtime;
 use hyle_ca_interface::{
-    Blueprint, CaSolver, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
-    NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+    Blueprint, CaRuntime, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec, Runtime,
 };
 use hyle_ca_solver::Solver;
 
@@ -146,13 +146,13 @@ let spec = Blueprint::builder()
     .rules([RuleSpec::when(Material::Alive).becomes(Material::Dead)])
     .build()?;
 
-let mut solver = Solver::from_spec(2, 2, 2, &spec);
-solver.set(0, 0, 0, Material::Alive.id());
-solver.step();
+let mut runtime = Runtime::new(Solver::from_spec(2, 2, 2, &spec));
+runtime.set(0, 0, 0, Material::Alive.id());
+runtime.step();
 
-let runtime = analyze_runtime(&solver, &[Material::Alive.id()]);
-assert_eq!(runtime.living_cells, 0);
-assert_eq!(runtime.died_cells, 1);
+let report = analyze_runtime(&runtime, &[Material::Alive.id()]);
+assert_eq!(report.living_cells, 0);
+assert_eq!(report.died_cells, 1);
 # Ok::<(), hyle_ca_interface::BuildError>(())
 ```
 
@@ -165,8 +165,8 @@ assert_eq!(runtime.died_cells, 1);
 ```rust
 use hyle_ca_analysis::analyze_cell;
 use hyle_ca_interface::{
-    Blueprint, CaSolver, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
-    NeighborhoodShape, NeighborhoodSpec,
+    Blueprint, CaRuntime, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, Runtime,
 };
 use hyle_ca_solver::Solver;
 
@@ -216,10 +216,10 @@ let spec = Blueprint::builder()
     )])
     .build()?;
 
-let mut solver = Solver::from_spec(3, 3, 3, &spec);
-solver.set(1, 1, 1, Material::Alive.id());
+let mut runtime = Runtime::new(Solver::from_spec(3, 3, 3, &spec));
+runtime.set(1, 1, 1, Material::Alive.id());
 
-let report = analyze_cell(&solver, [1, 1, 1]).expect("cell exists");
+let report = analyze_cell(&runtime, [1, 1, 1]).expect("cell exists");
 assert_eq!(report.material.name, "alive");
 assert_eq!(report.neighborhoods[0].name, "adjacent");
 # Ok::<(), hyle_ca_interface::BuildError>(())
@@ -229,6 +229,6 @@ assert_eq!(report.neighborhoods[0].name, "adjacent");
 
 | Crate | Role |
 |------|------|
-| [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface) | Contracts, semantics, and shared solver interfaces |
+| [`hyle-ca-interface`](https://crates.io/crates/hyle-ca-interface) | Schema types, resolved forms, and shared runtime/solver interfaces |
 | [`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis) | Shared spec analysis and diagnostics |
 | [`hyle-ca-solver`](https://crates.io/crates/hyle-ca-solver) | Default CPU solver implementation |

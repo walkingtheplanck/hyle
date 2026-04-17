@@ -20,6 +20,6 @@ pub use schema::{
 };
 pub use runtime::{
     AttributeAccessError, CaRuntime, CaSolver, CaSolverProvider, CellAttributeValue, CellId,
-    CellQueryError, Instance, Topology, TransitionCount, ValidatedSolver,
+    CellQueryError, Instance, Runtime, Topology, TransitionCount, ValidatedSolver,
 };
 pub use resolved::Rng;
