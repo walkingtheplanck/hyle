@@ -4,4 +4,4 @@ mod attribute_access;
 mod cell;
 
 pub use attribute_access::AttributeAccessError;
-pub use cell::{CellAttributeValue, CellId, CellQueryError};
+pub use cell::{CellAttributeValue, CellQueryError};

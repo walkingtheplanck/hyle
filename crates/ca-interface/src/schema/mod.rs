@@ -18,7 +18,6 @@ pub use dsl::{
     WeightComparison,
 };
 pub use sets::{
-    AttributeId, AttributeRef, AttributeSet, MaterialId, MaterialRef, MaterialSet, NeighborhoodId,
-    NeighborhoodRef, NeighborhoodSet,
+    AttributeRef, AttributeSet, MaterialRef, MaterialSet, NeighborhoodRef, NeighborhoodSet,
 };
 pub use spec::{AttributeAssignment, Blueprint, ResolvedCondition, Rule, RuleEffect, Semantics};

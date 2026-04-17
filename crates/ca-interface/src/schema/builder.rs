@@ -4,10 +4,11 @@ use std::any::TypeId;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
+use crate::NeighborhoodId;
 use crate::schema::{
     AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef, AttributeRef, AttributeSet,
     AttributeType, AttributeValue, Blueprint, Condition, MaterialAttributeBinding, MaterialDef,
-    MaterialRef, MaterialSet, NeighborhoodId, NeighborhoodRef, NeighborhoodSet, NeighborhoodSpec,
+    MaterialRef, MaterialSet, NeighborhoodRef, NeighborhoodSet, NeighborhoodSpec,
     ResolvedCondition, Rule, RuleEffect, Semantics, TopologyDescriptor,
 };
 
@@ -160,7 +161,7 @@ impl Error for BuildError {}
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct MaterialRegistry {
     owner: TypeId,
-    default_material: crate::schema::MaterialId,
+    default_material: crate::MaterialId,
     materials: Vec<MaterialDef>,
 }
 
@@ -695,7 +696,7 @@ fn validate_condition(
 
 fn ensure_material_has_attribute(
     materials: &MaterialRegistry,
-    material: crate::schema::MaterialId,
+    material: crate::MaterialId,
     attribute: AttributeRef,
 ) -> Result<(), BuildError> {
     if materials.materials[material.index()]

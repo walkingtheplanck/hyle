@@ -1,6 +1,6 @@
 //! Portable schema attribute descriptors.
 
-use crate::schema::AttributeId;
+use crate::AttributeId;
 
 /// Scalar type used by an attached per-cell attribute channel.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

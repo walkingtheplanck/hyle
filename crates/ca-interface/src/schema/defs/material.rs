@@ -1,6 +1,6 @@
 //! Portable schema material descriptors.
 
-use crate::schema::{MaterialAttributeBinding, MaterialId};
+use crate::{MaterialId, schema::MaterialAttributeBinding};
 
 /// One named material declared by a schema.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -2,70 +2,7 @@
 
 use std::any::TypeId;
 
-use crate::{AttributeType, AttributeValue};
-
-/// Stable numeric material identifier used by solvers and runtimes.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct MaterialId(u16);
-
-impl MaterialId {
-    /// Construct an identifier from its raw numeric value.
-    pub const fn new(raw: u16) -> Self {
-        Self(raw)
-    }
-
-    /// Return the raw numeric value.
-    pub const fn raw(self) -> u16 {
-        self.0
-    }
-
-    /// Return the identifier as a dense zero-based index.
-    pub const fn index(self) -> usize {
-        self.0 as usize
-    }
-}
-
-/// Stable numeric attribute identifier used by solvers and runtimes.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct AttributeId(u16);
-
-impl AttributeId {
-    /// Construct an identifier from its raw numeric value.
-    pub const fn new(raw: u16) -> Self {
-        Self(raw)
-    }
-
-    /// Return the raw numeric value.
-    pub const fn raw(self) -> u16 {
-        self.0
-    }
-
-    /// Return the identifier as a dense zero-based index.
-    pub const fn index(self) -> usize {
-        self.0 as usize
-    }
-}
-
-/// Stable numeric neighborhood identifier used by solvers and runtimes.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct NeighborhoodId(u16);
-
-impl NeighborhoodId {
-    /// Construct an identifier from its raw numeric value.
-    pub const fn new(raw: u16) -> Self {
-        Self(raw)
-    }
-
-    /// Return the raw numeric value.
-    pub const fn raw(self) -> u16 {
-        self.0
-    }
-
-    /// Return the identifier as a dense zero-based index.
-    pub const fn index(self) -> usize {
-        self.0 as usize
-    }
-}
+use crate::{AttributeId, AttributeType, AttributeValue, MaterialId, NeighborhoodId};
 
 /// Type-erased reference to one material symbol from a specific material set.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

@@ -1,8 +1,9 @@
 //! Canonical schema contract types.
 
+use crate::{AttributeId, MaterialId, NeighborhoodId};
 use crate::schema::{
-    AttributeComparison, AttributeDef, AttributeId, AttributeValue, CountComparison, MaterialDef,
-    MaterialId, NeighborhoodId, NeighborhoodSpec, TopologyDescriptor, WeightComparison,
+    AttributeComparison, AttributeDef, AttributeValue, CountComparison, MaterialDef,
+    NeighborhoodSpec, TopologyDescriptor, WeightComparison,
 };
 
 use super::BlueprintBuilder;
