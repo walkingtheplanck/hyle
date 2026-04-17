@@ -4,7 +4,7 @@ use hyle_ca_interface::{
     attr, neighbors, rng, AttrAssign, AttributeComparison, AttributeSet, AttributeType,
     AttributeValue, Blueprint, BuildError, MatAttr, MaterialSet, NeighborhoodFalloff,
     NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, ResolvedCondition,
-    RuleEffect, RuleSpec, TopologyDescriptor, Weight, WeightComparison,
+    RngStreamId, RuleEffect, RuleSpec, TopologyDescriptor, Weight, WeightComparison,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -178,7 +178,7 @@ fn builder_emits_random_chance_and_weighted_conditions() {
     assert_eq!(
         spec.rules()[0].condition,
         Some(ResolvedCondition::RandomChance {
-            stream: 7,
+            stream: RngStreamId::new(7),
             one_in: 3,
         })
     );
@@ -287,7 +287,7 @@ fn builder_rejects_zero_random_denominator() {
     assert_eq!(
         error,
         BuildError::InvalidRandomChance {
-            stream: 2,
+            stream: RngStreamId::new(2),
             one_in: 0,
         }
     );

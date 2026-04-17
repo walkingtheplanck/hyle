@@ -4,7 +4,7 @@ use std::any::TypeId;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use crate::NeighborhoodId;
+use crate::{NeighborhoodId, RngStreamId};
 use crate::schema::{
     AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef, AttributeRef, AttributeSet,
     AttributeType, AttributeValue, Blueprint, Condition, MaterialAttributeBinding, MaterialDef,
@@ -76,7 +76,7 @@ pub enum BuildError {
     /// A random condition requested an invalid denominator.
     InvalidRandomChance {
         /// Random stream identifier used by the invalid condition.
-        stream: u32,
+        stream: RngStreamId,
         /// Requested `1 / n` denominator.
         one_in: u32,
     },

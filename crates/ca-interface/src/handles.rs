@@ -1,5 +1,7 @@
 //! Shared opaque handle and identifier types.
 
+use std::fmt::{Display, Formatter};
+
 /// Opaque handle to one logical cell in the active runtime grid.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct CellId(u32);
@@ -80,5 +82,33 @@ impl NeighborhoodId {
     /// Return the identifier as a dense zero-based index.
     pub const fn index(self) -> usize {
         self.0 as usize
+    }
+}
+
+/// Stable identifier for deterministic rule-visible RNG streams.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct RngStreamId(u32);
+
+impl RngStreamId {
+    /// Construct a stream identifier from its raw numeric value.
+    pub const fn new(raw: u32) -> Self {
+        Self(raw)
+    }
+
+    /// Return the raw numeric value.
+    pub const fn raw(self) -> u32 {
+        self.0
+    }
+}
+
+impl From<u32> for RngStreamId {
+    fn from(value: u32) -> Self {
+        Self::new(value)
+    }
+}
+
+impl Display for RngStreamId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.raw())
     }
 }

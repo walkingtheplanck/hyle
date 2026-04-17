@@ -8,5 +8,5 @@ pub use crate::schema::{
 };
 pub use crate::{
     AttributeAccessError, AttributeId, CaRuntime, CaSolverProvider, CellId, CellQueryError,
-    Instance, MaterialId, Rng, Runtime,
+    Instance, MaterialId, Rng, RngStreamId, Runtime,
 };

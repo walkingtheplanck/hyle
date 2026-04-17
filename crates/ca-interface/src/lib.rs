@@ -9,7 +9,7 @@ mod runtime;
 /// Canonical resolved forms derived from declarative schemas.
 pub mod resolved;
 
-pub use handles::{AttributeId, CellId, MaterialId, NeighborhoodId};
+pub use handles::{AttributeId, CellId, MaterialId, NeighborhoodId, RngStreamId};
 pub use schema::{
     attr, neighbors, rng, AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef,
     AttributeRef, AttributeSelector, AttributeSet, AttributeType, AttributeValue, AxisTopology,

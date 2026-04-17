@@ -3,7 +3,7 @@
 use hyle_ca_interface::resolved::{cell_rng, ResolvedBlueprint};
 use hyle_ca_interface::{
     AttributeAssignment, AttributeComparison, AttributeId, AttributeValue, CountComparison,
-    MaterialId, ResolvedCondition, RuleEffect, WeightComparison,
+    MaterialId, ResolvedCondition, RngStreamId, RuleEffect, WeightComparison,
 };
 
 use crate::Neighborhood;
@@ -78,7 +78,7 @@ enum CompiledCondition {
         comparison: WeightComparison,
     },
     RandomChance {
-        stream: u32,
+        stream: RngStreamId,
         one_in: u32,
     },
     Attribute {

@@ -1,6 +1,6 @@
 //! Canonical schema contract types.
 
-use crate::{AttributeId, MaterialId, NeighborhoodId};
+use crate::{AttributeId, MaterialId, NeighborhoodId, RngStreamId};
 use crate::schema::{
     AttributeComparison, AttributeDef, AttributeValue, CountComparison, MaterialDef,
     NeighborhoodSpec, TopologyDescriptor, WeightComparison,
@@ -36,7 +36,7 @@ pub enum ResolvedCondition {
     /// Deterministic per-cell random gate derived from step and position.
     RandomChance {
         /// Independent random stream identifier.
-        stream: u32,
+        stream: RngStreamId,
         /// True when the derived RNG hits a `1 / n` chance.
         one_in: u32,
     },

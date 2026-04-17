@@ -2,6 +2,7 @@
 
 use std::ops::RangeInclusive;
 
+use crate::RngStreamId;
 use crate::schema::defs::WEIGHT_SCALE;
 use crate::schema::{
     AttributeRef, AttributeSet, AttributeType, AttributeValue, MaterialRef, MaterialSet,
@@ -27,7 +28,7 @@ pub enum Condition {
     /// Deterministic per-cell random gate derived from the step and position.
     RandomChance {
         /// Independent random stream identifier.
-        stream: u32,
+        stream: RngStreamId,
         /// True when the derived RNG hits a `1 / n` chance.
         one_in: u32,
     },
@@ -459,7 +460,7 @@ pub fn attr<A: AttributeSet>(attribute: A) -> AttributeSelector {
 /// Deterministic random source selector.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RandomSource {
-    stream: u32,
+    stream: RngStreamId,
 }
 
 impl RandomSource {
@@ -473,6 +474,8 @@ impl RandomSource {
 }
 
 /// Start a deterministic random condition with the given stream id.
-pub const fn rng(stream: u32) -> RandomSource {
-    RandomSource { stream }
+pub fn rng(stream: impl Into<RngStreamId>) -> RandomSource {
+    RandomSource {
+        stream: stream.into(),
+    }
 }

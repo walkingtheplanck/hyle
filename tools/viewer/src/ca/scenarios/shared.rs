@@ -1,6 +1,6 @@
 //! Shared viewer material definitions, palette, and seeding helpers.
 
-use hyle_ca_interface::{Blueprint, CaRuntime, Instance, MaterialId, MaterialSet, Rng};
+use hyle_ca_interface::{Blueprint, CaRuntime, Instance, MaterialId, MaterialSet, Rng, RngStreamId};
 
 use crate::ca::world::{Material, Materials};
 
@@ -258,8 +258,9 @@ pub(super) fn seed_random_box(
     cell: ViewerCell,
     chance: u32,
     seed: u64,
-    stream: u32,
+    stream: impl Into<RngStreamId>,
 ) {
+    let stream = stream.into();
     for z in z_range.clone() {
         for y in y_range.clone() {
             for x in x_range.clone() {
