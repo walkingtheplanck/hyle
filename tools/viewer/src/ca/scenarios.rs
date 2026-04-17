@@ -12,7 +12,7 @@ pub(crate) use shared::ViewerCell;
 
 #[cfg(test)]
 mod tests {
-    use hyle_ca_interface::{CaRuntime, CaSolverProvider};
+    use hyle_ca_interface::{CaSolverProvider, RuntimeGrid, RuntimeStepping};
     use hyle_ca_solver::CpuSolverProvider;
 
     use super::{Scenario, ViewerCell};

@@ -5,9 +5,10 @@ use std::sync::Arc;
 
 use hyle_ca_interface::resolved::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
-    AttributeAccessError, AttributeId, AttributeValue, Blueprint, CaSolver, CellAttributeValue,
-    CellId, CellQueryError, GridRegion, GridSnapshot, MaterialDef, MaterialId,
-    NeighborhoodId, NeighborhoodSpec, RuleEffect, Topology, TransitionCount, Instance,
+    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, Blueprint, CellAttributeValue,
+    CellId, CellQueryError, GridRegion, GridSnapshot, MaterialDef, MaterialId, NeighborhoodId,
+    NeighborhoodSpec, RuleEffect, SolverAttributes, SolverCells, SolverExecution, SolverGrid,
+    SolverMetadata, SolverMetrics, Topology, TransitionCount, Instance,
 };
 
 use crate::attributes::AttributeStore;
@@ -272,7 +273,7 @@ impl<T: Topology> Solver<T> {
     }
 }
 
-impl<T: Topology> CaSolver for Solver<T> {
+impl<T: Topology> SolverExecution for Solver<T> {
     type Topology = T;
 
     fn width(&self) -> u32 {
@@ -287,7 +288,7 @@ impl<T: Topology> CaSolver for Solver<T> {
         self.grid.depth
     }
 
-    fn topology(&self) -> &Self::Topology {
+    fn topology(&self) -> &<Self as SolverExecution>::Topology {
         &self.topology
     }
 
@@ -309,37 +310,6 @@ impl<T: Topology> CaSolver for Solver<T> {
 
     fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId) {
         self.grid.set(&self.topology, x, y, z, material);
-    }
-
-    fn material_defs(&self) -> &[MaterialDef] {
-        self.schema
-            .as_ref()
-            .map(|schema| schema.resolved.materials())
-            .unwrap_or(&[])
-    }
-
-    fn attribute_defs(&self) -> &[hyle_ca_interface::AttributeDef] {
-        self.schema
-            .as_ref()
-            .map(|schema| schema.resolved.attributes())
-            .unwrap_or(&[])
-    }
-
-    fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
-        self.schema
-            .as_ref()
-            .map(|schema| schema.neighborhood_specs.as_slice())
-            .unwrap_or(&[])
-    }
-
-    fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError> {
-        self.decode_cell(cell).ok_or(CellQueryError::UnknownCell(cell))
-    }
-
-    fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError> {
-        self.decode_cell(cell)
-            .map(|_| self.grid.cells[cell.raw() as usize])
-            .ok_or(CellQueryError::UnknownCell(cell))
     }
 
     fn get_attr(
@@ -382,38 +352,53 @@ impl<T: Topology> CaSolver for Solver<T> {
         Ok(())
     }
 
-    fn attribute(
-        &self,
-        cell: CellId,
-        attribute: AttributeId,
-    ) -> Result<AttributeValue, CellQueryError> {
-        if !self.attributes.contains(attribute) {
-            return Err(CellQueryError::from(AttributeAccessError::UnknownAttribute(
-                attribute,
-            )));
-        }
-        if cell.raw() as usize >= self.grid.cell_count() {
-            return Err(CellQueryError::UnknownCell(cell));
-        }
-
-        Ok(self.attributes.get(attribute, cell.raw() as usize))
+    fn step(&mut self) {
+        self.grid.prepare_step();
+        self.attributes.prepare_step();
+        self.step_program();
+        self.record_step_metrics();
+        self.grid.swap();
+        self.attributes.swap();
+        self.step_count += 1;
     }
 
-    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
-        if cell.raw() as usize >= self.grid.cell_count() {
-            return Err(CellQueryError::UnknownCell(cell));
-        }
+    fn step_count(&self) -> u32 {
+        self.step_count
+    }
+}
 
-        Ok(self
-            .attribute_defs()
-            .iter()
-            .map(|attribute| {
-                CellAttributeValue::new(
-                    attribute.id,
-                    self.attributes.get(attribute.id, cell.raw() as usize),
-                )
-            })
-            .collect())
+impl<T: Topology> SolverMetadata for Solver<T> {
+    fn material_defs(&self) -> &[MaterialDef] {
+        self.schema
+            .as_ref()
+            .map(|schema| schema.resolved.materials())
+            .unwrap_or(&[])
+    }
+
+    fn attribute_defs(&self) -> &[AttributeDef] {
+        self.schema
+            .as_ref()
+            .map(|schema| schema.resolved.attributes())
+            .unwrap_or(&[])
+    }
+
+    fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
+        self.schema
+            .as_ref()
+            .map(|schema| schema.neighborhood_specs.as_slice())
+            .unwrap_or(&[])
+    }
+}
+
+impl<T: Topology> SolverCells for Solver<T> {
+    fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError> {
+        self.decode_cell(cell).ok_or(CellQueryError::UnknownCell(cell))
+    }
+
+    fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError> {
+        self.decode_cell(cell)
+            .map(|_| self.grid.cells[cell.raw() as usize])
+            .ok_or(CellQueryError::UnknownCell(cell))
     }
 
     fn neighbors(
@@ -448,21 +433,45 @@ impl<T: Topology> CaSolver for Solver<T> {
 
         Ok(cells)
     }
+}
 
-    fn step(&mut self) {
-        self.grid.prepare_step();
-        self.attributes.prepare_step();
-        self.step_program();
-        self.record_step_metrics();
-        self.grid.swap();
-        self.attributes.swap();
-        self.step_count += 1;
+impl<T: Topology> SolverAttributes for Solver<T> {
+    fn attribute(
+        &self,
+        cell: CellId,
+        attribute: AttributeId,
+    ) -> Result<AttributeValue, CellQueryError> {
+        if !self.attributes.contains(attribute) {
+            return Err(CellQueryError::from(AttributeAccessError::UnknownAttribute(
+                attribute,
+            )));
+        }
+        if cell.raw() as usize >= self.grid.cell_count() {
+            return Err(CellQueryError::UnknownCell(cell));
+        }
+
+        Ok(self.attributes.get(attribute, cell.raw() as usize))
     }
 
-    fn step_count(&self) -> u32 {
-        self.step_count
-    }
+    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
+        if cell.raw() as usize >= self.grid.cell_count() {
+            return Err(CellQueryError::UnknownCell(cell));
+        }
 
+        Ok(self
+            .attribute_defs()
+            .iter()
+            .map(|attribute| {
+                CellAttributeValue::new(
+                    attribute.id,
+                    self.attributes.get(attribute.id, cell.raw() as usize),
+                )
+            })
+            .collect())
+    }
+}
+
+impl<T: Topology> SolverMetrics for Solver<T> {
     fn last_changed_cells(&self) -> u64 {
         self.last_changed_cells
     }
@@ -481,7 +490,9 @@ impl<T: Topology> CaSolver for Solver<T> {
     fn last_transitions(&self) -> &[TransitionCount] {
         &self.last_transitions
     }
+}
 
+impl<T: Topology> SolverGrid for Solver<T> {
     fn iter_cells(&self) -> Vec<(u32, u32, u32, MaterialId)> {
         self.grid.iter_cells()
     }

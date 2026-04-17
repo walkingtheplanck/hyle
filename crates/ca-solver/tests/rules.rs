@@ -3,8 +3,9 @@
 use hyle_ca_interface::resolved::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
     attr, neighbors, rng, AttrAssign, AttributeSet, AttributeType, AttributeValue, Blueprint,
-    CaSolver, Instance, MatAttr, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
-    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, Weight,
+    Instance, MatAttr, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec, SolverExecution, SolverGrid, SolverMetrics,
+    Weight,
 };
 use hyle_ca_solver::Solver;
 

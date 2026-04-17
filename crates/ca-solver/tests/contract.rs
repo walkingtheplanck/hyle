@@ -1,9 +1,9 @@
 //! Contract tests: does the solver API behave as documented?
 
 use hyle_ca_interface::{
-    neighbors, Blueprint, CaSolver, GridRegion, MaterialId, MaterialSet, NeighborhoodFalloff,
+    neighbors, Blueprint, GridRegion, MaterialId, MaterialSet, NeighborhoodFalloff,
     NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
-    TopologyDescriptor,
+    SolverExecution, SolverGrid, TopologyDescriptor,
 };
 use hyle_ca_solver::{DescriptorTopology, Solver, TorusTopology};
 

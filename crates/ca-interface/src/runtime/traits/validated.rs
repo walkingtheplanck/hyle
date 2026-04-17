@@ -1,8 +1,12 @@
 //! Debug-only wrapper that validates all `CaSolver` contracts at runtime.
 
 use crate::{
-    AttributeAccessError, AttributeId, AttributeValue, CaSolver, CellAttributeValue, CellId,
-    CellQueryError, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec, TransitionCount,
+    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, CaSolver, MaterialDef,
+    MaterialId, NeighborhoodSpec, TransitionCount,
+};
+
+use super::{
+    SolverAttributes, SolverCells, SolverExecution, SolverGrid, SolverMetadata, SolverMetrics,
 };
 
 /// Wrapper that validates `CaSolver` contracts on every operation.
@@ -46,7 +50,7 @@ impl<S: CaSolver> ValidatedSolver<S> {
     }
 }
 
-impl<S> CaSolver for ValidatedSolver<S>
+impl<S> SolverExecution for ValidatedSolver<S>
 where
     S: CaSolver,
 {
@@ -82,7 +86,7 @@ where
         d
     }
 
-    fn topology(&self) -> &Self::Topology {
+    fn topology(&self) -> &<Self as SolverExecution>::Topology {
         self.inner.topology()
     }
 
@@ -152,50 +156,6 @@ where
         }
     }
 
-    fn material_defs(&self) -> &[MaterialDef] {
-        self.inner.material_defs()
-    }
-
-    fn attribute_defs(&self) -> &[crate::AttributeDef] {
-        self.inner.attribute_defs()
-    }
-
-    fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
-        self.inner.neighborhood_specs()
-    }
-
-    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId> {
-        self.inner.cell_at(x, y, z)
-    }
-
-    fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError> {
-        self.inner.cell_position(cell)
-    }
-
-    fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError> {
-        self.inner.material(cell)
-    }
-
-    fn attribute(
-        &self,
-        cell: CellId,
-        attribute: AttributeId,
-    ) -> Result<AttributeValue, CellQueryError> {
-        self.inner.attribute(cell, attribute)
-    }
-
-    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
-        self.inner.attributes(cell)
-    }
-
-    fn neighbors(
-        &self,
-        cell: CellId,
-        neighborhood: NeighborhoodId,
-    ) -> Result<Vec<CellId>, CellQueryError> {
-        self.inner.neighbors(cell, neighborhood)
-    }
-
     fn get_attr(
         &self,
         attribute: AttributeId,
@@ -231,33 +191,41 @@ where
     fn step_count(&self) -> u32 {
         self.inner.step_count()
     }
+}
 
+impl<S> SolverMetadata for ValidatedSolver<S>
+where
+    S: CaSolver,
+{
+    fn material_defs(&self) -> &[MaterialDef] {
+        self.inner.material_defs()
+    }
+
+    fn attribute_defs(&self) -> &[AttributeDef] {
+        self.inner.attribute_defs()
+    }
+
+    fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
+        self.inner.neighborhood_specs()
+    }
+}
+
+impl<S> SolverCells for ValidatedSolver<S> where S: CaSolver {}
+
+impl<S> SolverAttributes for ValidatedSolver<S> where S: CaSolver {}
+
+impl<S> SolverGrid for ValidatedSolver<S> where S: CaSolver {}
+
+impl<S> SolverMetrics for ValidatedSolver<S>
+where
+    S: CaSolver,
+{
     fn last_changed_cells(&self) -> u64 {
         self.inner.last_changed_cells()
     }
 
-    fn populations(&self) -> Vec<u64> {
-        self.inner.populations()
-    }
-
     fn last_transitions(&self) -> &[TransitionCount] {
         self.inner.last_transitions()
-    }
-
-    fn readback(&self) -> crate::GridSnapshot<MaterialId> {
-        self.inner.readback()
-    }
-
-    fn read_region(&self, region: crate::GridRegion) -> Vec<MaterialId> {
-        self.inner.read_region(region)
-    }
-
-    fn write_region(&mut self, region: crate::GridRegion, cells: &[MaterialId]) {
-        self.inner.write_region(region, cells);
-    }
-
-    fn iter_cells(&self) -> Vec<(u32, u32, u32, MaterialId)> {
-        self.inner.iter_cells()
     }
 }
 

@@ -1,9 +1,14 @@
 //! Standard concrete `CaRuntime` wrapper around a `CaSolver`.
 
 use crate::{
-    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, CaRuntime, CaSolver,
-    CellAttributeValue, CellId, CellQueryError, GridDims, GridRegion, GridSnapshot, MaterialDef,
-    MaterialId, NeighborhoodId, NeighborhoodSpec, TransitionCount,
+    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, CaSolver, CellAttributeValue,
+    CellId, CellQueryError, GridDims, GridRegion, GridSnapshot, MaterialDef, MaterialId,
+    NeighborhoodId, NeighborhoodSpec, TransitionCount,
+};
+
+use super::{
+    RuntimeAttributes, RuntimeCells, RuntimeGrid, RuntimeMetadata, RuntimeMetrics, RuntimeStepping,
+    SolverAttributes, SolverCells, SolverExecution, SolverGrid, SolverMetadata, SolverMetrics,
 };
 
 /// Standard consumer-facing runtime backed by one concrete solver.
@@ -33,52 +38,45 @@ impl<S> Runtime<S> {
     }
 }
 
-impl<S> CaRuntime for Runtime<S>
+impl<S> RuntimeMetadata for Runtime<S>
 where
     S: CaSolver + Send,
 {
     fn dims(&self) -> GridDims {
-        CaSolver::dims(&self.solver)
-    }
-
-    fn step(&mut self) {
-        CaSolver::step(&mut self.solver);
+        SolverExecution::dims(&self.solver)
     }
 
     fn material_defs(&self) -> &[MaterialDef] {
-        CaSolver::material_defs(&self.solver)
+        SolverMetadata::material_defs(&self.solver)
     }
 
     fn attribute_defs(&self) -> &[AttributeDef] {
-        CaSolver::attribute_defs(&self.solver)
+        SolverMetadata::attribute_defs(&self.solver)
     }
 
     fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
-        CaSolver::neighborhood_specs(&self.solver)
+        SolverMetadata::neighborhood_specs(&self.solver)
     }
+}
 
+impl<S> RuntimeCells for Runtime<S>
+where
+    S: CaSolver + Send,
+{
     fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId> {
-        CaSolver::cell_at(&self.solver, x, y, z)
+        SolverCells::cell_at(&self.solver, x, y, z)
     }
 
     fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError> {
-        CaSolver::cell_position(&self.solver, cell)
+        SolverCells::cell_position(&self.solver, cell)
+    }
+
+    fn cells_in_region(&self, region: GridRegion) -> Vec<CellId> {
+        SolverCells::cells_in_region(&self.solver, region)
     }
 
     fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError> {
-        CaSolver::material(&self.solver, cell)
-    }
-
-    fn attribute(
-        &self,
-        cell: CellId,
-        attribute: AttributeId,
-    ) -> Result<AttributeValue, CellQueryError> {
-        CaSolver::attribute(&self.solver, cell, attribute)
-    }
-
-    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
-        CaSolver::attributes(&self.solver, cell)
+        SolverCells::material(&self.solver, cell)
     }
 
     fn neighbors(
@@ -86,11 +84,24 @@ where
         cell: CellId,
         neighborhood: NeighborhoodId,
     ) -> Result<Vec<CellId>, CellQueryError> {
-        CaSolver::neighbors(&self.solver, cell, neighborhood)
+        SolverCells::neighbors(&self.solver, cell, neighborhood)
+    }
+}
+
+impl<S> RuntimeAttributes for Runtime<S>
+where
+    S: CaSolver + Send,
+{
+    fn attribute(
+        &self,
+        cell: CellId,
+        attribute: AttributeId,
+    ) -> Result<AttributeValue, CellQueryError> {
+        SolverAttributes::attribute(&self.solver, cell, attribute)
     }
 
-    fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId) {
-        CaSolver::set(&mut self.solver, x, y, z, material);
+    fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
+        SolverAttributes::attributes(&self.solver, cell)
     }
 
     fn get_attr(
@@ -100,7 +111,7 @@ where
         y: i32,
         z: i32,
     ) -> Result<AttributeValue, AttributeAccessError> {
-        CaSolver::get_attr(&self.solver, attribute, x, y, z)
+        SolverExecution::get_attr(&self.solver, attribute, x, y, z)
     }
 
     fn set_attr(
@@ -111,42 +122,65 @@ where
         z: i32,
         value: AttributeValue,
     ) -> Result<(), AttributeAccessError> {
-        CaSolver::set_attr(&mut self.solver, attribute, x, y, z, value)
+        SolverExecution::set_attr(&mut self.solver, attribute, x, y, z, value)
+    }
+}
+
+impl<S> RuntimeGrid for Runtime<S>
+where
+    S: CaSolver + Send,
+{
+    fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId) {
+        SolverExecution::set(&mut self.solver, x, y, z, material);
     }
 
     fn read_region(&self, region: GridRegion) -> Vec<MaterialId> {
-        CaSolver::read_region(&self.solver, region)
+        SolverGrid::read_region(&self.solver, region)
     }
 
     fn write_region(&mut self, region: GridRegion, cells: &[MaterialId]) {
-        CaSolver::write_region(&mut self.solver, region, cells);
+        SolverGrid::write_region(&mut self.solver, region, cells);
     }
 
     fn replace_cells(&mut self, cells: &[MaterialId]) {
-        CaSolver::replace_cells(&mut self.solver, cells);
+        SolverGrid::replace_cells(&mut self.solver, cells);
     }
 
     fn readback(&self) -> GridSnapshot<MaterialId> {
-        CaSolver::readback(&self.solver)
+        SolverGrid::readback(&self.solver)
+    }
+}
+
+impl<S> RuntimeStepping for Runtime<S>
+where
+    S: CaSolver + Send,
+{
+    fn step(&mut self) {
+        SolverExecution::step(&mut self.solver);
     }
 
     fn step_count(&self) -> u32 {
-        CaSolver::step_count(&self.solver)
+        SolverExecution::step_count(&self.solver)
     }
+}
 
+impl<S> RuntimeMetrics for Runtime<S>
+where
+    S: CaSolver + Send,
+{
     fn last_changed_cells(&self) -> u64 {
-        CaSolver::last_changed_cells(&self.solver)
+        SolverMetrics::last_changed_cells(&self.solver)
     }
 
     fn population(&self, material: MaterialId) -> u64 {
-        CaSolver::population(&self.solver, material)
+        SolverMetrics::population(&self.solver, material)
     }
 
     fn populations(&self) -> Vec<u64> {
-        CaSolver::populations(&self.solver)
+        SolverMetrics::populations(&self.solver)
     }
 
     fn last_transitions(&self) -> &[TransitionCount] {
-        CaSolver::last_transitions(&self.solver)
+        SolverMetrics::last_transitions(&self.solver)
     }
 }

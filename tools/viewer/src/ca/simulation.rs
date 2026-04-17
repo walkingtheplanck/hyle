@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use hyle_ca_interface::{CaRuntime, CaSolverProvider, MaterialSet};
+use hyle_ca_interface::{CaSolverProvider, MaterialSet, RuntimeGrid, RuntimeStepping};
 
 use crate::ca::{Materials, Scenario, SimpleWorld, ViewerCell, AIR};
 

@@ -2,9 +2,10 @@
 
 use hyle_ca_interface::{
     AttributeAccessError, AttributeDef, AttributeId, AttributeType, AttributeValue, AxisTopology,
-    CaSolver, CellId, GridDims, GridRegion, MaterialDef, MaterialId, NeighborhoodFalloff,
-    NeighborhoodId, NeighborhoodRadius, NeighborhoodShape, NeighborhoodSpec, Topology,
-    TopologyDescriptor, TransitionCount,
+    CellId, GridDims, GridRegion, MaterialDef, MaterialId, NeighborhoodFalloff, NeighborhoodId,
+    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, SolverCells,
+    SolverExecution, SolverGrid, SolverMetadata, SolverMetrics, Topology, TopologyDescriptor,
+    TransitionCount,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -89,7 +90,7 @@ enum AdjacentNeighborhood {
     Adjacent,
 }
 
-impl hyle_ca_interface::NeighborhoodSet for AdjacentNeighborhood {
+impl NeighborhoodSet for AdjacentNeighborhood {
     fn variants() -> &'static [Self] {
         &[Self::Adjacent]
     }
@@ -99,7 +100,7 @@ impl hyle_ca_interface::NeighborhoodSet for AdjacentNeighborhood {
     }
 }
 
-impl CaSolver for DummySolver {
+impl SolverExecution for DummySolver {
     type Topology = BoundedLikeTopology;
 
     fn width(&self) -> u32 {
@@ -169,6 +170,12 @@ impl CaSolver for DummySolver {
 
     fn step(&mut self) {}
 
+    fn step_count(&self) -> u32 {
+        0
+    }
+}
+
+impl SolverMetadata for DummySolver {
     fn material_defs(&self) -> &[MaterialDef] {
         &self.material_defs
     }
@@ -180,11 +187,13 @@ impl CaSolver for DummySolver {
     fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
         &self.neighborhood_specs
     }
+}
 
-    fn step_count(&self) -> u32 {
-        0
-    }
+impl SolverCells for DummySolver {}
 
+impl SolverGrid for DummySolver {}
+
+impl SolverMetrics for DummySolver {
     fn last_changed_cells(&self) -> u64 {
         0
     }
