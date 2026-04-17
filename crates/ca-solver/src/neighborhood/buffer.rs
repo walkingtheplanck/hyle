@@ -1,6 +1,6 @@
 //! Neighborhood struct - pre-fetched neighbors around a center material.
 
-use hyle_ca_interface::semantics::NeighborhoodSample;
+use hyle_ca_interface::resolved::NeighborhoodSample;
 use hyle_ca_interface::MaterialId;
 
 use super::types::Entry;

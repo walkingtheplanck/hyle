@@ -1,13 +1,13 @@
-//! Canonical blueprint contract types.
+//! Canonical schema contract types.
 
-use crate::contracts::{
+use crate::schema::{
     AttributeComparison, AttributeDef, AttributeId, AttributeValue, CountComparison, MaterialDef,
     MaterialId, NeighborhoodId, NeighborhoodSpec, TopologyDescriptor, WeightComparison,
 };
 
 use super::BlueprintBuilder;
 
-/// Portable semantics version for a blueprint contract.
+/// Portable semantics version for a schema contract.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Semantics {
     /// Version 1 semantics: deterministic local rules with first-match wins.
@@ -94,7 +94,7 @@ pub struct Rule {
     pub effect: RuleEffect,
 }
 
-/// Immutable, solver-agnostic blueprint contract.
+/// Immutable, solver-agnostic schema contract.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Blueprint {
     semantics: Semantics,
@@ -108,7 +108,7 @@ pub struct Blueprint {
 }
 
 impl Blueprint {
-    /// Start building a solver-agnostic blueprint.
+    /// Start building a solver-agnostic schema.
     pub fn builder() -> BlueprintBuilder {
         BlueprintBuilder::new()
     }

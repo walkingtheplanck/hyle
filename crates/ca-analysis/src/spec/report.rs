@@ -7,7 +7,7 @@ use hyle_ca_interface::{
 
 use crate::Diagnostic;
 
-/// Top-level summary derived from a blueprint.
+/// Top-level summary derived from a schema.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpecSummary {
     /// Declared material universe.
@@ -64,7 +64,7 @@ pub struct NeighborhoodAnalysis {
     pub used_by_rules: usize,
 }
 
-/// Full analysis result for a blueprint.
+/// Full analysis result for a schema.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpecAnalysis {
     /// High-level summary.

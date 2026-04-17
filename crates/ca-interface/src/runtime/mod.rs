@@ -1,19 +1,11 @@
-//! Shared runtime-facing model traits.
+//! Shared runtime-facing execution traits and query models.
 
-mod attribute_access;
-mod ca_runtime;
-mod cell;
-mod instance;
-mod provider;
-mod solver;
-mod step_metrics;
+mod model;
+mod query;
+mod traits;
 mod topology;
 
-pub use attribute_access::AttributeAccessError;
-pub use ca_runtime::CaRuntime;
-pub use cell::{CellAttributeValue, CellId, CellQueryError};
-pub use instance::Instance;
-pub use provider::CaSolverProvider;
-pub use solver::{CaSolver, ValidatedSolver};
-pub use step_metrics::TransitionCount;
+pub use model::{Instance, TransitionCount};
+pub use query::{AttributeAccessError, CellAttributeValue, CellId, CellQueryError};
+pub use traits::{CaRuntime, CaSolver, CaSolverProvider, ValidatedSolver};
 pub use topology::Topology;

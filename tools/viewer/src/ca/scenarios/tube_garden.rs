@@ -70,7 +70,7 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Alive),
         ])
         .build()
-        .expect("tube garden blueprint should build")
+        .expect("tube garden schema should build")
 }
 
 pub(super) fn seed(ca: &mut impl CaRuntime) {

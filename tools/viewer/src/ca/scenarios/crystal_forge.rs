@@ -76,7 +76,7 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Hot),
         ])
         .build()
-        .expect("crystal forge blueprint should build")
+        .expect("crystal forge schema should build")
 }
 
 pub(super) fn seed(ca: &mut impl CaRuntime) {

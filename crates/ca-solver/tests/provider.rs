@@ -83,7 +83,7 @@ fn cpu_provider_builds_runtime() {
             .require(neighbors(M::Alive).count().eq(3))
             .becomes(M::Alive)])
         .build()
-        .expect("test blueprint should build");
+        .expect("test schema should build");
 
     let provider = CpuSolverProvider::new();
     let mut runtime = provider.build(Instance::new(4, 4, 4).with_seed(7), &spec);

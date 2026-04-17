@@ -1,6 +1,6 @@
 //! Compiled solver programs derived from interpreted blueprints.
 
-use hyle_ca_interface::semantics::{cell_rng, ResolvedBlueprint};
+use hyle_ca_interface::resolved::{cell_rng, ResolvedBlueprint};
 use hyle_ca_interface::{
     AttributeAssignment, AttributeComparison, AttributeId, AttributeValue, CountComparison,
     MaterialId, ResolvedCondition, RuleEffect, WeightComparison,

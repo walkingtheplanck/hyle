@@ -1,4 +1,4 @@
-//! Canonical interpretation helpers derived from declarative contracts.
+//! Canonical resolved forms derived from declarative schemas.
 
 mod blueprint;
 mod neighborhood;

@@ -1,6 +1,6 @@
 //! Neighborhood-derived analysis helpers.
 
-use hyle_ca_interface::semantics::neighbor_count;
+use hyle_ca_interface::resolved::neighbor_count;
 use hyle_ca_interface::NeighborhoodSpec;
 
 use super::NeighborhoodAnalysis;

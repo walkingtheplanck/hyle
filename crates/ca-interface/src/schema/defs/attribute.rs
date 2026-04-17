@@ -1,6 +1,6 @@
-//! Portable blueprint attribute descriptors.
+//! Portable schema attribute descriptors.
 
-use crate::contracts::AttributeId;
+use crate::schema::AttributeId;
 
 /// Scalar type used by an attached per-cell attribute channel.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -117,7 +117,7 @@ impl From<i32> for AttributeValue {
     }
 }
 
-/// One named attached per-cell attribute declared by a blueprint.
+/// One named attached per-cell attribute declared by a schema.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttributeDef {
     /// Stable numeric identifier.

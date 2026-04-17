@@ -1,4 +1,4 @@
-use crate::contracts::{NeighborhoodId, NeighborhoodRef, NeighborhoodSet};
+use crate::schema::{NeighborhoodId, NeighborhoodRef, NeighborhoodSet};
 
 /// Fixed-point scale used for deterministic neighborhood weights.
 pub const WEIGHT_SCALE: u32 = 1024;

@@ -42,7 +42,7 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Alive),
         ])
         .build()
-        .expect("life blueprint should build")
+        .expect("life schema should build")
 }
 
 pub(super) fn seed(ca: &mut impl CaRuntime) {

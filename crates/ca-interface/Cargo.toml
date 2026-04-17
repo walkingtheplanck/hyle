@@ -2,7 +2,7 @@
 name = "hyle-ca-interface"
 version = "0.1.0"
 edition = "2021"
-description = "Shared interfaces, contracts, and descriptors for the Hyle cellular automaton framework."
+description = "Shared interfaces, schema types, and runtime traits for the Hyle cellular automaton framework."
 readme = "README.md"
 license = "GPL-3.0-only"
 repository = "https://github.com/walkingtheplanck/hyle"

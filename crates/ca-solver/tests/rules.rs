@@ -1,6 +1,6 @@
 //! Rule application tests using declarative blueprints.
 
-use hyle_ca_interface::semantics::{cell_rng, interpret_blueprint};
+use hyle_ca_interface::resolved::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
     attr, neighbors, rng, AttrAssign, AttributeSet, AttributeType, AttributeValue, Blueprint,
     CaSolver, Instance, MatAttr, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,

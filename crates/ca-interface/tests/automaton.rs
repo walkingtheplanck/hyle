@@ -1,4 +1,4 @@
-//! Tests for the declarative blueprint builder.
+//! Tests for the declarative schema builder.
 
 use hyle_ca_interface::{
     attr, neighbors, rng, AttrAssign, AttributeComparison, AttributeSet, AttributeType,

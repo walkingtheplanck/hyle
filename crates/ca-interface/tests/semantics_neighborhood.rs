@@ -1,4 +1,4 @@
-use hyle_ca_interface::semantics::{expand_neighborhood, neighbor_count, offsets, Offset3};
+use hyle_ca_interface::resolved::{expand_neighborhood, neighbor_count, offsets, Offset3};
 use hyle_ca_interface::{
     NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
 };

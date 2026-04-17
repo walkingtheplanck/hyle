@@ -143,7 +143,7 @@ When you create a solver from a `Blueprint`, the solver interprets that
 blueprint into a resolved blueprint and uses the descriptor declared by it.
 
 Custom solver implementations that need canonical neighborhood expansion can use
-`hyle_ca_interface::semantics` directly without reimplementing contract interpretation.
+`hyle_ca_interface::resolved` directly without reimplementing schema interpretation.
 
 ## Declaring Custom Neighborhoods
 

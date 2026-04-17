@@ -1,4 +1,4 @@
-//! Enum-backed symbol traits used by blueprint authoring.
+//! Enum-backed symbol traits used by schema authoring.
 
 use std::any::TypeId;
 
@@ -176,7 +176,7 @@ impl NeighborhoodRef {
     }
 }
 
-/// Enum-backed material universe used by a blueprint.
+/// Enum-backed material universe used by a schema.
 pub trait MaterialSet: Copy + Default + Eq + Send + Sync + 'static {
     /// Return the full ordered material set.
     fn variants() -> &'static [Self];
@@ -204,7 +204,7 @@ pub trait MaterialSet: Copy + Default + Eq + Send + Sync + 'static {
     }
 }
 
-/// Enum-backed attribute universe used by a blueprint.
+/// Enum-backed attribute universe used by a schema.
 pub trait AttributeSet: Copy + Eq + Send + Sync + 'static {
     /// Return the full ordered attribute set.
     fn variants() -> &'static [Self];
@@ -235,7 +235,7 @@ pub trait AttributeSet: Copy + Eq + Send + Sync + 'static {
     }
 }
 
-/// Enum-backed neighborhood universe used by a blueprint.
+/// Enum-backed neighborhood universe used by a schema.
 pub trait NeighborhoodSet: Copy + Eq + Send + Sync + 'static {
     /// Return the full ordered neighborhood set.
     fn variants() -> &'static [Self];

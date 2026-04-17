@@ -26,7 +26,7 @@ impl Display for Severity {
 /// The primary subject referenced by a diagnostic.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Subject {
-    /// The diagnostic refers to the blueprint spec as a whole.
+    /// The diagnostic refers to the schema spec as a whole.
     Spec,
     /// The diagnostic refers to a specific rule.
     Rule {

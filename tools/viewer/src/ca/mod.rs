@@ -1,4 +1,4 @@
-//! Cellular-blueprint state and world data for the viewer.
+//! Cellular-schema state and world data for the viewer.
 
 mod scenarios;
 mod simulation;

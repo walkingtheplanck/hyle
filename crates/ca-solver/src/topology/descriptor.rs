@@ -1,4 +1,4 @@
-use hyle_ca_interface::semantics::ResolvedTopology;
+use hyle_ca_interface::resolved::ResolvedTopology;
 use hyle_ca_interface::{GridDims, Topology, TopologyDescriptor};
 
 /// Topology adapter backed by a [`TopologyDescriptor`].

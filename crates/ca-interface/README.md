@@ -1,6 +1,6 @@
 # hyle-ca-interface
 
-Shared interfaces, contracts, and descriptors for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
+Shared interfaces, schema types, and runtime traits for the [Hyle](https://github.com/walkingtheplanck/hyle) cellular automaton framework.
 
 This crate defines the shared public interface layer. Depend on it to:
 - define enum-backed material, attribute, and neighborhood sets
@@ -10,12 +10,12 @@ This crate defines the shared public interface layer. Depend on it to:
 
 Derived analysis and diagnostics live in
 [`hyle-ca-analysis`](https://crates.io/crates/hyle-ca-analysis). Canonical
-interpretation helpers live in this crate under `hyle_ca_interface::semantics`.
+resolved helpers live in this crate under `hyle_ca_interface::resolved`.
 
 It has **zero dependencies** and is split conceptually into:
-- `contracts` for declarative blueprint and descriptor data
-- `semantics` for interpreted blueprint, neighborhood, and topology meaning
-- `runtime` for running-simulation interfaces and shared runtime types such as `CellId`, `MaterialId`, `Instance`, `Topology`, `CaSolver`, `CaRuntime`, `CaSolverProvider`, and `ValidatedSolver`
+- `schema` for declarative blueprint and descriptor data
+- `resolved` for canonical interpreted blueprint, neighborhood, and topology meaning
+- `runtime` for running-simulation interfaces, split into execution traits, cell-query types, and small runtime models
 
 ## Key Types
 
@@ -34,10 +34,10 @@ It has **zero dependencies** and is split conceptually into:
 | [`Topology`] / [`TopologyDescriptor`] | Boundary behavior traits and descriptors |
 | [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 
-Semantic forms are available under `hyle_ca_interface::semantics`, for example:
-- `hyle_ca_interface::semantics::ResolvedBlueprint`
-- `hyle_ca_interface::semantics::Neighborhood`
-- `hyle_ca_interface::semantics::ResolvedTopology`
+Resolved forms are available under `hyle_ca_interface::resolved`, for example:
+- `hyle_ca_interface::resolved::ResolvedBlueprint`
+- `hyle_ca_interface::resolved::Neighborhood`
+- `hyle_ca_interface::resolved::ResolvedTopology`
 
 ## Preferred Imports
 
@@ -47,10 +47,10 @@ Use the crate root or the prelude as the main entry points:
   `use hyle_ca_interface::{Blueprint, CaSolverProvider, Instance};`
 - Use `hyle_ca_interface::prelude::*` when you want a compact common import set
   for blueprint authoring and runtime setup.
-- Treat `hyle_ca_interface::semantics` as an advanced namespace for interpreted
+- Treat `hyle_ca_interface::resolved` as an advanced namespace for interpreted
   forms and semantic helpers.
 
-The internal `contracts` and `runtime` module layout is crate organization, not
+The internal `schema`, `resolved`, and `runtime` module layout is crate organization, not
 the intended consumer-facing path.
 
 ## Building a Portable Blueprint

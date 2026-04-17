@@ -54,7 +54,7 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Bloom),
         ])
         .build()
-        .expect("weighted bloom blueprint should build")
+        .expect("weighted bloom schema should build")
 }
 
 pub(super) fn seed(ca: &mut impl CaRuntime) {

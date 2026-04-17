@@ -19,13 +19,13 @@ pub trait CaRuntime: Send {
     /// Advance the simulation by one step.
     fn step(&mut self);
 
-    /// Material descriptors declared on the active blueprint, if available.
+    /// Material descriptors declared on the active schema, if available.
     fn material_defs(&self) -> &[MaterialDef];
 
-    /// Attribute descriptors declared on the active blueprint, if available.
+    /// Attribute descriptors declared on the active schema, if available.
     fn attribute_defs(&self) -> &[AttributeDef];
 
-    /// Neighborhood specs declared on the active blueprint, if available.
+    /// Neighborhood specs declared on the active schema, if available.
     fn neighborhood_specs(&self) -> &[NeighborhoodSpec];
 
     /// Resolve one logical cell handle from grid coordinates.

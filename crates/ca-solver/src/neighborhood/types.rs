@@ -1,6 +1,6 @@
 //! Shared runtime types for CPU neighborhoods.
 
-use hyle_ca_interface::semantics::Offset3;
+use hyle_ca_interface::resolved::Offset3;
 use hyle_ca_interface::MaterialId;
 
 /// A single neighbor: its offset, cell value, and precomputed weight.

@@ -2,8 +2,8 @@
 
 use std::ops::RangeInclusive;
 
-use crate::contracts::descriptors::WEIGHT_SCALE;
-use crate::contracts::{
+use crate::schema::defs::WEIGHT_SCALE;
+use crate::schema::{
     AttributeRef, AttributeSet, AttributeType, AttributeValue, MaterialRef, MaterialSet,
 };
 

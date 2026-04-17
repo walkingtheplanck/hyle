@@ -1,8 +1,8 @@
-//! Portable blueprint material descriptors.
+//! Portable schema material descriptors.
 
-use crate::contracts::{MaterialAttributeBinding, MaterialId};
+use crate::schema::{MaterialAttributeBinding, MaterialId};
 
-/// One named material declared by a blueprint.
+/// One named material declared by a schema.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MaterialDef {
     /// Stable numeric identifier.

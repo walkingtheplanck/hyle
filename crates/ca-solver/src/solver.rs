@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use hyle_ca_interface::semantics::{interpret_blueprint, ResolvedBlueprint};
+use hyle_ca_interface::resolved::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
     AttributeAccessError, AttributeId, AttributeValue, Blueprint, CaSolver, CellAttributeValue,
     CellId, CellQueryError, GridRegion, GridSnapshot, MaterialDef, MaterialId,
@@ -20,7 +20,7 @@ struct RuntimeSchema {
     neighborhood_specs: Vec<NeighborhoodSpec>,
 }
 
-/// Default 3D cellular blueprint solver.
+/// Default 3D cellular schema solver.
 pub struct Solver<T: Topology = BoundedTopology> {
     grid: Grid,
     attributes: AttributeStore,
@@ -85,7 +85,7 @@ impl Solver<BoundedTopology> {
 }
 
 impl Solver<DescriptorTopology> {
-    /// Create a solver whose topology and rules come from an interpreted blueprint.
+    /// Create a solver whose topology and rules come from an interpreted schema.
     pub fn from_blueprint(
         width: u32,
         height: u32,
@@ -95,7 +95,7 @@ impl Solver<DescriptorTopology> {
         Self::from_blueprint_instance(Instance::new(width, height, depth), blueprint)
     }
 
-    /// Create a solver from a runtime instance and interpreted blueprint.
+    /// Create a solver from a runtime instance and interpreted schema.
     pub fn from_blueprint_instance(instance: Instance, blueprint: &ResolvedBlueprint) -> Self {
         let schema = Arc::new(RuntimeSchema {
             resolved: blueprint.clone(),
@@ -125,7 +125,7 @@ impl Solver<DescriptorTopology> {
             last_transitions: Vec::new(),
         };
 
-        // Ensure freshly allocated cells use the blueprint defaults for the default material.
+        // Ensure freshly allocated cells use the schema defaults for the default material.
         if let Some(defaults) = solver
             .material_defaults
             .get(default_material.index())
@@ -140,12 +140,12 @@ impl Solver<DescriptorTopology> {
         solver
     }
 
-    /// Interpret a declarative blueprint and create a solver from it.
+    /// Interpret a declarative schema and create a solver from it.
     pub fn from_spec(width: u32, height: u32, depth: u32, blueprint: &Blueprint) -> Self {
         Self::from_spec_instance(Instance::new(width, height, depth), blueprint)
     }
 
-    /// Interpret a declarative blueprint and create a solver from a runtime instance.
+    /// Interpret a declarative schema and create a solver from a runtime instance.
     pub fn from_spec_instance(instance: Instance, blueprint: &Blueprint) -> Self {
         let resolved = interpret_blueprint(blueprint);
         Self::from_blueprint_instance(instance, &resolved)

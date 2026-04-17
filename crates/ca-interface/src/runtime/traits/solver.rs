@@ -1,6 +1,6 @@
 //! Solver trait - the common interface all CA solvers implement.
 
-use crate::semantics;
+use crate::resolved;
 use crate::{
     AttributeAccessError, AttributeDef, AttributeId, AttributeValue, CellAttributeValue, CellId,
     CellQueryError, GridDims, GridRegion, GridSnapshot, MaterialDef, MaterialId,
@@ -91,17 +91,17 @@ pub trait CaSolver {
         value: AttributeValue,
     ) -> Result<(), AttributeAccessError>;
 
-    /// Material descriptors declared on the active blueprint, if available.
+    /// Material descriptors declared on the active schema, if available.
     fn material_defs(&self) -> &[MaterialDef] {
         &[]
     }
 
-    /// Attribute descriptors declared on the active blueprint, if available.
+    /// Attribute descriptors declared on the active schema, if available.
     fn attribute_defs(&self) -> &[AttributeDef] {
         &[]
     }
 
-    /// Neighborhood specs declared on the active blueprint, if available.
+    /// Neighborhood specs declared on the active schema, if available.
     fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
         &[]
     }
@@ -170,7 +170,7 @@ pub trait CaSolver {
         let [x, y, z] = self.cell_position(cell)?;
         let mut cells = Vec::new();
 
-        for offset in semantics::offsets(spec) {
+        for offset in resolved::offsets(spec) {
             if let Some(neighbor) =
                 self.cell_at(x as i32 + offset.dx, y as i32 + offset.dy, z as i32 + offset.dz)
             {

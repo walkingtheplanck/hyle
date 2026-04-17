@@ -73,7 +73,7 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Grass),
         ])
         .build()
-        .expect("fire cycle blueprint should build")
+        .expect("fire cycle schema should build")
 }
 
 pub(super) fn seed(ca: &mut impl CaRuntime) {

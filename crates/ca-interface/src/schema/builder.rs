@@ -4,7 +4,7 @@ use std::any::TypeId;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use crate::contracts::{
+use crate::schema::{
     AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef, AttributeRef, AttributeSet,
     AttributeType, AttributeValue, Blueprint, Condition, MaterialAttributeBinding, MaterialDef,
     MaterialRef, MaterialSet, NeighborhoodId, NeighborhoodRef, NeighborhoodSet, NeighborhoodSpec,
@@ -160,7 +160,7 @@ impl Error for BuildError {}
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct MaterialRegistry {
     owner: TypeId,
-    default_material: crate::contracts::MaterialId,
+    default_material: crate::schema::MaterialId,
     materials: Vec<MaterialDef>,
 }
 
@@ -177,7 +177,7 @@ struct NeighborhoodRegistry {
     expected_names: Vec<&'static str>,
 }
 
-/// One material-to-attribute attachment entry in the blueprint schema.
+/// One material-to-attribute attachment entry in the schema schema.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MatAttr {
     material: MaterialRef,
@@ -267,7 +267,7 @@ impl RuleSpec {
     }
 }
 
-/// Typed blueprint builder.
+/// Typed schema builder.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BlueprintBuilder {
     semantics: Semantics,
@@ -296,13 +296,13 @@ impl BlueprintBuilder {
         }
     }
 
-    /// Override the topology descriptor used by this blueprint.
+    /// Override the topology descriptor used by this schema.
     pub fn topology(mut self, topology: TopologyDescriptor) -> Self {
         self.topology = topology;
         self
     }
 
-    /// Register the enum-backed material universe for this blueprint.
+    /// Register the enum-backed material universe for this schema.
     pub fn materials<M: MaterialSet>(mut self) -> Self {
         self.materials = Some(MaterialRegistry {
             owner: TypeId::of::<M>(),
@@ -316,7 +316,7 @@ impl BlueprintBuilder {
         self
     }
 
-    /// Register the enum-backed attribute universe for this blueprint.
+    /// Register the enum-backed attribute universe for this schema.
     pub fn attributes<A: AttributeSet>(mut self) -> Self {
         self.attributes = Some(AttributeRegistry {
             owner: TypeId::of::<A>(),
@@ -340,7 +340,7 @@ impl BlueprintBuilder {
         self
     }
 
-    /// Register the enum-backed neighborhood universe for this blueprint.
+    /// Register the enum-backed neighborhood universe for this schema.
     pub fn neighborhoods<N: NeighborhoodSet>(mut self) -> Self {
         self.neighborhoods = Some(NeighborhoodRegistry {
             owner: TypeId::of::<N>(),
@@ -365,7 +365,7 @@ impl BlueprintBuilder {
         self
     }
 
-    /// Provide the ordered rules for this blueprint.
+    /// Provide the ordered rules for this schema.
     pub fn rules<I>(mut self, rules: I) -> Self
     where
         I: IntoIterator<Item = RuleSpec>,
@@ -374,7 +374,7 @@ impl BlueprintBuilder {
         self
     }
 
-    /// Validate and build the portable blueprint.
+    /// Validate and build the portable schema.
     pub fn build(self) -> Result<Blueprint, BuildError> {
         let mut materials = self.materials.ok_or(BuildError::MissingMaterials)?;
         validate_unique_material_labels(&materials.materials)?;
@@ -695,7 +695,7 @@ fn validate_condition(
 
 fn ensure_material_has_attribute(
     materials: &MaterialRegistry,
-    material: crate::contracts::MaterialId,
+    material: crate::schema::MaterialId,
     attribute: AttributeRef,
 ) -> Result<(), BuildError> {
     if materials.materials[material.index()]

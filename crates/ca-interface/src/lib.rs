@@ -1,14 +1,14 @@
 #![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
 
-mod contracts;
-/// Common framework imports for blueprint authoring and runtime setup.
+mod schema;
+/// Common framework imports for schema authoring and runtime setup.
 pub mod prelude;
 mod runtime;
-/// Canonical interpretation helpers derived from declarative contracts.
-pub mod semantics;
+/// Canonical resolved forms derived from declarative schemas.
+pub mod resolved;
 
-pub use contracts::{
+pub use schema::{
     attr, neighbors, rng, AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef,
     AttributeId, AttributeRef, AttributeSelector, AttributeSet, AttributeType, AttributeValue,
     AxisTopology, Blueprint, BlueprintBuilder, BuildError, Condition, CountComparison, GridDims,
@@ -22,4 +22,4 @@ pub use runtime::{
     AttributeAccessError, CaRuntime, CaSolver, CaSolverProvider, CellAttributeValue, CellId,
     CellQueryError, Instance, Topology, TransitionCount, ValidatedSolver,
 };
-pub use semantics::Rng;
+pub use resolved::Rng;

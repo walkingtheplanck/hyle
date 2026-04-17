@@ -8,7 +8,7 @@ use super::{
     neighborhoods::analyze_neighborhoods, rules::analyze_rules, SpecAnalysis, SpecSummary,
 };
 
-/// Analyze a declarative blueprint and return shared diagnostics and summaries.
+/// Analyze a declarative schema and return shared diagnostics and summaries.
 pub fn analyze_spec(blueprint: &Blueprint) -> SpecAnalysis {
     let mut usage_counts = vec![0usize; blueprint.neighborhoods().len()];
     for rule in blueprint.rules() {

@@ -2,7 +2,7 @@ use crate::{AttributeDef, Blueprint, MaterialDef, NeighborhoodSpec, Rule, Semant
 
 use super::{interpret_topology, Neighborhood, ResolvedTopology};
 
-/// An interpreted neighborhood used by a blueprint.
+/// An interpreted neighborhood used by a schema.
 #[derive(Clone, Debug, PartialEq)]
 pub struct NamedNeighborhood {
     spec: NeighborhoodSpec,
@@ -26,7 +26,7 @@ impl NamedNeighborhood {
     }
 }
 
-/// A canonical interpreted blueprint derived from a declarative blueprint.
+/// A canonical interpreted schema derived from a declarative schema.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ResolvedBlueprint {
     semantics: Semantics,
@@ -75,13 +75,13 @@ impl ResolvedBlueprint {
         self.default_neighborhood
     }
 
-    /// Return the ordered blueprint rules.
+    /// Return the ordered schema rules.
     pub fn rules(&self) -> &[Rule] {
         &self.rules
     }
 }
 
-/// Interpret a declarative blueprint into its canonical semantic form.
+/// Interpret a declarative schema into its canonical semantic form.
 pub fn interpret_blueprint(blueprint: &Blueprint) -> ResolvedBlueprint {
     ResolvedBlueprint {
         semantics: blueprint.semantics(),

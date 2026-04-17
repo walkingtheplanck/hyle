@@ -1,6 +1,6 @@
 //! Rule-derived analysis helpers.
 
-use hyle_ca_interface::semantics::{max_weighted_sum, neighbor_count};
+use hyle_ca_interface::resolved::{max_weighted_sum, neighbor_count};
 use hyle_ca_interface::{Blueprint, CountComparison, ResolvedCondition, WeightComparison};
 
 use crate::{Diagnostic, Subject};
