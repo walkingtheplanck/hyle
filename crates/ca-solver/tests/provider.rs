@@ -1,6 +1,6 @@
 use hyle_ca_interface::{
-    neighbors, AttrAssign, AttributeSet, AttributeType, AttributeValue, Blueprint,
-    CaSolverProvider, GridRegion, Instance, MatAttr, MaterialSet, NeighborhoodFalloff,
+    neighbors, AttrAssign, AttributeAccessError, AttributeSet, AttributeType, AttributeValue,
+    Blueprint, CaSolverProvider, GridRegion, Instance, MatAttr, MaterialSet, NeighborhoodFalloff,
     NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
     RuntimeAttributes, RuntimeGrid, RuntimeMetadata, RuntimeStepping, SolverExecution,
 };
@@ -90,10 +90,12 @@ fn cpu_provider_builds_runtime() {
     assert_eq!(runtime.solver().dims().width, 4);
 
     runtime.set(1, 1, 1, M::Alive.id());
-    runtime.write_region(
-        GridRegion::new([0, 0, 0], [2, 1, 1]),
-        &[M::Other.id(), M::Alive.id()],
-    );
+    runtime
+        .write_region(
+            GridRegion::new([0, 0, 0], [2, 1, 1]),
+            &[M::Other.id(), M::Alive.id()],
+        )
+        .expect("runtime region writes should succeed");
     runtime
         .set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(4))
         .expect("runtime attribute writes should succeed");
@@ -104,8 +106,44 @@ fn cpu_provider_builds_runtime() {
     assert_eq!(snapshot.get([1, 0, 0]), Some(&M::Alive.id()));
     assert_eq!(
         runtime.read_region(GridRegion::new([0, 0, 0], [2, 1, 1])),
-        vec![M::Other.id(), M::Alive.id()]
+        Ok(vec![M::Other.id(), M::Alive.id()])
     );
-    assert_eq!(runtime.get_attr(A::Heat.id(), 1, 1, 1), Ok(AttributeValue::U8(4)));
+    assert_eq!(
+        runtime.get_attr(A::Heat.id(), 1, 1, 1),
+        Ok(AttributeValue::U8(4))
+    );
     assert_eq!(runtime.step_count(), 1);
+}
+
+#[test]
+fn runtime_attribute_writes_report_type_mismatches() {
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .attributes::<A>()
+        .material_attributes([
+            MatAttr::new(M::Dead, []),
+            MatAttr::new(M::Alive, [AttrAssign::new(A::Heat).default(0u8)]),
+            MatAttr::new(M::Other, []),
+        ])
+        .neighborhoods::<N>()
+        .neighborhood_specs([NeighborhoodSpec::new(
+            N::Adjacent,
+            NeighborhoodShape::Moore,
+            NeighborhoodRadius::new(1),
+            NeighborhoodFalloff::Uniform,
+        )])
+        .build()
+        .expect("test schema should build");
+
+    let provider = CpuSolverProvider::new();
+    let mut runtime = provider.build(Instance::new(2, 2, 2), &spec);
+
+    assert_eq!(
+        runtime.set_attr(A::Heat.id(), 0, 0, 0, AttributeValue::Bool(true)),
+        Err(AttributeAccessError::TypeMismatch {
+            attribute: A::Heat.id(),
+            expected: AttributeType::U8,
+            actual: AttributeType::Bool,
+        })
+    );
 }

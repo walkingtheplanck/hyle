@@ -2,10 +2,10 @@
 
 use hyle_ca_interface::resolved::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
-    attr, neighbors, rng, AttrAssign, AttributeSet, AttributeType, AttributeValue, Blueprint,
-    Instance, MatAttr, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
-    NeighborhoodShape, NeighborhoodSpec, RuleSpec, SolverExecution, SolverGrid, SolverMetrics,
-    Weight,
+    attr, neighbors, rng, AttrAssign, AttributeAccessError, AttributeSet, AttributeType,
+    AttributeValue, Blueprint, Instance, MatAttr, MaterialSet, NeighborhoodFalloff,
+    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
+    SolverExecution, SolverGrid, SolverMetrics, Weight,
 };
 use hyle_ca_solver::Solver;
 
@@ -213,9 +213,14 @@ fn attribute_updates_apply_on_keep_rules() {
 
     let mut solver = Solver::from_spec(3, 3, 3, &spec);
     solver.set(1, 1, 1, M::Alive.id());
-    solver.set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(1)).unwrap();
+    solver
+        .set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(1))
+        .unwrap();
     solver.step();
-    assert_eq!(solver.get_attr(A::Heat.id(), 1, 1, 1), Ok(AttributeValue::U8(3)));
+    assert_eq!(
+        solver.get_attr(A::Heat.id(), 1, 1, 1),
+        Ok(AttributeValue::U8(3))
+    );
 }
 
 #[test]
@@ -239,10 +244,42 @@ fn material_changes_reset_attributes_to_destination_defaults() {
 
     let mut solver = Solver::from_spec(3, 3, 3, &spec);
     solver.set(1, 1, 1, M::Alive.id());
-    solver.set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(7)).unwrap();
+    solver
+        .set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(7))
+        .unwrap();
     solver.step();
     assert_eq!(solver.get(1, 1, 1), M::Water.id());
-    assert_eq!(solver.get_attr(A::Heat.id(), 1, 1, 1), Ok(AttributeValue::U8(2)));
+    assert_eq!(
+        solver.get_attr(A::Heat.id(), 1, 1, 1),
+        Ok(AttributeValue::U8(2))
+    );
+}
+
+#[test]
+fn attribute_writes_return_type_mismatch_errors() {
+    let spec = Blueprint::builder()
+        .materials::<M>()
+        .attributes::<A>()
+        .material_attributes([
+            MatAttr::new(M::Dead, []),
+            MatAttr::new(M::Alive, [AttrAssign::new(A::Heat).default(1u8)]),
+            MatAttr::new(M::Water, []),
+            MatAttr::new(M::Ice, []),
+        ])
+        .neighborhoods::<N>()
+        .neighborhood_specs(specs())
+        .build()
+        .expect("valid spec");
+
+    let mut solver = Solver::from_spec(2, 2, 2, &spec);
+    assert_eq!(
+        solver.set_attr(A::Heat.id(), 0, 0, 0, AttributeValue::Bool(true)),
+        Err(AttributeAccessError::TypeMismatch {
+            attribute: A::Heat.id(),
+            expected: AttributeType::U8,
+            actual: AttributeType::Bool,
+        })
+    );
 }
 
 #[test]
@@ -252,7 +289,11 @@ fn weighted_sum_rules_work() {
         .neighborhoods::<N>()
         .neighborhood_specs(specs())
         .rules([RuleSpec::when(M::Dead)
-            .require(neighbors(M::Alive).weighted_sum().at_least(Weight::cells(2)))
+            .require(
+                neighbors(M::Alive)
+                    .weighted_sum()
+                    .at_least(Weight::cells(2)),
+            )
             .becomes(M::Alive)])
         .build()
         .expect("valid spec");

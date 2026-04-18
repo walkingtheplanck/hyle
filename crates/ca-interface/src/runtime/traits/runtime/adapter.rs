@@ -2,8 +2,8 @@
 
 use crate::{
     AttributeAccessError, AttributeDef, AttributeId, AttributeValue, CaSolver, CellAttributeValue,
-    CellId, CellQueryError, GridDims, GridRegion, GridSnapshot, MaterialDef, MaterialId,
-    NeighborhoodId, NeighborhoodSpec, TransitionCount,
+    CellId, CellQueryError, GridAccessError, GridDims, GridRegion, GridSnapshot, MaterialDef,
+    MaterialId, NeighborhoodId, NeighborhoodSpec, TransitionCount,
 };
 
 use crate::runtime::traits::{
@@ -74,7 +74,7 @@ where
         SolverCells::cell_position(&self.solver, cell)
     }
 
-    fn cells_in_region(&self, region: GridRegion) -> Vec<CellId> {
+    fn cells_in_region(&self, region: GridRegion) -> Result<Vec<CellId>, GridAccessError> {
         SolverCells::cells_in_region(&self.solver, region)
     }
 
@@ -137,16 +137,20 @@ where
         SolverExecution::set(&mut self.solver, x, y, z, material);
     }
 
-    fn read_region(&self, region: GridRegion) -> Vec<MaterialId> {
+    fn read_region(&self, region: GridRegion) -> Result<Vec<MaterialId>, GridAccessError> {
         SolverGrid::read_region(&self.solver, region)
     }
 
-    fn write_region(&mut self, region: GridRegion, cells: &[MaterialId]) {
-        SolverGrid::write_region(&mut self.solver, region, cells);
+    fn write_region(
+        &mut self,
+        region: GridRegion,
+        cells: &[MaterialId],
+    ) -> Result<(), GridAccessError> {
+        SolverGrid::write_region(&mut self.solver, region, cells)
     }
 
-    fn replace_cells(&mut self, cells: &[MaterialId]) {
-        SolverGrid::replace_cells(&mut self.solver, cells);
+    fn replace_cells(&mut self, cells: &[MaterialId]) -> Result<(), GridAccessError> {
+        SolverGrid::replace_cells(&mut self.solver, cells)
     }
 
     fn readback(&self) -> GridSnapshot<MaterialId> {

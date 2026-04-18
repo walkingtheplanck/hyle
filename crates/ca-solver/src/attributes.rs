@@ -1,6 +1,6 @@
 //! Double-buffered attached attribute storage.
 
-use hyle_ca_interface::{AttributeDef, AttributeId, AttributeValue};
+use hyle_ca_interface::{AttributeDef, AttributeId, AttributeType, AttributeValue};
 
 pub(crate) struct AttributeStore {
     buffers: Vec<AttributeBuffer>,
@@ -10,7 +10,10 @@ impl AttributeStore {
     pub(crate) fn new(total_cells: usize, defs: &[AttributeDef]) -> Self {
         let mut buffers = Vec::with_capacity(defs.len());
         for def in defs {
-            buffers.push(AttributeBuffer::new(total_cells, AttributeValue::zero(def.value_type)));
+            buffers.push(AttributeBuffer::new(
+                total_cells,
+                AttributeValue::zero(def.value_type),
+            ));
         }
         Self { buffers }
     }
@@ -49,11 +52,15 @@ impl AttributeStore {
         attribute: AttributeId,
         cell_index: usize,
         value: AttributeValue,
-    ) {
-        self.buffers[attribute.index()].set_current(cell_index, value);
+    ) -> Result<(), (AttributeType, AttributeType)> {
+        self.buffers[attribute.index()].set_current(cell_index, value)
     }
 
-    pub(crate) fn reset_next_to_defaults(&mut self, cell_index: usize, defaults: &[AttributeValue]) {
+    pub(crate) fn reset_next_to_defaults(
+        &mut self,
+        cell_index: usize,
+        defaults: &[AttributeValue],
+    ) {
         for (buffer, value) in self.buffers.iter_mut().zip(defaults.iter().copied()) {
             buffer.set_next(cell_index, value);
         }
@@ -71,6 +78,18 @@ enum AttributeBuffer {
 }
 
 impl AttributeBuffer {
+    fn value_type(&self) -> AttributeType {
+        match self {
+            Self::Bool { .. } => AttributeType::Bool,
+            Self::U8 { .. } => AttributeType::U8,
+            Self::U16 { .. } => AttributeType::U16,
+            Self::U32 { .. } => AttributeType::U32,
+            Self::I8 { .. } => AttributeType::I8,
+            Self::I16 { .. } => AttributeType::I16,
+            Self::I32 { .. } => AttributeType::I32,
+        }
+    }
+
     fn new(total_cells: usize, default: AttributeValue) -> Self {
         match default {
             AttributeValue::Bool(value) => Self::Bool {
@@ -153,16 +172,25 @@ impl AttributeBuffer {
         }
     }
 
-    fn set_current(&mut self, cell_index: usize, value: AttributeValue) {
+    fn set_current(
+        &mut self,
+        cell_index: usize,
+        value: AttributeValue,
+    ) -> Result<(), (AttributeType, AttributeType)> {
+        let actual = value.value_type();
+        let expected = self.value_type();
         match (self, value) {
-            (Self::Bool { current, .. }, AttributeValue::Bool(value)) => current[cell_index] = value,
+            (Self::Bool { current, .. }, AttributeValue::Bool(value)) => {
+                current[cell_index] = value
+            }
             (Self::U8 { current, .. }, AttributeValue::U8(value)) => current[cell_index] = value,
             (Self::U16 { current, .. }, AttributeValue::U16(value)) => current[cell_index] = value,
             (Self::U32 { current, .. }, AttributeValue::U32(value)) => current[cell_index] = value,
             (Self::I8 { current, .. }, AttributeValue::I8(value)) => current[cell_index] = value,
             (Self::I16 { current, .. }, AttributeValue::I16(value)) => current[cell_index] = value,
             (Self::I32 { current, .. }, AttributeValue::I32(value)) => current[cell_index] = value,
-            _ => panic!("attribute value type must match its storage buffer"),
+            _ => return Err((expected, actual)),
         }
+        Ok(())
     }
 }

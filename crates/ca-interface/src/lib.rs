@@ -4,15 +4,23 @@
 extern crate self as hyle_ca_interface;
 
 mod handles;
-mod schema;
 /// Common framework imports for schema authoring and runtime setup.
 pub mod prelude;
-mod runtime;
 /// Canonical resolved forms derived from declarative schemas.
 pub mod resolved;
+mod runtime;
+mod schema;
 
-pub use hyle_ca_interface_derive::MaterialSet;
 pub use handles::{AttributeId, CellId, MaterialId, NeighborhoodId, RngStreamId};
+pub use hyle_ca_interface_derive::MaterialSet;
+pub use resolved::Rng;
+pub use runtime::{
+    AttributeAccessError, CaRuntime, CaSolver, CaSolverProvider, CellAttributeValue,
+    CellQueryError, GridAccessError, Instance, Runtime, RuntimeAttributes, RuntimeCells,
+    RuntimeGrid, RuntimeMetadata, RuntimeMetrics, RuntimeStepping, SolverAttributes, SolverCells,
+    SolverExecution, SolverGrid, SolverMetadata, SolverMetrics, Topology, TransitionCount,
+    ValidatedSolver,
+};
 pub use schema::{
     attr, neighbors, rng, AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef,
     AttributeRef, AttributeSelector, AttributeSet, AttributeType, AttributeValue, AxisTopology,
@@ -23,11 +31,3 @@ pub use schema::{
     ResolvedCondition, Rule, RuleEffect, RuleSpec, Semantics, TopologyDescriptor, Weight,
     WeightComparison, WEIGHT_SCALE,
 };
-pub use runtime::{
-    AttributeAccessError, CaRuntime, CaSolver, CaSolverProvider, CellAttributeValue,
-    CellQueryError, Instance, Runtime, RuntimeAttributes, RuntimeCells, RuntimeGrid,
-    RuntimeMetadata, RuntimeMetrics, RuntimeStepping, SolverAttributes, SolverCells,
-    SolverExecution, SolverGrid, SolverMetadata, SolverMetrics, Topology, TransitionCount,
-    ValidatedSolver,
-};
-pub use resolved::Rng;

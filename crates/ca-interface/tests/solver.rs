@@ -2,10 +2,10 @@
 
 use hyle_ca_interface::{
     AttributeAccessError, AttributeDef, AttributeId, AttributeType, AttributeValue, AxisTopology,
-    CellId, GridDims, GridRegion, MaterialDef, MaterialId, NeighborhoodFalloff, NeighborhoodId,
-    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, SolverCells,
-    SolverExecution, SolverGrid, SolverMetadata, SolverMetrics, Topology, TopologyDescriptor,
-    TransitionCount,
+    CellId, GridAccessError, GridDims, GridRegion, MaterialDef, MaterialId, NeighborhoodFalloff,
+    NeighborhoodId, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
+    SolverCells, SolverExecution, SolverGrid, SolverMetadata, SolverMetrics, Topology,
+    TopologyDescriptor, TransitionCount,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -246,15 +246,17 @@ fn default_readback_returns_x_major_snapshot() {
 fn default_read_and_write_region_follow_x_major_order() {
     let mut solver = DummySolver::new(3, 3, 2);
     let region = GridRegion::new([1, 1, 0], [2, 2, 1]);
-    solver.write_region(
-        region,
-        &[
-            MaterialId::new(1),
-            MaterialId::new(2),
-            MaterialId::new(3),
-            MaterialId::new(4),
-        ],
-    );
+    solver
+        .write_region(
+            region,
+            &[
+                MaterialId::new(1),
+                MaterialId::new(2),
+                MaterialId::new(3),
+                MaterialId::new(4),
+            ],
+        )
+        .expect("region write should succeed");
 
     assert_eq!(solver.get(1, 1, 0), MaterialId::new(1));
     assert_eq!(solver.get(2, 1, 0), MaterialId::new(2));
@@ -262,21 +264,82 @@ fn default_read_and_write_region_follow_x_major_order() {
     assert_eq!(solver.get(2, 2, 0), MaterialId::new(4));
     assert_eq!(
         solver.read_region(region),
-        vec![
+        Ok(vec![
             MaterialId::new(1),
             MaterialId::new(2),
             MaterialId::new(3),
             MaterialId::new(4),
-        ]
+        ])
     );
 }
 
+#[test]
+fn region_queries_return_typed_errors_for_invalid_regions() {
+    let solver = DummySolver::new(3, 3, 1);
+    let region = GridRegion::new([2, 2, 0], [2, 1, 1]);
+    let error = GridAccessError::RegionOutOfBounds {
+        region,
+        dims: solver.dims(),
+    };
+
+    assert_eq!(solver.cells_in_region(region), Err(error));
+    assert_eq!(solver.read_region(region), Err(error));
+}
+
+#[test]
+fn grid_writes_return_typed_errors_for_wrong_cell_counts() {
+    let mut solver = DummySolver::new(3, 3, 1);
+    let region = GridRegion::new([0, 0, 0], [2, 1, 1]);
+
+    assert_eq!(
+        solver.write_region(region, &[MaterialId::new(1)]),
+        Err(GridAccessError::CellCountMismatch {
+            expected: region.cell_count(),
+            actual: 1,
+        })
+    );
+    assert_eq!(
+        solver.replace_cells(&[MaterialId::new(1)]),
+        Err(GridAccessError::CellCountMismatch {
+            expected: solver.dims().cell_count(),
+            actual: 1,
+        })
+    );
+}
+
+#[test]
+fn default_cell_queries_enumerate_regions_and_neighbors() {
+    let mut solver = DummySolver::new(3, 3, 1);
+    solver.set(1, 1, 0, MaterialId::new(1));
+    solver.set(2, 1, 0, MaterialId::new(1));
+
+    let center = solver.cell_at(1, 1, 0).expect("center cell must resolve");
+    assert!(solver.contains_cell(center));
+    assert!(!solver.contains_cell(CellId::new(99)));
+    assert_eq!(solver.cells().len(), 9);
+    assert_eq!(
+        solver
+            .cells_in_region(GridRegion::new([1, 1, 0], [2, 1, 1]))
+            .expect("valid region must resolve")
+            .len(),
+        2
+    );
+
+    let neighbors = solver
+        .neighbor_materials(center, NeighborhoodId::new(0))
+        .expect("known neighborhood must resolve");
+    assert!(neighbors
+        .iter()
+        .any(|(_, material)| *material == MaterialId::new(1)));
+}
 #[test]
 fn metadata_queries_resolve_by_id() {
     let solver = DummySolver::new(2, 2, 2);
 
     assert_eq!(
-        solver.material_def(MaterialId::new(1)).map(|definition| definition.name),
+        solver
+            .material_def(MaterialId::new(1))
+            .map(|definition| definition.name),
         Some("alive")
     );
     assert_eq!(
@@ -291,24 +354,4 @@ fn metadata_queries_resolve_by_id() {
             .map(|spec| spec.name()),
         Some("adjacent")
     );
-}
-
-#[test]
-fn default_cell_queries_enumerate_regions_and_neighbors() {
-    let mut solver = DummySolver::new(3, 3, 1);
-    solver.set(1, 1, 0, MaterialId::new(1));
-    solver.set(2, 1, 0, MaterialId::new(1));
-
-    let center = solver.cell_at(1, 1, 0).expect("center cell must resolve");
-    assert!(solver.contains_cell(center));
-    assert!(!solver.contains_cell(CellId::new(99)));
-    assert_eq!(solver.cells().len(), 9);
-    assert_eq!(solver.cells_in_region(GridRegion::new([1, 1, 0], [2, 1, 1])).len(), 2);
-
-    let neighbors = solver
-        .neighbor_materials(center, NeighborhoodId::new(0))
-        .expect("known neighborhood must resolve");
-    assert!(neighbors
-        .iter()
-        .any(|(_, material)| *material == MaterialId::new(1)));
 }

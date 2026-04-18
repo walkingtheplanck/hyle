@@ -9,6 +9,8 @@ pub enum CellQueryError {
     UnknownCell(CellId),
     /// The requested neighborhood id is not declared on the active schema.
     UnknownNeighborhood(NeighborhoodId),
+    /// Neighborhood queries require schema metadata that is not available.
+    SchemaUnavailable,
     /// The underlying attribute lookup failed.
     Attribute(AttributeAccessError),
 }

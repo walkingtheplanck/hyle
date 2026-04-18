@@ -5,7 +5,7 @@ mod model;
 mod topology;
 mod traits;
 
-pub use errors::{AttributeAccessError, CellQueryError};
+pub use errors::{AttributeAccessError, CellQueryError, GridAccessError};
 pub use model::{CellAttributeValue, Instance, TransitionCount};
 pub use topology::Topology;
 pub use traits::{

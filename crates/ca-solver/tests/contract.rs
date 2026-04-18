@@ -1,9 +1,9 @@
 //! Contract tests: does the solver API behave as documented?
 
 use hyle_ca_interface::{
-    neighbors, Blueprint, GridRegion, MaterialId, MaterialSet, NeighborhoodFalloff,
-    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
-    SolverExecution, SolverGrid, TopologyDescriptor,
+    neighbors, Blueprint, CellQueryError, GridRegion, MaterialId, MaterialSet, NeighborhoodFalloff,
+    NeighborhoodId, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
+    RuleSpec, SolverCells, SolverExecution, SolverGrid, TopologyDescriptor,
 };
 use hyle_ca_solver::{DescriptorTopology, Solver, TorusTopology};
 
@@ -84,13 +84,17 @@ fn write_region_updates_subvolume_in_x_major_order() {
             MaterialId::new(3),
             MaterialId::new(4),
         ],
+    )
+    .expect("region write should succeed");
+    assert_eq!(
+        s.read_region(region).expect("region read should succeed")[..],
+        [
+            MaterialId::new(1),
+            MaterialId::new(2),
+            MaterialId::new(3),
+            MaterialId::new(4)
+        ]
     );
-    assert_eq!(s.read_region(region)[..], [
-        MaterialId::new(1),
-        MaterialId::new(2),
-        MaterialId::new(3),
-        MaterialId::new(4)
-    ]);
 }
 
 #[test]
@@ -123,6 +127,17 @@ fn from_spec_uses_descriptor_topology() {
     assert_eq!(
         solver.topology(),
         &DescriptorTopology::new(TopologyDescriptor::wrap())
+    );
+}
+
+#[test]
+fn neighborhood_queries_without_schema_report_missing_schema() {
+    let solver = Solver::new(2, 2, 2);
+    let cell = solver.cell_at(0, 0, 0).expect("origin cell should exist");
+
+    assert_eq!(
+        solver.neighbors(cell, NeighborhoodId::new(0)),
+        Err(CellQueryError::SchemaUnavailable)
     );
 }
 

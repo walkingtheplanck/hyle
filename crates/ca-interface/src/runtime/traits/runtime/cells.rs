@@ -1,6 +1,6 @@
 //! Runtime cell and neighborhood query capabilities.
 
-use crate::{CellId, CellQueryError, GridRegion, MaterialId, NeighborhoodId};
+use crate::{CellId, CellQueryError, GridAccessError, GridRegion, MaterialId, NeighborhoodId};
 
 use super::RuntimeMetadata;
 
@@ -20,10 +20,11 @@ pub trait RuntimeCells: RuntimeMetadata {
     /// Resolve every logical cell handle in the active grid in x-major order.
     fn cells(&self) -> Vec<CellId> {
         self.cells_in_region(self.dims().as_region())
+            .expect("the full runtime region must lie within runtime dimensions")
     }
 
-    /// Resolve all logical cell handles in one in-bounds region in x-major order.
-    fn cells_in_region(&self, region: GridRegion) -> Vec<CellId>;
+    /// Resolve all logical cell handles in one region in x-major order.
+    fn cells_in_region(&self, region: GridRegion) -> Result<Vec<CellId>, GridAccessError>;
 
     /// Read one material from a resolved cell handle.
     fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError>;

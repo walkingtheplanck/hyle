@@ -6,9 +6,9 @@ use std::sync::Arc;
 use hyle_ca_interface::resolved::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
     AttributeAccessError, AttributeDef, AttributeId, AttributeValue, Blueprint, CellAttributeValue,
-    CellId, CellQueryError, GridRegion, GridSnapshot, MaterialDef, MaterialId, NeighborhoodId,
-    NeighborhoodSpec, RuleEffect, SolverAttributes, SolverCells, SolverExecution, SolverGrid,
-    SolverMetadata, SolverMetrics, Topology, TransitionCount, Instance,
+    CellId, CellQueryError, GridAccessError, GridRegion, GridSnapshot, Instance, MaterialDef,
+    MaterialId, NeighborhoodId, NeighborhoodSpec, RuleEffect, SolverAttributes, SolverCells,
+    SolverExecution, SolverGrid, SolverMetadata, SolverMetrics, Topology, TransitionCount,
 };
 
 use crate::attributes::AttributeStore;
@@ -100,7 +100,11 @@ impl Solver<DescriptorTopology> {
     pub fn from_blueprint_instance(instance: Instance, blueprint: &ResolvedBlueprint) -> Self {
         let schema = Arc::new(RuntimeSchema {
             resolved: blueprint.clone(),
-            neighborhood_specs: blueprint.neighborhoods().iter().map(|item| item.spec()).collect(),
+            neighborhood_specs: blueprint
+                .neighborhoods()
+                .iter()
+                .map(|item| item.spec())
+                .collect(),
         });
         let material_defaults = compile_material_defaults(&schema.resolved);
         let default_material = schema.resolved.default_material();
@@ -257,14 +261,16 @@ impl<T: Topology> Solver<T> {
 
                         if target_material != center {
                             self.grid.cells_next[idx] = target_material;
-                            if let Some(defaults) = self.material_defaults.get(target_material.index())
+                            if let Some(defaults) =
+                                self.material_defaults.get(target_material.index())
                             {
                                 self.attributes.reset_next_to_defaults(idx, defaults);
                             }
                         }
 
                         for update in evaluation.attribute_updates {
-                            self.attributes.set_next(update.attribute, idx, update.value);
+                            self.attributes
+                                .set_next(update.attribute, idx, update.value);
                         }
                     }
                 }
@@ -348,7 +354,13 @@ impl<T: Topology> SolverExecution for Solver<T> {
             return Err(AttributeAccessError::OutOfBounds { x, y, z });
         }
 
-        self.attributes.set_current(attribute, index, value);
+        self.attributes
+            .set_current(attribute, index, value)
+            .map_err(|(expected, actual)| AttributeAccessError::TypeMismatch {
+                attribute,
+                expected,
+                actual,
+            })?;
         Ok(())
     }
 
@@ -392,7 +404,8 @@ impl<T: Topology> SolverMetadata for Solver<T> {
 
 impl<T: Topology> SolverCells for Solver<T> {
     fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError> {
-        self.decode_cell(cell).ok_or(CellQueryError::UnknownCell(cell))
+        self.decode_cell(cell)
+            .ok_or(CellQueryError::UnknownCell(cell))
     }
 
     fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError> {
@@ -409,14 +422,16 @@ impl<T: Topology> SolverCells for Solver<T> {
         let schema = self
             .schema
             .as_ref()
-            .ok_or(CellQueryError::UnknownNeighborhood(neighborhood))?;
+            .ok_or(CellQueryError::SchemaUnavailable)?;
         let interpreted = schema
             .resolved
             .neighborhoods()
             .iter()
             .find(|item| item.spec().id() == neighborhood)
             .ok_or(CellQueryError::UnknownNeighborhood(neighborhood))?;
-        let [x, y, z] = self.decode_cell(cell).ok_or(CellQueryError::UnknownCell(cell))?;
+        let [x, y, z] = self
+            .decode_cell(cell)
+            .ok_or(CellQueryError::UnknownCell(cell))?;
         let mut cells = Vec::new();
 
         for offset in interpreted.neighborhood().offsets() {
@@ -442,9 +457,9 @@ impl<T: Topology> SolverAttributes for Solver<T> {
         attribute: AttributeId,
     ) -> Result<AttributeValue, CellQueryError> {
         if !self.attributes.contains(attribute) {
-            return Err(CellQueryError::from(AttributeAccessError::UnknownAttribute(
-                attribute,
-            )));
+            return Err(CellQueryError::from(
+                AttributeAccessError::UnknownAttribute(attribute),
+            ));
         }
         if cell.raw() as usize >= self.grid.cell_count() {
             return Err(CellQueryError::UnknownCell(cell));
@@ -504,9 +519,11 @@ impl<T: Topology> SolverGrid for Solver<T> {
         )
     }
 
-    fn read_region(&self, region: GridRegion) -> Vec<MaterialId> {
+    fn read_region(&self, region: GridRegion) -> Result<Vec<MaterialId>, GridAccessError> {
         let dims = self.grid.dims();
-        assert!(dims.contains_region(region), "region must lie within solver dimensions");
+        if !dims.contains_region(region) {
+            return Err(GridAccessError::RegionOutOfBounds { region, dims });
+        }
 
         let [ox, oy, oz] = region.origin;
         let [sx, sy, sz] = region.size;
@@ -523,17 +540,24 @@ impl<T: Topology> SolverGrid for Solver<T> {
             }
         }
 
-        cells
+        Ok(cells)
     }
 
-    fn write_region(&mut self, region: GridRegion, cells: &[MaterialId]) {
+    fn write_region(
+        &mut self,
+        region: GridRegion,
+        cells: &[MaterialId],
+    ) -> Result<(), GridAccessError> {
         let dims = self.grid.dims();
-        assert!(dims.contains_region(region), "region must lie within solver dimensions");
-        assert_eq!(
-            cells.len(),
-            region.cell_count(),
-            "region write must provide exactly one material per destination slot"
-        );
+        if !dims.contains_region(region) {
+            return Err(GridAccessError::RegionOutOfBounds { region, dims });
+        }
+        if cells.len() != region.cell_count() {
+            return Err(GridAccessError::CellCountMismatch {
+                expected: region.cell_count(),
+                actual: cells.len(),
+            });
+        }
 
         let [ox, oy, oz] = region.origin;
         let [sx, sy, sz] = region.size;
@@ -551,6 +575,8 @@ impl<T: Topology> SolverGrid for Solver<T> {
                 }
             }
         }
+
+        Ok(())
     }
 }
 

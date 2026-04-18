@@ -1,6 +1,6 @@
 //! Solver bulk material-grid capabilities.
 
-use crate::{GridRegion, GridSnapshot, MaterialId};
+use crate::{GridAccessError, GridRegion, GridSnapshot, MaterialId};
 
 use super::SolverExecution;
 
@@ -36,9 +36,11 @@ pub trait SolverGrid: SolverExecution {
     }
 
     /// Read a contiguous rectangular region in x-major order.
-    fn read_region(&self, region: GridRegion) -> Vec<MaterialId> {
+    fn read_region(&self, region: GridRegion) -> Result<Vec<MaterialId>, GridAccessError> {
         let dims = self.dims();
-        assert!(dims.contains_region(region), "region must lie within solver dimensions");
+        if !dims.contains_region(region) {
+            return Err(GridAccessError::RegionOutOfBounds { region, dims });
+        }
 
         let mut cells = Vec::with_capacity(region.cell_count());
         let [ox, oy, oz] = region.origin;
@@ -52,18 +54,25 @@ pub trait SolverGrid: SolverExecution {
             }
         }
 
-        cells
+        Ok(cells)
     }
 
     /// Overwrite a contiguous rectangular region from x-major ordered data.
-    fn write_region(&mut self, region: GridRegion, cells: &[MaterialId]) {
+    fn write_region(
+        &mut self,
+        region: GridRegion,
+        cells: &[MaterialId],
+    ) -> Result<(), GridAccessError> {
         let dims = self.dims();
-        assert!(dims.contains_region(region), "region must lie within solver dimensions");
-        assert_eq!(
-            cells.len(),
-            region.cell_count(),
-            "region write must provide exactly one cell per destination slot"
-        );
+        if !dims.contains_region(region) {
+            return Err(GridAccessError::RegionOutOfBounds { region, dims });
+        }
+        if cells.len() != region.cell_count() {
+            return Err(GridAccessError::CellCountMismatch {
+                expected: region.cell_count(),
+                actual: cells.len(),
+            });
+        }
 
         let [ox, oy, oz] = region.origin;
         let [sx, sy, sz] = region.size;
@@ -77,16 +86,19 @@ pub trait SolverGrid: SolverExecution {
                 }
             }
         }
+
+        Ok(())
     }
 
     /// Replace the full solver state from x-major ordered data.
-    fn replace_cells(&mut self, cells: &[MaterialId]) {
+    fn replace_cells(&mut self, cells: &[MaterialId]) -> Result<(), GridAccessError> {
         let dims = self.dims();
-        assert_eq!(
-            cells.len(),
-            dims.cell_count(),
-            "full-grid replacement must match solver dimensions"
-        );
-        self.write_region(dims.as_region(), cells);
+        if cells.len() != dims.cell_count() {
+            return Err(GridAccessError::CellCountMismatch {
+                expected: dims.cell_count(),
+                actual: cells.len(),
+            });
+        }
+        self.write_region(dims.as_region(), cells)
     }
 }

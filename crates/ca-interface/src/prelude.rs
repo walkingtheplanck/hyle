@@ -8,6 +8,6 @@ pub use crate::schema::{
 };
 pub use crate::{
     AttributeAccessError, AttributeId, CaRuntime, CaSolverProvider, CellId, CellQueryError,
-    Instance, MaterialId, Rng, RngStreamId, Runtime, RuntimeAttributes, RuntimeCells,
-    RuntimeGrid, RuntimeMetadata, RuntimeMetrics, RuntimeStepping,
+    GridAccessError, Instance, MaterialId, Rng, RngStreamId, Runtime, RuntimeAttributes,
+    RuntimeCells, RuntimeGrid, RuntimeMetadata, RuntimeMetrics, RuntimeStepping,
 };

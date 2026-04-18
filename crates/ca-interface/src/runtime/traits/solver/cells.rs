@@ -1,7 +1,7 @@
 //! Solver cell and neighborhood query capabilities.
 
 use crate::resolved;
-use crate::{CellId, CellQueryError, GridRegion, MaterialId, NeighborhoodId};
+use crate::{CellId, CellQueryError, GridAccessError, GridRegion, MaterialId, NeighborhoodId};
 
 use super::{SolverExecution, SolverMetadata};
 
@@ -35,15 +35,15 @@ pub trait SolverCells: SolverExecution + SolverMetadata {
     /// Resolve every logical cell handle in the active grid in x-major order.
     fn cells(&self) -> Vec<CellId> {
         self.cells_in_region(self.dims().as_region())
+            .expect("the full solver region must lie within solver dimensions")
     }
 
-    /// Resolve all logical cell handles in one in-bounds region in x-major order.
-    fn cells_in_region(&self, region: GridRegion) -> Vec<CellId> {
+    /// Resolve all logical cell handles in one region in x-major order.
+    fn cells_in_region(&self, region: GridRegion) -> Result<Vec<CellId>, GridAccessError> {
         let dims = self.dims();
-        assert!(
-            dims.contains_region(region),
-            "region must lie within solver dimensions"
-        );
+        if !dims.contains_region(region) {
+            return Err(GridAccessError::RegionOutOfBounds { region, dims });
+        }
 
         let [ox, oy, oz] = region.origin;
         let [sx, sy, sz] = region.size;
@@ -60,7 +60,7 @@ pub trait SolverCells: SolverExecution + SolverMetadata {
             }
         }
 
-        cells
+        Ok(cells)
     }
 
     /// Read one material from a resolved cell handle.
@@ -83,9 +83,11 @@ pub trait SolverCells: SolverExecution + SolverMetadata {
         let mut cells = Vec::new();
 
         for offset in resolved::offsets(spec) {
-            if let Some(neighbor) =
-                self.cell_at(x as i32 + offset.dx, y as i32 + offset.dy, z as i32 + offset.dz)
-            {
+            if let Some(neighbor) = self.cell_at(
+                x as i32 + offset.dx,
+                y as i32 + offset.dy,
+                z as i32 + offset.dz,
+            ) {
                 cells.push(neighbor);
             }
         }
