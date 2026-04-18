@@ -15,7 +15,7 @@ resolved helpers live in this crate under `hyle_ca_interface::resolved`.
 It has **zero dependencies** and is split conceptually into:
 - `schema` for declarative blueprint and descriptor data
 - `resolved` for canonical interpreted blueprint, neighborhood, and topology meaning
-- `runtime` for running-simulation interfaces, split into execution traits, cell-query types, and small runtime models
+- `runtime` for running-simulation interfaces, split into execution traits, runtime error types, and small runtime models
 
 ## Key Types
 

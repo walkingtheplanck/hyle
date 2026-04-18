@@ -1,15 +1,15 @@
-//! Shared runtime-facing execution traits and query models.
+//! Shared runtime-facing execution traits, errors, and data models.
 
+mod errors;
 mod model;
-mod query;
-mod traits;
 mod topology;
+mod traits;
 
-pub use model::{Instance, TransitionCount};
-pub use query::{AttributeAccessError, CellAttributeValue, CellQueryError};
+pub use errors::{AttributeAccessError, CellQueryError};
+pub use model::{CellAttributeValue, Instance, TransitionCount};
+pub use topology::Topology;
 pub use traits::{
     CaRuntime, CaSolver, CaSolverProvider, Runtime, RuntimeAttributes, RuntimeCells, RuntimeGrid,
     RuntimeMetadata, RuntimeMetrics, RuntimeStepping, SolverAttributes, SolverCells,
     SolverExecution, SolverGrid, SolverMetadata, SolverMetrics, ValidatedSolver,
 };
-pub use topology::Topology;
