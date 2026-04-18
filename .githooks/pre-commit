@@ -8,8 +8,8 @@ cargo fmt --all
 git diff --name-only | xargs -r git add
 
 # Run shared CI checks (clippy, test, doc — fmt already ran above)
-. "$(git rev-parse --show-toplevel)/scripts/ci-check.sh" clippy
-. "$(git rev-parse --show-toplevel)/scripts/ci-check.sh" test
-. "$(git rev-parse --show-toplevel)/scripts/ci-check.sh" doc
+sh "$(git rev-parse --show-toplevel)/scripts/ci-check.sh" clippy
+sh "$(git rev-parse --show-toplevel)/scripts/ci-check.sh" test
+sh "$(git rev-parse --show-toplevel)/scripts/ci-check.sh" doc
 
 echo "=== All checks passed ==="
