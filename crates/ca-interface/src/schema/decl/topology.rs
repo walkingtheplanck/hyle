@@ -1,3 +1,5 @@
+//! Declarative topology descriptors.
+
 /// Topology descriptor for device upload and serialization.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TopologyDescriptor {

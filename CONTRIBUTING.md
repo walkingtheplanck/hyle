@@ -19,6 +19,18 @@ These standards apply to the library crates (`ca-interface`, `ca-analysis`, `ca-
 - Use semantically named files (`shapes.rs`, `weights.rs`, not `utils.rs` or `helpers.rs`).
 - Separate responsibilities into different files or modules.
 
+### `ca-interface` ownership boundaries
+
+When working in `crates/ca-interface`, keep the module ownership line explicit:
+
+- `domain`: neutral value types shared by schema and runtime code
+- `schema`: declarative authoring records, builder state, and rule DSL
+- `runtime`: live execution/query traits, runtime errors, and runtime-only models
+- `resolved`: interpreted semantic helpers derived from declarations
+
+If a type means the same thing in both schema and runtime code, prefer one
+shared `domain` type over duplicated layer-specific copies.
+
 The **viewer** (`tools/viewer/`) is an internal dev tool, not a published crate. It is excluded from CI, documentation standards, and code organization rules. Shortcuts and workarounds are acceptable there.
 
 ## Documentation

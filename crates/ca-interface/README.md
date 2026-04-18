@@ -13,6 +13,7 @@ Derived analysis and diagnostics live in
 resolved helpers live in this crate under `hyle_ca_interface::resolved`.
 
 It has **zero dependencies** and is split conceptually into:
+- `domain` for shared CA value types used by both schema and runtime code
 - `schema` for declarative blueprint and descriptor data
 - `resolved` for canonical interpreted blueprint, neighborhood, and topology meaning
 - `runtime` for running-simulation interfaces, split into execution traits, runtime error types, and small runtime models
@@ -38,6 +39,20 @@ Resolved forms are available under `hyle_ca_interface::resolved`, for example:
 - `hyle_ca_interface::resolved::Neighborhood`
 - `hyle_ca_interface::resolved::ResolvedTopology`
 
+## Internal Ownership
+
+Internally, `ca-interface` keeps a hard ownership boundary between layers:
+
+- `domain` holds neutral value types shared across the crate, such as `GridDims`,
+  `GridRegion`, `GridSnapshot`, `AttributeType`, `AttributeValue`, and
+  `NeighborhoodRadius`
+- `schema` holds declarative authoring records, builder state, and rule DSL
+- `runtime` holds live execution/query traits, runtime errors, and runtime-only models
+- `resolved` holds interpreted semantic helpers derived from declarations
+
+Rule of thumb: if a type means the same thing in both schema and runtime code,
+it belongs in `domain` instead of being duplicated or owned by one layer.
+
 ## Preferred Imports
 
 Use the crate root or the prelude as the main entry points:
@@ -49,8 +64,8 @@ Use the crate root or the prelude as the main entry points:
 - Treat `hyle_ca_interface::resolved` as an advanced namespace for interpreted
   forms and semantic helpers.
 
-The internal `schema`, `resolved`, and `runtime` module layout is crate organization, not
-the intended consumer-facing path.
+The internal `domain`, `schema`, `resolved`, and `runtime` module layout is
+crate organization, not the intended consumer-facing path.
 
 ## Building a Portable Blueprint
 

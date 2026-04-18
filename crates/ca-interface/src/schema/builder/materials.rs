@@ -1,7 +1,8 @@
 use std::any::TypeId;
 
+use crate::AttributeValue;
 use crate::schema::{
-    AttrAssign, AttributeComparison, AttributeDef, AttributeRef, AttributeSet, AttributeValue,
+    AttrAssign, AttributeComparison, AttributeDef, AttributeRef, AttributeSet,
     MaterialAttributeBinding, MaterialDef, MaterialRef, MaterialSet,
 };
 

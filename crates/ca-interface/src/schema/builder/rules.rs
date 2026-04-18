@@ -1,7 +1,8 @@
+use crate::AttributeValue;
 use crate::NeighborhoodId;
 use crate::schema::{
-    AttributeAssignment, AttributeRef, AttributeSet, AttributeValue, Condition, MaterialRef,
-    MaterialSet, NeighborhoodRef, NeighborhoodSet, ResolvedCondition, Rule, RuleEffect,
+    AttributeAssignment, AttributeRef, AttributeSet, Condition, MaterialRef, MaterialSet,
+    NeighborhoodRef, NeighborhoodSet, ResolvedCondition, Rule, RuleEffect,
 };
 
 use super::errors::BuildError;

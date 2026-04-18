@@ -2,10 +2,10 @@
 
 use std::ops::RangeInclusive;
 
-use crate::RngStreamId;
-use crate::schema::defs::WEIGHT_SCALE;
+use crate::WEIGHT_SCALE;
+use crate::{AttributeType, AttributeValue, RngStreamId};
 use crate::schema::{
-    AttributeRef, AttributeSet, AttributeType, AttributeValue, MaterialRef, MaterialSet,
+    AttributeRef, AttributeSet, MaterialRef, MaterialSet,
 };
 
 /// A deterministic rule condition.

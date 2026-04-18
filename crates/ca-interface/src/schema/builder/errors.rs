@@ -1,8 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use crate::RngStreamId;
-use crate::schema::AttributeType;
+use crate::{AttributeType, RngStreamId};
 
 /// Errors raised while building a [`crate::schema::Blueprint`].
 #[derive(Clone, Debug, PartialEq, Eq)]

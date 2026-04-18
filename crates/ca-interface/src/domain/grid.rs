@@ -1,3 +1,7 @@
+//! Shared grid geometry and snapshot transport types.
+//!
+//! These types are used by both schema-facing setup APIs and runtime bulk IO.
+
 /// Errors raised while constructing validated grid descriptors.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GridShapeError {

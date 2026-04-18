@@ -1,16 +1,20 @@
-//! Declarative schema types and authoring helpers.
+//! Declarative blueprint authoring types and helpers.
+//!
+//! `schema` owns declarations, builder state, and rule DSL types.
+//! Shared domain value types such as grid geometry and scalar attribute values
+//! live outside this module so they can be used by both schema and runtime code
+//! without implying ownership by either layer.
 
 mod builder;
-pub mod defs;
+mod decl;
 mod dsl;
 mod sets;
 mod spec;
 
 pub use builder::{BlueprintBuilder, BuildError, MatAttr, RuleSpec};
-pub use defs::{
-    AttributeDef, AttributeType, AttributeValue, AxisTopology, GridDims, GridRegion,
-    GridShapeError, GridSnapshot, MaterialAttributeBinding, MaterialDef, NeighborhoodFalloff, NeighborhoodRadius,
-    NeighborhoodShape, NeighborhoodSpec, TopologyDescriptor, WEIGHT_SCALE,
+pub use decl::{
+    AttributeDef, AxisTopology, MaterialAttributeBinding, MaterialDef, NeighborhoodFalloff,
+    NeighborhoodShape, NeighborhoodSpec, TopologyDescriptor,
 };
 pub use dsl::{
     attr, neighbors, rng, AttrAssign, AttributeComparison, AttributeSelector, Condition,
