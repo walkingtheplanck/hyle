@@ -162,6 +162,9 @@ impl AttributeBuffer {
     fn set_next(&mut self, cell_index: usize, value: AttributeValue) {
         let expected = self.value_type();
         let actual = value.value_type();
+        // Rule compilation and material-default preparation are supposed to
+        // guarantee type-correct writes. Keep that contract checked in debug
+        // builds, but avoid a release-build abort in the step loop.
         debug_assert_eq!(
             expected, actual,
             "attribute value type must match its storage buffer"
@@ -175,6 +178,9 @@ impl AttributeBuffer {
             (Self::I8 { next, .. }, AttributeValue::I8(value)) => next[cell_index] = value,
             (Self::I16 { next, .. }, AttributeValue::I16(value)) => next[cell_index] = value,
             (Self::I32 { next, .. }, AttributeValue::I32(value)) => next[cell_index] = value,
+            // Mismatches are contract violations upstream; dropping the write
+            // keeps release execution non-panicking while debug builds still
+            // flag the bug immediately.
             _ => {}
         }
     }

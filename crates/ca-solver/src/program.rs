@@ -253,6 +253,8 @@ fn ordered_attribute_compare(
 }
 
 fn attribute_ge(value: AttributeValue, expected: AttributeValue) -> bool {
+    // Schema validation is expected to guarantee homogeneous attribute
+    // comparisons before rules ever reach the compiled program.
     debug_assert_eq!(
         value.value_type(),
         expected.value_type(),
@@ -266,11 +268,15 @@ fn attribute_ge(value: AttributeValue, expected: AttributeValue) -> bool {
         (AttributeValue::I8(value), AttributeValue::I8(expected)) => value >= expected,
         (AttributeValue::I16(value), AttributeValue::I16(expected)) => value >= expected,
         (AttributeValue::I32(value), AttributeValue::I32(expected)) => value >= expected,
+        // Preserve non-panicking hot-path behavior in release builds if a
+        // malformed compiled rule somehow slips past validation.
         _ => false,
     }
 }
 
 fn attribute_le(value: AttributeValue, expected: AttributeValue) -> bool {
+    // Keep the invariant mirrored here so both ordered comparisons degrade the
+    // same way in release builds.
     debug_assert_eq!(
         value.value_type(),
         expected.value_type(),

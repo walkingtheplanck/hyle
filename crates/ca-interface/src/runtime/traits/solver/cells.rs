@@ -33,6 +33,10 @@ pub trait SolverCells: SolverExecution + SolverMetadata {
     }
 
     /// Resolve every logical cell handle in the active grid in x-major order.
+    ///
+    /// This keeps the full-grid convenience path aligned with
+    /// [`SolverCells::cells_in_region`] so callers do not need to special-case
+    /// “full grid” as magically infallible.
     fn cells(&self) -> Result<Vec<CellId>, GridAccessError> {
         self.cells_in_region(self.dims().as_region())
     }

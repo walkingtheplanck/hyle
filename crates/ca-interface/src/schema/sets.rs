@@ -122,6 +122,12 @@ pub trait MaterialSet: Copy + Default + Eq + Send + Sync + 'static {
     fn label(self) -> &'static str;
 
     /// Return the stable numeric identifier for this material.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a manual `MaterialSet` implementation returns a `variants()`
+    /// slice that does not contain `self`. The derive macro maintains this
+    /// contract automatically.
     fn id(self) -> MaterialId {
         let index = Self::variants()
             .iter()
@@ -153,6 +159,12 @@ pub trait AttributeSet: Copy + Eq + Send + Sync + 'static {
     fn value_type(self) -> AttributeType;
 
     /// Return the stable numeric identifier for this attribute.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a manual `AttributeSet` implementation returns a `variants()`
+    /// slice that does not contain `self`. The derive-like contract here is
+    /// that `variants()` is the source of truth for the entire set.
     fn id(self) -> AttributeId {
         let index = Self::variants()
             .iter()
@@ -181,6 +193,11 @@ pub trait NeighborhoodSet: Copy + Eq + Send + Sync + 'static {
     fn label(self) -> &'static str;
 
     /// Return the stable numeric identifier for this neighborhood.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a manual `NeighborhoodSet` implementation returns a
+    /// `variants()` slice that does not contain `self`.
     fn id(self) -> NeighborhoodId {
         let index = Self::variants()
             .iter()
@@ -195,6 +212,12 @@ pub trait NeighborhoodSet: Copy + Eq + Send + Sync + 'static {
     }
 
     /// Return the default neighborhood identifier, using the first variant.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a manual `NeighborhoodSet` implementation returns an empty
+    /// `variants()` slice. Neighborhood sets are expected to declare at least
+    /// one usable neighborhood.
     fn default_neighborhood() -> NeighborhoodId {
         Self::variants()
             .first()

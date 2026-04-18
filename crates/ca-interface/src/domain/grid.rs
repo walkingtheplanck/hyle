@@ -64,6 +64,14 @@ pub struct GridDims {
 
 impl GridDims {
     /// Construct a new set of grid dimensions.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`GridShapeError::CoordinateRangeOverflow`] when any axis exceeds
+    /// the largest coordinate range supported by topology resolution.
+    ///
+    /// Returns [`GridShapeError::GridCellCountOverflow`] when the logical cell
+    /// count does not fit in host indexing types.
     pub fn new(width: u32, height: u32, depth: u32) -> Result<Self, GridShapeError> {
         let max = i32::MAX as u32;
         if width > max || height > max || depth > max {
@@ -94,13 +102,20 @@ impl GridDims {
         })
     }
 
+    /// Construct grid dimensions from already validated state.
+    ///
+    /// # Invariants
+    ///
+    /// `cell_count` must equal `width * height * depth`, and the three axes must
+    /// already satisfy the same range checks enforced by [`GridDims::new`].
+    ///
+    /// # Performance
+    ///
+    /// This skips redundant validation for internal paths that already proved the
+    /// shape is valid, such as full-grid region helpers and instance-backed
+    /// solver construction.
     #[doc(hidden)]
-    pub const fn from_validated(
-        width: u32,
-        height: u32,
-        depth: u32,
-        cell_count: usize,
-    ) -> Self {
+    pub const fn from_validated(width: u32, height: u32, depth: u32, cell_count: usize) -> Self {
         Self {
             width,
             height,
@@ -157,14 +172,20 @@ pub struct GridRegion {
 
 impl GridRegion {
     /// Construct a new region from an origin and size.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`GridShapeError::RegionEndOverflow`] when `origin + size`
+    /// exceeds the coordinate range, or
+    /// [`GridShapeError::RegionCellCountOverflow`] when the region volume does
+    /// not fit in host indexing types.
     pub fn new(origin: [u32; 3], size: [u32; 3]) -> Result<Self, GridShapeError> {
         let Some(end_exclusive) = Some([
             origin[0].checked_add(size[0]),
             origin[1].checked_add(size[1]),
             origin[2].checked_add(size[2]),
         ])
-        .and_then(|coords| Some([coords[0]?, coords[1]?, coords[2]?]))
-        else {
+        .and_then(|coords| Some([coords[0]?, coords[1]?, coords[2]?])) else {
             return Err(GridShapeError::RegionEndOverflow { origin, size });
         };
 
@@ -183,6 +204,17 @@ impl GridRegion {
         })
     }
 
+    /// Construct a region from already validated state.
+    ///
+    /// # Invariants
+    ///
+    /// `end_exclusive` must equal `origin + size`, and `cell_count` must equal
+    /// the region volume implied by `size`.
+    ///
+    /// # Performance
+    ///
+    /// This keeps helpers such as [`GridDims::as_region`] infallible once the
+    /// enclosing grid shape has already been validated.
     #[doc(hidden)]
     pub const fn from_validated(
         origin: [u32; 3],
@@ -232,6 +264,11 @@ pub struct GridSnapshot<C> {
 
 impl<C> GridSnapshot<C> {
     /// Construct a validated grid snapshot.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`GridDataError::CellCountMismatch`] when the provided cells do
+    /// not fully cover the declared grid shape.
     pub fn new(dims: GridDims, cells: Vec<C>) -> Result<Self, GridDataError> {
         if cells.len() != dims.cell_count() {
             return Err(GridDataError::CellCountMismatch {
@@ -243,6 +280,16 @@ impl<C> GridSnapshot<C> {
         Ok(Self { dims, cells })
     }
 
+    /// Construct a snapshot from already validated state.
+    ///
+    /// # Invariants
+    ///
+    /// `cells.len()` must match `dims.cell_count()`.
+    ///
+    /// # Performance
+    ///
+    /// Runtime readback paths allocate the exact output length themselves, so
+    /// rechecking that length here would only duplicate already-proven work.
     #[doc(hidden)]
     pub const fn from_validated(dims: GridDims, cells: Vec<C>) -> Self {
         Self { dims, cells }

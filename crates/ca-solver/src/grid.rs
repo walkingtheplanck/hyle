@@ -25,6 +25,15 @@ impl Grid {
     }
 
     /// Create a grid from already validated dimensions.
+    ///
+    /// # Invariants
+    ///
+    /// `dims` must already satisfy the same shape checks as [`Grid::new`].
+    ///
+    /// # Performance
+    ///
+    /// Instance-backed solver construction already carries validated
+    /// [`GridDims`], so rebuilding them here would only duplicate validation.
     pub fn from_dims(dims: GridDims, default_material: MaterialId) -> Self {
         let total = dims.cell_count() + 1;
         Self {
@@ -111,5 +120,7 @@ pub(crate) fn resolve_index<T: Topology>(
     y: i32,
     z: i32,
 ) -> usize {
+    // Centralize the guard-cell convention in one place so solver code can
+    // treat topology resolution as a pure policy decision.
     topology.resolve_index(x, y, z, dims, guard_idx)
 }

@@ -18,6 +18,10 @@ pub trait RuntimeCells: RuntimeMetadata {
     }
 
     /// Resolve every logical cell handle in the active grid in x-major order.
+    ///
+    /// This is a convenience wrapper over [`RuntimeCells::cells_in_region`] for
+    /// the full active grid, so it now shares the same error surface instead of
+    /// assuming full-grid region resolution can never fail.
     fn cells(&self) -> Result<Vec<CellId>, GridAccessError> {
         self.cells_in_region(self.dims().as_region())
     }
