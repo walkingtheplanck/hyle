@@ -9,7 +9,7 @@ mod builder;
 mod decl;
 mod dsl;
 pub mod refs;
-mod sets;
+pub mod sets;
 mod spec;
 
 pub use builder::{BlueprintBuilder, BuildError, MatAttr, RuleSpec};
