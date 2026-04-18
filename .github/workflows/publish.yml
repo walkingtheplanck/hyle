@@ -35,17 +35,52 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Dry-run package order
+        if: ${{ inputs.dry_run }}
+        run: |
+          cargo package -p hyle-ca-interface-derive
+          cargo package -p hyle-ca-interface \
+            --config 'patch.crates-io.hyle-ca-interface-derive.path="crates/ca-interface-derive"'
+          cargo package -p hyle-ca-solver \
+            --config 'patch.crates-io.hyle-ca-interface.path="crates/ca-interface"' \
+            --config 'patch.crates-io.hyle-ca-interface-derive.path="crates/ca-interface-derive"'
+          cargo package -p hyle-ca-analysis \
+            --config 'patch.crates-io.hyle-ca-interface.path="crates/ca-interface"' \
+            --config 'patch.crates-io.hyle-ca-interface-derive.path="crates/ca-interface-derive"' \
+            --config 'patch.crates-io.hyle-ca-solver.path="crates/ca-solver"'
 
-      - name: Publish hyle-ca-interface
-        run: cargo publish -p hyle-ca-interface ${{ inputs.dry_run && '--dry-run' || '' }}
+      - name: Publish hyle-ca-interface-derive
+        if: ${{ !inputs.dry_run }}
+        run: cargo publish -p hyle-ca-interface-derive
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-      - name: Wait for crates.io index
+      - name: Wait for crates.io index after derive
+        if: ${{ !inputs.dry_run }}
+        run: sleep 30
+
+      - name: Publish hyle-ca-interface
+        if: ${{ !inputs.dry_run }}
+        run: cargo publish -p hyle-ca-interface
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Wait for crates.io index after interface
         if: ${{ !inputs.dry_run }}
         run: sleep 30
 
       - name: Publish hyle-ca-solver
-        run: cargo publish -p hyle-ca-solver ${{ inputs.dry_run && '--dry-run' || '' }}
+        if: ${{ !inputs.dry_run }}
+        run: cargo publish -p hyle-ca-solver
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Wait for crates.io index after solver
+        if: ${{ !inputs.dry_run }}
+        run: sleep 30
+
+      - name: Publish hyle-ca-analysis
+        if: ${{ !inputs.dry_run }}
+        run: cargo publish -p hyle-ca-analysis
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

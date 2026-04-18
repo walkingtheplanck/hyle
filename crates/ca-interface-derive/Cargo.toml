@@ -1,6 +1,6 @@
 [package]
 name = "hyle-ca-interface-derive"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Proc-macro derives for the Hyle CA interface."
 license = "GPL-3.0-only"

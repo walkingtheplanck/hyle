@@ -2,6 +2,9 @@
 //!
 //! These types are used by both schema-facing setup APIs and runtime bulk IO.
 
+use std::error::Error;
+use std::fmt::{Display, Formatter};
+
 /// Errors raised while constructing validated grid descriptors.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GridShapeError {
@@ -41,6 +44,42 @@ pub enum GridShapeError {
     },
 }
 
+impl Display for GridShapeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GridShapeError::CoordinateRangeOverflow {
+                width,
+                height,
+                depth,
+                max,
+            } => write!(
+                f,
+                "grid dimensions ({width}, {height}, {depth}) exceed the supported coordinate range max of {max}"
+            ),
+            GridShapeError::GridCellCountOverflow {
+                width,
+                height,
+                depth,
+            } => write!(
+                f,
+                "grid dimensions ({width}, {height}, {depth}) overflow host cell indexing"
+            ),
+            GridShapeError::RegionCellCountOverflow { origin, size } => write!(
+                f,
+                "grid region at {:?} with size {:?} overflows host cell indexing",
+                origin, size
+            ),
+            GridShapeError::RegionEndOverflow { origin, size } => write!(
+                f,
+                "grid region at {:?} with size {:?} overflows its end coordinates",
+                origin, size
+            ),
+        }
+    }
+}
+
+impl Error for GridShapeError {}
+
 /// Errors raised while building host-side grid data containers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GridDataError {
@@ -52,6 +91,19 @@ pub enum GridDataError {
         actual: usize,
     },
 }
+
+impl Display for GridDataError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GridDataError::CellCountMismatch { expected, actual } => write!(
+                f,
+                "grid data length mismatch: expected {expected} cells, got {actual}"
+            ),
+        }
+    }
+}
+
+impl Error for GridDataError {}
 
 /// Immutable grid dimensions in cells.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

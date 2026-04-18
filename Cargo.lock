@@ -878,7 +878,7 @@ checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
 
 [[package]]
 name = "hyle-ca-analysis"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hyle-ca-interface",
  "hyle-ca-solver",
@@ -886,14 +886,14 @@ dependencies = [
 
 [[package]]
 name = "hyle-ca-interface"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hyle-ca-interface-derive",
 ]
 
 [[package]]
 name = "hyle-ca-interface-derive"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -902,7 +902,7 @@ dependencies = [
 
 [[package]]
 name = "hyle-ca-solver"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hyle-ca-interface",
 ]

@@ -1,6 +1,6 @@
 [package]
 name = "hyle-ca-analysis"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Shared analysis and diagnostics for the Hyle cellular automaton framework."
 readme = "README.md"
@@ -12,7 +12,7 @@ categories = ["game-development", "algorithms"]
 exclude = ["tests/"]
 
 [dependencies]
-hyle-ca-interface = { path = "../ca-interface", version = "0.1.0" }
+hyle-ca-interface = { path = "../ca-interface", version = "0.2.0" }
 
 [dev-dependencies]
-hyle-ca-solver = { path = "../ca-solver", version = "0.1.0" }
+hyle-ca-solver = { path = "../ca-solver", version = "0.2.0" }
