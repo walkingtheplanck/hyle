@@ -54,7 +54,7 @@ pub trait SolverCells: SolverExecution + SolverMetadata {
                 for x in ox..ox + sx {
                     let cell = self
                         .cell_at(x as i32, y as i32, z as i32)
-                        .expect("in-bounds region coordinates must resolve to cells");
+                        .ok_or(GridAccessError::CoordinateUnresolvable { x, y, z })?;
                     cells.push(cell);
                 }
             }

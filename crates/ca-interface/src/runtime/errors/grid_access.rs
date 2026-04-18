@@ -12,6 +12,15 @@ pub enum GridAccessError {
         /// Active grid dimensions used for validation.
         dims: GridDims,
     },
+    /// A coordinate inside a validated region failed to resolve to a cell handle.
+    CoordinateUnresolvable {
+        /// X coordinate that failed to resolve.
+        x: u32,
+        /// Y coordinate that failed to resolve.
+        y: u32,
+        /// Z coordinate that failed to resolve.
+        z: u32,
+    },
     /// The provided host-side cell slice length does not match the destination size.
     CellCountMismatch {
         /// Number of cells the operation expected.

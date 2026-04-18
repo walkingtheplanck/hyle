@@ -203,6 +203,111 @@ impl SolverMetrics for DummySolver {
     }
 }
 
+struct BrokenRegionSolver {
+    inner: DummySolver,
+}
+
+impl BrokenRegionSolver {
+    fn new(width: u32, height: u32, depth: u32) -> Self {
+        Self {
+            inner: DummySolver::new(width, height, depth),
+        }
+    }
+}
+
+impl SolverExecution for BrokenRegionSolver {
+    type Topology = BoundedLikeTopology;
+
+    fn width(&self) -> u32 {
+        self.inner.width()
+    }
+
+    fn height(&self) -> u32 {
+        self.inner.height()
+    }
+
+    fn depth(&self) -> u32 {
+        self.inner.depth()
+    }
+
+    fn topology(&self) -> &Self::Topology {
+        self.inner.topology()
+    }
+
+    fn get(&self, x: i32, y: i32, z: i32) -> MaterialId {
+        self.inner.get(x, y, z)
+    }
+
+    fn set(&mut self, x: i32, y: i32, z: i32, material: MaterialId) {
+        self.inner.set(x, y, z, material);
+    }
+
+    fn get_attr(
+        &self,
+        attribute: AttributeId,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> Result<AttributeValue, AttributeAccessError> {
+        self.inner.get_attr(attribute, x, y, z)
+    }
+
+    fn set_attr(
+        &mut self,
+        attribute: AttributeId,
+        x: i32,
+        y: i32,
+        z: i32,
+        value: AttributeValue,
+    ) -> Result<(), AttributeAccessError> {
+        self.inner.set_attr(attribute, x, y, z, value)
+    }
+
+    fn step(&mut self) {
+        self.inner.step();
+    }
+
+    fn step_count(&self) -> u32 {
+        self.inner.step_count()
+    }
+}
+
+impl SolverMetadata for BrokenRegionSolver {
+    fn material_defs(&self) -> &[MaterialDef] {
+        self.inner.material_defs()
+    }
+
+    fn attribute_defs(&self) -> &[AttributeDef] {
+        self.inner.attribute_defs()
+    }
+
+    fn neighborhood_specs(&self) -> &[NeighborhoodSpec] {
+        self.inner.neighborhood_specs()
+    }
+}
+
+impl SolverCells for BrokenRegionSolver {
+    fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId> {
+        if [x, y, z] == [1, 0, 0] {
+            None
+        } else {
+            self.inner.cell_at(x, y, z)
+        }
+    }
+}
+
+impl SolverGrid for BrokenRegionSolver {}
+
+impl SolverMetrics for BrokenRegionSolver {
+    fn last_changed_cells(&self) -> u64 {
+        0
+    }
+
+    fn last_transitions(&self) -> &[TransitionCount] {
+        &[]
+    }
+}
+
 #[test]
 fn default_resolve_index_rejects_negative_and_large_values() {
     let solver = DummySolver::new(4, 5, 6);
@@ -284,6 +389,16 @@ fn region_queries_return_typed_errors_for_invalid_regions() {
 
     assert_eq!(solver.cells_in_region(region), Err(error));
     assert_eq!(solver.read_region(region), Err(error));
+}
+
+#[test]
+fn region_queries_return_typed_errors_for_unresolvable_coordinates() {
+    let solver = BrokenRegionSolver::new(2, 1, 1);
+
+    assert_eq!(
+        solver.cells_in_region(GridRegion::new([0, 0, 0], [2, 1, 1])),
+        Err(GridAccessError::CoordinateUnresolvable { x: 1, y: 0, z: 0 })
+    );
 }
 
 #[test]
