@@ -18,6 +18,12 @@ struct PendingAttributeUpdate {
     value: AttributeValue,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PendingRuleEffect {
+    Keep,
+    Become(MaterialRef),
+}
+
 /// Author-time rule item used by [`crate::schema::BlueprintBuilder::rules`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RuleSpec {
@@ -25,7 +31,7 @@ pub struct RuleSpec {
     neighborhood: Option<NeighborhoodRef>,
     condition: Option<Condition>,
     attribute_updates: Vec<PendingAttributeUpdate>,
-    effect: RuleEffect,
+    effect: PendingRuleEffect,
 }
 
 impl RuleSpec {
@@ -39,7 +45,7 @@ impl RuleSpec {
             neighborhood: None,
             condition: None,
             attribute_updates: Vec::new(),
-            effect: RuleEffect::Keep,
+            effect: PendingRuleEffect::Keep,
         }
     }
 
@@ -67,7 +73,7 @@ impl RuleSpec {
     ///
     /// This is still meaningful when combined with attribute writes.
     pub fn keep(mut self) -> Self {
-        self.effect = RuleEffect::Keep;
+        self.effect = PendingRuleEffect::Keep;
         self
     }
 
@@ -76,7 +82,7 @@ impl RuleSpec {
     /// Material changes also cause attribute defaults for the destination
     /// material to be re-applied by the runtime.
     pub fn becomes<M: MaterialSet>(mut self, material: M) -> Self {
-        self.effect = RuleEffect::Become(material.id());
+        self.effect = PendingRuleEffect::Become(material.material());
         self
     }
 
@@ -114,9 +120,10 @@ impl RuleSpec {
             return Err(BuildError::MismatchedMaterial(self.when.label()));
         }
 
+        let when = self.when.id().map_err(BuildError::from)?;
         let target_material = match self.effect {
-            RuleEffect::Keep => self.when.id(),
-            RuleEffect::Become(target) => target,
+            PendingRuleEffect::Keep => when,
+            PendingRuleEffect::Become(target) => target.id().map_err(BuildError::from)?,
         };
 
         let neighborhood = match self.neighborhood {
@@ -124,7 +131,7 @@ impl RuleSpec {
                 if reference.owner() != neighborhoods.owner {
                     return Err(BuildError::UnknownRuleNeighborhood(reference.label()));
                 }
-                reference.id()
+                reference.id().map_err(BuildError::from)?
             }
             None => default_neighborhood,
         };
@@ -162,17 +169,20 @@ impl RuleSpec {
             }
             ensure_material_has_attribute(materials, target_material, update.attribute)?;
             attribute_updates.push(AttributeAssignment::new(
-                update.attribute.id(),
+                update.attribute.id().map_err(BuildError::from)?,
                 update.value,
             ));
         }
 
         Ok(Rule {
-            when: self.when.id(),
+            when,
             neighborhood,
             condition,
             attribute_updates,
-            effect: self.effect,
+            effect: match self.effect {
+                PendingRuleEffect::Keep => RuleEffect::Keep,
+                PendingRuleEffect::Become(_) => RuleEffect::Become(target_material),
+            },
         })
     }
 }
@@ -193,7 +203,7 @@ fn validate_condition(
                 return Err(BuildError::MismatchedMaterial(material.label()));
             }
             Ok(ResolvedCondition::NeighborCount {
-                material: material.id(),
+                material: material.id().map_err(BuildError::from)?,
                 comparison: *comparison,
             })
         }
@@ -205,7 +215,7 @@ fn validate_condition(
                 return Err(BuildError::MismatchedMaterial(material.label()));
             }
             Ok(ResolvedCondition::NeighborWeightedSum {
-                material: material.id(),
+                material: material.id().map_err(BuildError::from)?,
                 comparison: *comparison,
             })
         }
@@ -230,11 +240,15 @@ fn validate_condition(
                 return Err(BuildError::MismatchedAttribute(attribute.label()));
             }
 
-            ensure_material_has_attribute(materials, when.id(), *attribute)?;
+            ensure_material_has_attribute(
+                materials,
+                when.id().map_err(BuildError::from)?,
+                *attribute,
+            )?;
             validate_attribute_comparison(*attribute, *comparison)?;
 
             Ok(ResolvedCondition::Attribute {
-                attribute: attribute.id(),
+                attribute: attribute.id().map_err(BuildError::from)?,
                 comparison: *comparison,
             })
         }

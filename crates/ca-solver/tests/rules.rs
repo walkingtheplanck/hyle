@@ -2,10 +2,10 @@
 
 use hyle_ca_interface::resolved::{cell_rng, interpret_blueprint};
 use hyle_ca_interface::{
-    attr, neighbors, rng, AttrAssign, AttributeAccessError, AttributeSet, AttributeType,
-    AttributeValue, Blueprint, Instance, MatAttr, MaterialSet, NeighborhoodFalloff,
-    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
-    SolverExecution, SolverGrid, SolverMetrics, Weight,
+    attr, neighbors, rng, AttrAssign, AttributeAccessError, AttributeId, AttributeSet,
+    AttributeType, AttributeValue, Blueprint, Instance, MatAttr, MaterialId, MaterialSet,
+    NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
+    RuleSpec, SolverExecution, SolverGrid, SolverMetrics, Weight,
 };
 use hyle_ca_solver::Solver;
 
@@ -71,6 +71,18 @@ impl NeighborhoodSet for N {
     }
 }
 
+fn material_id(material: M) -> MaterialId {
+    material
+        .id()
+        .expect("test material set should be internally consistent")
+}
+
+fn attribute_id(attribute: A) -> AttributeId {
+    attribute
+        .id()
+        .expect("test attribute set should be internally consistent")
+}
+
 fn specs() -> [NeighborhoodSpec; 2] {
     [
         NeighborhoodSpec::new(
@@ -78,13 +90,15 @@ fn specs() -> [NeighborhoodSpec; 2] {
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
-        ),
+        )
+        .expect("test neighborhood set should be internally consistent"),
         NeighborhoodSpec::new(
             N::RadiusTwo,
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(2),
             NeighborhoodFalloff::Uniform,
-        ),
+        )
+        .expect("test neighborhood set should be internally consistent"),
     ]
 }
 
@@ -101,11 +115,11 @@ fn kill_all_spec() -> Blueprint {
 #[test]
 fn rule_kill_all() {
     let mut solver = Solver::from_spec(4, 4, 4, &kill_all_spec()).expect("valid grid");
-    solver.set(2, 2, 2, M::Alive.id());
-    solver.set(1, 1, 1, M::Alive.id());
+    solver.set(2, 2, 2, material_id(M::Alive));
+    solver.set(1, 1, 1, material_id(M::Alive));
     solver.step();
-    assert_eq!(solver.get(2, 2, 2), M::Dead.id());
-    assert_eq!(solver.get(1, 1, 1), M::Dead.id());
+    assert_eq!(solver.get(2, 2, 2), material_id(M::Dead));
+    assert_eq!(solver.get(1, 1, 1), material_id(M::Dead));
 }
 
 #[test]
@@ -115,8 +129,8 @@ fn solver_from_blueprint_matches_from_spec() {
 
     let mut from_spec = Solver::from_spec(4, 4, 4, &spec).expect("valid grid");
     let mut from_blueprint = Solver::from_blueprint(4, 4, 4, &blueprint).expect("valid grid");
-    from_spec.set(2, 2, 2, M::Alive.id());
-    from_blueprint.set(2, 2, 2, M::Alive.id());
+    from_spec.set(2, 2, 2, material_id(M::Alive));
+    from_blueprint.set(2, 2, 2, material_id(M::Alive));
     from_spec.step();
     from_blueprint.step();
     assert_eq!(from_spec.readback().cells, from_blueprint.readback().cells);
@@ -135,9 +149,9 @@ fn rule_spread_to_neighbors() {
         .expect("valid spec");
 
     let mut solver = Solver::from_spec(5, 5, 5, &spec).expect("valid grid");
-    solver.set(2, 2, 2, M::Alive.id());
+    solver.set(2, 2, 2, material_id(M::Alive));
     solver.step();
-    assert_eq!(solver.get(1, 1, 1), M::Alive.id());
+    assert_eq!(solver.get(1, 1, 1), material_id(M::Alive));
 }
 
 #[test]
@@ -153,18 +167,18 @@ fn rule_type_interaction() {
         .expect("valid spec");
 
     let mut solver = Solver::from_spec(5, 5, 5, &spec).expect("valid grid");
-    solver.set(2, 2, 2, M::Water.id());
+    solver.set(2, 2, 2, material_id(M::Water));
     for dz in -1..=1 {
         for dy in -1..=1 {
             for dx in -1..=1 {
                 if dx != 0 || dy != 0 || dz != 0 {
-                    solver.set(2 + dx, 2 + dy, 2 + dz, M::Ice.id());
+                    solver.set(2 + dx, 2 + dy, 2 + dz, material_id(M::Ice));
                 }
             }
         }
     }
     solver.step();
-    assert_eq!(solver.get(2, 2, 2), M::Ice.id());
+    assert_eq!(solver.get(2, 2, 2), material_id(M::Ice));
 }
 
 #[test]
@@ -184,9 +198,9 @@ fn random_chance_rules_follow_semantic_rng() {
         .with_seed(41);
     let mut solver = Solver::from_spec_instance(instance, &spec);
     let expected = if cell_rng([0, 0, 0], 0, 3, 41).chance(5) {
-        M::Alive.id()
+        material_id(M::Alive)
     } else {
-        M::Dead.id()
+        material_id(M::Dead)
     };
 
     solver.step();
@@ -214,13 +228,13 @@ fn attribute_updates_apply_on_keep_rules() {
         .expect("valid spec");
 
     let mut solver = Solver::from_spec(3, 3, 3, &spec).expect("valid grid");
-    solver.set(1, 1, 1, M::Alive.id());
+    solver.set(1, 1, 1, material_id(M::Alive));
     solver
-        .set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(1))
+        .set_attr(attribute_id(A::Heat), 1, 1, 1, AttributeValue::U8(1))
         .unwrap();
     solver.step();
     assert_eq!(
-        solver.get_attr(A::Heat.id(), 1, 1, 1),
+        solver.get_attr(attribute_id(A::Heat), 1, 1, 1),
         Ok(AttributeValue::U8(3))
     );
 }
@@ -245,14 +259,14 @@ fn material_changes_reset_attributes_to_destination_defaults() {
         .expect("valid spec");
 
     let mut solver = Solver::from_spec(3, 3, 3, &spec).expect("valid grid");
-    solver.set(1, 1, 1, M::Alive.id());
+    solver.set(1, 1, 1, material_id(M::Alive));
     solver
-        .set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(7))
+        .set_attr(attribute_id(A::Heat), 1, 1, 1, AttributeValue::U8(7))
         .unwrap();
     solver.step();
-    assert_eq!(solver.get(1, 1, 1), M::Water.id());
+    assert_eq!(solver.get(1, 1, 1), material_id(M::Water));
     assert_eq!(
-        solver.get_attr(A::Heat.id(), 1, 1, 1),
+        solver.get_attr(attribute_id(A::Heat), 1, 1, 1),
         Ok(AttributeValue::U8(2))
     );
 }
@@ -275,9 +289,9 @@ fn attribute_writes_return_type_mismatch_errors() {
 
     let mut solver = Solver::from_spec(2, 2, 2, &spec).expect("valid grid");
     assert_eq!(
-        solver.set_attr(A::Heat.id(), 0, 0, 0, AttributeValue::Bool(true)),
+        solver.set_attr(attribute_id(A::Heat), 0, 0, 0, AttributeValue::Bool(true)),
         Err(AttributeAccessError::TypeMismatch {
-            attribute: A::Heat.id(),
+            attribute: attribute_id(A::Heat),
             expected: AttributeType::U8,
             actual: AttributeType::Bool,
         })
@@ -301,26 +315,26 @@ fn weighted_sum_rules_work() {
         .expect("valid spec");
 
     let mut solver = Solver::from_spec(5, 5, 5, &spec).expect("valid grid");
-    solver.set(2, 2, 1, M::Alive.id());
-    solver.set(2, 2, 3, M::Alive.id());
+    solver.set(2, 2, 1, material_id(M::Alive));
+    solver.set(2, 2, 3, material_id(M::Alive));
     solver.step();
-    assert_eq!(solver.get(2, 2, 2), M::Alive.id());
+    assert_eq!(solver.get(2, 2, 2), material_id(M::Alive));
 }
 
 #[test]
 fn step_metrics_track_populations_and_transitions() {
     let mut solver = Solver::from_spec(4, 4, 4, &kill_all_spec()).expect("valid grid");
-    solver.set(1, 1, 1, M::Alive.id());
-    solver.set(2, 2, 2, M::Alive.id());
+    solver.set(1, 1, 1, material_id(M::Alive));
+    solver.set(2, 2, 2, material_id(M::Alive));
 
     solver.step();
 
     assert_eq!(solver.step_count(), 1);
     assert_eq!(solver.last_changed_cells(), 2);
-    assert_eq!(solver.population(M::Alive.id()), 0);
-    assert_eq!(solver.population(M::Dead.id()), 64);
+    assert_eq!(solver.population(material_id(M::Alive)), 0);
+    assert_eq!(solver.population(material_id(M::Dead)), 64);
     assert_eq!(solver.last_transitions().len(), 1);
-    assert_eq!(solver.last_transitions()[0].from, M::Alive.id());
-    assert_eq!(solver.last_transitions()[0].to, M::Dead.id());
+    assert_eq!(solver.last_transitions()[0].from, material_id(M::Alive));
+    assert_eq!(solver.last_transitions()[0].to, material_id(M::Dead));
     assert_eq!(solver.last_transitions()[0].count, 2);
 }

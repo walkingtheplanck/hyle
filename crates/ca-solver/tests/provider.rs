@@ -1,8 +1,9 @@
 use hyle_ca_interface::{
-    neighbors, AttrAssign, AttributeAccessError, AttributeSet, AttributeType, AttributeValue,
-    Blueprint, CaSolverProvider, GridRegion, Instance, MatAttr, MaterialSet, NeighborhoodFalloff,
-    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
-    RuntimeAttributes, RuntimeGrid, RuntimeMetadata, RuntimeStepping, SolverExecution,
+    neighbors, AttrAssign, AttributeAccessError, AttributeId, AttributeSet, AttributeType,
+    AttributeValue, Blueprint, CaSolverProvider, GridRegion, Instance, MatAttr, MaterialId,
+    MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape,
+    NeighborhoodSpec, RuleSpec, RuntimeAttributes, RuntimeGrid, RuntimeMetadata, RuntimeStepping,
+    SolverExecution,
 };
 use hyle_ca_solver::CpuSolverProvider;
 
@@ -62,6 +63,18 @@ impl NeighborhoodSet for N {
     }
 }
 
+fn material_id(material: M) -> MaterialId {
+    material
+        .id()
+        .expect("test material set should be internally consistent")
+}
+
+fn attribute_id(attribute: A) -> AttributeId {
+    attribute
+        .id()
+        .expect("test attribute set should be internally consistent")
+}
+
 #[test]
 fn cpu_provider_builds_runtime() {
     let spec = Blueprint::builder()
@@ -78,7 +91,8 @@ fn cpu_provider_builds_runtime() {
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
-        )])
+        )
+        .expect("test neighborhood set should be internally consistent")])
         .rules([RuleSpec::when(M::Dead)
             .require(neighbors(M::Alive).count().eq(3))
             .becomes(M::Alive)])
@@ -94,29 +108,29 @@ fn cpu_provider_builds_runtime() {
     );
     assert_eq!(runtime.solver().dims().width(), 4);
 
-    runtime.set(1, 1, 1, M::Alive.id());
+    runtime.set(1, 1, 1, material_id(M::Alive));
     runtime
         .write_region(
             GridRegion::new([0, 0, 0], [2, 1, 1]).expect("test region should be valid"),
-            &[M::Other.id(), M::Alive.id()],
+            &[material_id(M::Other), material_id(M::Alive)],
         )
         .expect("runtime region writes should succeed");
     runtime
-        .set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(4))
+        .set_attr(attribute_id(A::Heat), 1, 1, 1, AttributeValue::U8(4))
         .expect("runtime attribute writes should succeed");
     runtime.step();
 
     let snapshot = runtime.readback();
     assert_eq!(runtime.dims().width(), 4);
-    assert_eq!(snapshot.get([1, 0, 0]), Some(&M::Alive.id()));
+    assert_eq!(snapshot.get([1, 0, 0]), Some(&material_id(M::Alive)));
     assert_eq!(
         runtime.read_region(
             GridRegion::new([0, 0, 0], [2, 1, 1]).expect("test region should be valid"),
         ),
-        Ok(vec![M::Other.id(), M::Alive.id()])
+        Ok(vec![material_id(M::Other), material_id(M::Alive)])
     );
     assert_eq!(
-        runtime.get_attr(A::Heat.id(), 1, 1, 1),
+        runtime.get_attr(attribute_id(A::Heat), 1, 1, 1),
         Ok(AttributeValue::U8(4))
     );
     assert_eq!(runtime.step_count(), 1);
@@ -138,7 +152,8 @@ fn runtime_attribute_writes_report_type_mismatches() {
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
-        )])
+        )
+        .expect("test neighborhood set should be internally consistent")])
         .build()
         .expect("test schema should build");
 
@@ -149,9 +164,9 @@ fn runtime_attribute_writes_report_type_mismatches() {
     );
 
     assert_eq!(
-        runtime.set_attr(A::Heat.id(), 0, 0, 0, AttributeValue::Bool(true)),
+        runtime.set_attr(attribute_id(A::Heat), 0, 0, 0, AttributeValue::Bool(true)),
         Err(AttributeAccessError::TypeMismatch {
-            attribute: A::Heat.id(),
+            attribute: attribute_id(A::Heat),
             expected: AttributeType::U8,
             actual: AttributeType::Bool,
         })

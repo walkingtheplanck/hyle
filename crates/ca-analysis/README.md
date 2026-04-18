@@ -51,16 +51,15 @@ let spec = Blueprint::builder()
         NeighborhoodShape::Moore,
         NeighborhoodRadius::new(1),
         NeighborhoodFalloff::Uniform,
-    )])
+    )?])
     .rules([RuleSpec::when(Material::Dead)
         .require(neighbors(Material::Alive).count().eq(3))
         .becomes(Material::Alive)])
-    .build()
-    .map_err(|err| format!("{err:?}"))?;
+    .build()?;
 
 let analysis = analyze_spec(&spec);
 assert_eq!(analysis.summary.rule_count, 1);
-# Ok::<(), String>(())
+# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 ## What It Analyzes
@@ -130,19 +129,18 @@ let spec = Blueprint::builder()
         NeighborhoodShape::Moore,
         NeighborhoodRadius::new(1),
         NeighborhoodFalloff::Uniform,
-    )])
+    )?])
     .rules([RuleSpec::when(Material::Alive).becomes(Material::Dead)])
-    .build()
-    .map_err(|err| format!("{err:?}"))?;
+    .build()?;
 
 let mut runtime = Runtime::new(Solver::from_spec(2, 2, 2, &spec).map_err(|err| format!("{err:?}"))?);
-runtime.set(0, 0, 0, Material::Alive.id());
+runtime.set(0, 0, 0, Material::Alive.id()?);
 runtime.step();
 
-let report = analyze_runtime(&runtime, &[Material::Alive.id()]);
+let report = analyze_runtime(&runtime, &[Material::Alive.id()?]);
 assert_eq!(report.living_cells, 0);
 assert_eq!(report.died_cells, 1);
-# Ok::<(), String>(())
+# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 ### Cell Analysis
@@ -202,17 +200,16 @@ let spec = Blueprint::builder()
         NeighborhoodShape::Moore,
         NeighborhoodRadius::new(1),
         NeighborhoodFalloff::Uniform,
-    )])
-    .build()
-    .map_err(|err| format!("{err:?}"))?;
+    )?])
+    .build()?;
 
 let mut runtime = Runtime::new(Solver::from_spec(3, 3, 3, &spec).map_err(|err| format!("{err:?}"))?);
-runtime.set(1, 1, 1, Material::Alive.id());
+runtime.set(1, 1, 1, Material::Alive.id()?);
 
-let report = analyze_cell(&runtime, [1, 1, 1]).expect("cell exists");
+let report = analyze_cell(&runtime, [1, 1, 1]).ok_or_else(|| "cell exists".to_string())?;
 assert_eq!(report.material.name, "alive");
 assert_eq!(report.neighborhoods[0].name, "adjacent");
-# Ok::<(), String>(())
+# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 ## Relationship To Other Crates

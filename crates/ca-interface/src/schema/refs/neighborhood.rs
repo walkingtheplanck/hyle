@@ -1,13 +1,13 @@
 use std::any::TypeId;
 
-use crate::schema::NeighborhoodSet;
+use crate::schema::{NeighborhoodSet, SetContractError};
 use crate::NeighborhoodId;
 
 /// Type-erased reference to one neighborhood symbol from a specific neighborhood set.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct NeighborhoodRef {
     owner: TypeId,
-    id: NeighborhoodId,
+    id: Result<NeighborhoodId, SetContractError>,
     label: &'static str,
 }
 
@@ -27,7 +27,7 @@ impl NeighborhoodRef {
     }
 
     /// Return the resolved neighborhood identifier.
-    pub const fn id(self) -> NeighborhoodId {
+    pub const fn id(self) -> Result<NeighborhoodId, SetContractError> {
         self.id
     }
 

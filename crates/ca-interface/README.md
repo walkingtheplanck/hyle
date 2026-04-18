@@ -106,7 +106,7 @@ let spec = Blueprint::builder()
         NeighborhoodShape::Moore,
         NeighborhoodRadius::new(1),
         NeighborhoodFalloff::Uniform,
-    )])
+    )?])
     .rules([
         RuleSpec::when(Material::Dead)
             .require(neighbors(Material::Alive).count().eq(3))
@@ -213,7 +213,7 @@ let spec = Blueprint::builder()
         NeighborhoodShape::Moore,
         NeighborhoodRadius::new(1),
         NeighborhoodFalloff::Uniform,
-    )])
+    )?])
     .rules([RuleSpec::when(Material::Hot)
         .require(attr(Attribute::Heat).at_least(2u8))
         .set_attr(Attribute::Heat, 0u8)

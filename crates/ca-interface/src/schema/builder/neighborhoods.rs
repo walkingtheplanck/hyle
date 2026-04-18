@@ -13,12 +13,13 @@ pub(super) struct NeighborhoodRegistry {
 }
 
 /// Erase one enum-backed neighborhood set into builder-owned metadata.
-pub(super) fn register_neighborhoods<N: NeighborhoodSet>() -> NeighborhoodRegistry {
-    NeighborhoodRegistry {
+pub(super) fn register_neighborhoods<N: NeighborhoodSet>(
+) -> Result<NeighborhoodRegistry, BuildError> {
+    Ok(NeighborhoodRegistry {
         owner: TypeId::of::<N>(),
-        default_neighborhood: N::default_neighborhood(),
+        default_neighborhood: N::default_neighborhood().map_err(BuildError::from)?,
         expected_names: N::variants().iter().map(|value| value.label()).collect(),
-    }
+    })
 }
 
 /// Match declarative neighborhood specs against the declared neighborhood set.
@@ -60,7 +61,7 @@ pub(super) fn validate_neighborhoods(
             if reference.owner() != registry.owner {
                 return Err(BuildError::UnknownRuleNeighborhood(reference.label()));
             }
-            reference.id()
+            reference.id().map_err(BuildError::from)?
         }
         None => registry.default_neighborhood,
     };

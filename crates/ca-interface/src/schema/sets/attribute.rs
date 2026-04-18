@@ -1,4 +1,6 @@
-use crate::schema::refs::AttributeRef;
+use std::any::type_name;
+
+use crate::schema::{refs::AttributeRef, SetContractError};
 use crate::{AttributeId, AttributeType, AttributeValue};
 
 /// Enum-backed attribute universe used by a schema.
@@ -13,20 +15,27 @@ pub trait AttributeSet: Copy + Eq + Send + Sync + 'static {
     fn value_type(self) -> AttributeType;
 
     /// Return the stable numeric identifier for this attribute.
-    fn id(self) -> AttributeId {
-        self.try_id().unwrap_or_default()
-    }
-
-    /// Return the stable numeric identifier for this attribute, if the trait
-    /// implementation is internally consistent.
-    fn try_id(self) -> Option<AttributeId> {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SetContractError`] when a manual implementation omits `self`
+    /// from `variants()`.
+    fn id(self) -> Result<AttributeId, SetContractError> {
+        let label = self.label();
         Self::variants()
             .iter()
             .position(|candidate| *candidate == self)
             .map(|index| AttributeId::new(index as u16))
+            .ok_or(SetContractError::MissingAttributeVariant {
+                set_type: type_name::<Self>(),
+                label,
+            })
     }
 
     /// Return a type-erased reference to this attribute.
+    ///
+    /// The reference carries any set-contract failure until schema validation
+    /// resolves it into ids.
     fn attribute(self) -> AttributeRef {
         AttributeRef::new(self)
     }

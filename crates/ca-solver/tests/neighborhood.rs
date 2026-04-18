@@ -28,12 +28,10 @@ fn runtime_neighborhood(
     radius: u32,
     falloff: NeighborhoodFalloff,
 ) -> Neighborhood {
-    let semantic = expand_neighborhood(NeighborhoodSpec::new(
-        N::Sample,
-        shape,
-        NeighborhoodRadius::new(radius),
-        falloff,
-    ));
+    let semantic = expand_neighborhood(
+        NeighborhoodSpec::new(N::Sample, shape, NeighborhoodRadius::new(radius), falloff)
+            .expect("test neighborhood set should be internally consistent"),
+    );
     Neighborhood::new(semantic.samples())
 }
 

@@ -1,13 +1,13 @@
 use std::any::TypeId;
 
-use crate::schema::AttributeSet;
+use crate::schema::{AttributeSet, SetContractError};
 use crate::{AttributeId, AttributeType};
 
 /// Type-erased reference to one attribute symbol from a specific attribute set.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct AttributeRef {
     owner: TypeId,
-    id: AttributeId,
+    id: Result<AttributeId, SetContractError>,
     label: &'static str,
     value_type: AttributeType,
 }
@@ -29,7 +29,7 @@ impl AttributeRef {
     }
 
     /// Return the resolved attribute identifier.
-    pub const fn id(self) -> AttributeId {
+    pub const fn id(self) -> Result<AttributeId, SetContractError> {
         self.id
     }
 

@@ -45,31 +45,40 @@ impl MatAttr {
     }
 }
 
-/// Erase one enum-backed material set into schema-owned definitions.
-pub(super) fn register_materials<M: MaterialSet>() -> MaterialRegistry {
-    MaterialRegistry {
+pub(super) fn register_materials<M: MaterialSet>() -> Result<MaterialRegistry, BuildError> {
+    Ok(MaterialRegistry {
         owner: TypeId::of::<M>(),
-        default_material: M::default_material(),
+        default_material: M::default_material().map_err(BuildError::from)?,
         materials: M::variants()
             .iter()
             .copied()
-            .map(|material| MaterialDef::new(material.id(), material.label(), Vec::new()))
-            .collect(),
-    }
+            .map(|material| {
+                Ok(MaterialDef::new(
+                    material.id().map_err(BuildError::from)?,
+                    material.label(),
+                    Vec::new(),
+                ))
+            })
+            .collect::<Result<Vec<_>, BuildError>>()?,
+    })
 }
 
 /// Erase one enum-backed attribute set into schema-owned definitions.
-pub(super) fn register_attributes<A: AttributeSet>() -> AttributeRegistry {
-    AttributeRegistry {
+pub(super) fn register_attributes<A: AttributeSet>() -> Result<AttributeRegistry, BuildError> {
+    Ok(AttributeRegistry {
         owner: TypeId::of::<A>(),
         attributes: A::variants()
             .iter()
             .copied()
             .map(|attribute| {
-                AttributeDef::new(attribute.id(), attribute.label(), attribute.value_type())
+                Ok(AttributeDef::new(
+                    attribute.id().map_err(BuildError::from)?,
+                    attribute.label(),
+                    attribute.value_type(),
+                ))
             })
-            .collect(),
-    }
+            .collect::<Result<Vec<_>, BuildError>>()?,
+    })
 }
 
 /// Reject material sets whose declarative labels collide.
@@ -116,7 +125,7 @@ pub(super) fn apply_material_attributes(
             return Err(BuildError::MismatchedMaterial(assignment.material.label()));
         }
 
-        let material_index = assignment.material.id().index();
+        let material_index = assignment.material.id().map_err(BuildError::from)?.index();
         if seen_materials[material_index] {
             return Err(BuildError::DuplicateMaterialAssignment(
                 assignment.material.label(),
@@ -153,7 +162,7 @@ pub(super) fn apply_material_attributes(
             }
 
             material.attributes.push(MaterialAttributeBinding::new(
-                attribute.attribute.id(),
+                attribute.attribute.id().map_err(BuildError::from)?,
                 attribute.default,
             ));
         }
@@ -168,10 +177,11 @@ pub(super) fn ensure_material_has_attribute(
     material: crate::MaterialId,
     attribute: AttributeRef,
 ) -> Result<(), BuildError> {
+    let attribute_id = attribute.id().map_err(BuildError::from)?;
     if materials.materials[material.index()]
         .attributes
         .iter()
-        .any(|binding| binding.attribute == attribute.id())
+        .any(|binding| binding.attribute == attribute_id)
     {
         Ok(())
     } else {

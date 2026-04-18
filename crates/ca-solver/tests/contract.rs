@@ -116,7 +116,8 @@ fn from_spec_uses_descriptor_topology() {
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
-        )])
+        )
+        .expect("test neighborhood set should be internally consistent")])
         .rules([RuleSpec::when(M::Dead)
             .require(neighbors(M::Alive).any())
             .becomes(M::Alive)])

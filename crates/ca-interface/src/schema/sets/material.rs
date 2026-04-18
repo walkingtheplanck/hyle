@@ -1,4 +1,6 @@
-use crate::schema::refs::MaterialRef;
+use std::any::type_name;
+
+use crate::schema::{refs::MaterialRef, SetContractError};
 use crate::MaterialId;
 
 /// Enum-backed material universe used by a schema.
@@ -10,29 +12,38 @@ pub trait MaterialSet: Copy + Default + Eq + Send + Sync + 'static {
     fn label(self) -> &'static str;
 
     /// Return the stable numeric identifier for this material.
-    fn id(self) -> MaterialId {
-        self.try_id().unwrap_or_default()
-    }
-
-    /// Return the stable numeric identifier for this material, if the trait
-    /// implementation is internally consistent.
     ///
-    /// Manual impls are expected to include every variant in `variants()`. The
-    /// derive macro maintains that contract automatically.
-    fn try_id(self) -> Option<MaterialId> {
+    /// # Errors
+    ///
+    /// Returns [`SetContractError`] when a manual implementation omits `self`
+    /// from `variants()`.
+    fn id(self) -> Result<MaterialId, SetContractError> {
+        let label = self.label();
         Self::variants()
             .iter()
             .position(|candidate| *candidate == self)
             .map(|index| MaterialId::new(index as u16))
+            .ok_or(SetContractError::MissingMaterialVariant {
+                set_type: type_name::<Self>(),
+                label,
+            })
     }
 
     /// Return a type-erased reference to this material.
+    ///
+    /// The reference carries any set-contract failure until schema validation
+    /// resolves it into ids.
     fn material(self) -> MaterialRef {
         MaterialRef::new(self)
     }
 
     /// Return the default material identifier used to initialize new grids.
-    fn default_material() -> MaterialId {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SetContractError`] when the default material is missing from
+    /// `variants()`.
+    fn default_material() -> Result<MaterialId, SetContractError> {
         Self::default().id()
     }
 }

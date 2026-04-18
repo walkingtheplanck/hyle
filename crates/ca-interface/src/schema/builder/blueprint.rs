@@ -16,10 +16,10 @@ use super::rules::RuleSpec;
 pub struct BlueprintBuilder {
     semantics: Semantics,
     topology: TopologyDescriptor,
-    materials: Option<MaterialRegistry>,
-    attributes: Option<AttributeRegistry>,
+    materials: Option<Result<MaterialRegistry, BuildError>>,
+    attributes: Option<Result<AttributeRegistry, BuildError>>,
     material_attributes: Vec<MatAttr>,
-    neighborhoods: Option<NeighborhoodRegistry>,
+    neighborhoods: Option<Result<NeighborhoodRegistry, BuildError>>,
     neighborhood_specs: Vec<NeighborhoodSpec>,
     default_neighborhood: Option<NeighborhoodRef>,
     rules: Vec<RuleSpec>,
@@ -136,11 +136,12 @@ impl BlueprintBuilder {
     /// families, repeats labels or assignments, or uses incompatible attribute
     /// values and rule conditions.
     pub fn build(self) -> Result<Blueprint, BuildError> {
-        let mut materials = self.materials.ok_or(BuildError::MissingMaterials)?;
+        let mut materials = self.materials.ok_or(BuildError::MissingMaterials)??;
         validate_unique_material_labels(&materials.materials)?;
 
         let attributes = match self.attributes {
             Some(attributes) => {
+                let attributes = attributes?;
                 validate_unique_attribute_labels(&attributes.attributes)?;
                 Some(attributes)
             }
@@ -153,7 +154,9 @@ impl BlueprintBuilder {
             &self.material_attributes,
         )?;
 
-        let neighborhoods = self.neighborhoods.ok_or(BuildError::MissingNeighborhoods)?;
+        let neighborhoods = self
+            .neighborhoods
+            .ok_or(BuildError::MissingNeighborhoods)??;
         let (neighborhood_specs, default_neighborhood) = validate_neighborhoods(
             &neighborhoods,
             &self.neighborhood_specs,

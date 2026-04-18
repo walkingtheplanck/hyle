@@ -79,19 +79,22 @@ fn neighborhood_specs() -> [NeighborhoodSpec; 3] {
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
-        ),
+        )
+        .expect("test neighborhood set should be internally consistent"),
         NeighborhoodSpec::new(
             N::Far,
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(2),
             NeighborhoodFalloff::Uniform,
-        ),
+        )
+        .expect("test neighborhood set should be internally consistent"),
         NeighborhoodSpec::new(
             N::Unused,
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(3),
             NeighborhoodFalloff::Uniform,
-        ),
+        )
+        .expect("test neighborhood set should be internally consistent"),
     ]
 }
 

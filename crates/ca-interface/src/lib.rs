@@ -31,6 +31,6 @@ pub use schema::{
     BuildError, Condition, CountComparison, MatAttr, MaterialAttributeBinding, MaterialDef,
     MaterialRef, MaterialSet, NeighborCount, NeighborSelector, NeighborWeightedSum,
     NeighborhoodFalloff, NeighborhoodRef, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
-    RandomSource, ResolvedCondition, Rule, RuleEffect, RuleSpec, Semantics, TopologyDescriptor,
-    Weight, WeightComparison,
+    RandomSource, ResolvedCondition, Rule, RuleEffect, RuleSpec, Semantics, SetContractError,
+    TopologyDescriptor, Weight, WeightComparison,
 };

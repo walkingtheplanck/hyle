@@ -1,7 +1,7 @@
 //! Declarative neighborhood records.
 
 use crate::{
-    schema::{NeighborhoodRef, NeighborhoodSet},
+    schema::{NeighborhoodRef, NeighborhoodSet, SetContractError},
     NeighborhoodId, NeighborhoodRadius,
 };
 
@@ -22,30 +22,30 @@ impl NeighborhoodSpec {
         shape: NeighborhoodShape,
         radius: NeighborhoodRadius,
         falloff: NeighborhoodFalloff,
-    ) -> Self {
-        Self {
-            id: neighborhood.id(),
+    ) -> Result<Self, SetContractError> {
+        Ok(Self {
+            id: neighborhood.id()?,
             name: neighborhood.label(),
             shape,
             radius,
             falloff,
-        }
+        })
     }
 
     /// Construct a neighborhood specification from an already typed-erased reference.
-    pub const fn from_ref(
+    pub fn from_ref(
         neighborhood: NeighborhoodRef,
         shape: NeighborhoodShape,
         radius: NeighborhoodRadius,
         falloff: NeighborhoodFalloff,
-    ) -> Self {
-        Self {
-            id: neighborhood.id(),
+    ) -> Result<Self, SetContractError> {
+        Ok(Self {
+            id: neighborhood.id()?,
             name: neighborhood.label(),
             shape,
             radius,
             falloff,
-        }
+        })
     }
 
     /// Return the neighborhood identifier.

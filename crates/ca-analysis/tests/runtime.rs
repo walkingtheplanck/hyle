@@ -1,6 +1,6 @@
 use hyle_ca_analysis::{analyze_cell, analyze_runtime};
 use hyle_ca_interface::{
-    Blueprint, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    Blueprint, MaterialId, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
     NeighborhoodShape, NeighborhoodSpec, RuleSpec, Runtime, RuntimeGrid, RuntimeStepping,
 };
 use hyle_ca_solver::Solver;
@@ -27,6 +27,12 @@ impl NeighborhoodSet for N {
     }
 }
 
+fn material_id(material: M) -> MaterialId {
+    material
+        .id()
+        .expect("test material set should be internally consistent")
+}
+
 #[test]
 fn runtime_analysis_tracks_living_birth_and_death_counts() {
     let spec = Blueprint::builder()
@@ -37,17 +43,18 @@ fn runtime_analysis_tracks_living_birth_and_death_counts() {
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
-        )])
+        )
+        .expect("test neighborhood set should be internally consistent")])
         .rules([RuleSpec::when(M::Alive).becomes(M::Dead)])
         .build()
         .expect("valid spec");
 
     let mut runtime = Runtime::new(Solver::from_spec(2, 2, 2, &spec).expect("valid grid"));
-    runtime.set(0, 0, 0, M::Alive.id());
-    runtime.set(1, 1, 1, M::Alive.id());
+    runtime.set(0, 0, 0, material_id(M::Alive));
+    runtime.set(1, 1, 1, material_id(M::Alive));
     runtime.step();
 
-    let report = analyze_runtime(&runtime, &[M::Alive.id()]);
+    let report = analyze_runtime(&runtime, &[material_id(M::Alive)]);
 
     assert_eq!(report.step, 1);
     assert_eq!(report.total_cells, 8);
@@ -69,14 +76,15 @@ fn cell_analysis_reports_material_attributes_and_neighborhoods() {
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
-        )])
+        )
+        .expect("test neighborhood set should be internally consistent")])
         .rules([RuleSpec::when(M::Alive).keep()])
         .build()
         .expect("valid spec");
 
     let mut runtime = Runtime::new(Solver::from_spec(3, 3, 3, &spec).expect("valid grid"));
-    runtime.set(1, 1, 1, M::Alive.id());
-    runtime.set(2, 1, 1, M::Alive.id());
+    runtime.set(1, 1, 1, material_id(M::Alive));
+    runtime.set(2, 1, 1, material_id(M::Alive));
 
     let report = analyze_cell(&runtime, [1, 1, 1]).expect("in-bounds cell");
 

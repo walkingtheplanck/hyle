@@ -17,7 +17,7 @@ instances through the shared `CaSolverProvider` interface.
 ## Quick Start
 
 ```rust
-# fn main() -> Result<(), String> {
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 use hyle_ca_interface::{
     neighbors, Blueprint, Instance, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
     NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, SolverExecution,
@@ -54,7 +54,7 @@ let spec = Blueprint::builder()
         NeighborhoodShape::Moore,
         NeighborhoodRadius::new(1),
         NeighborhoodFalloff::Uniform,
-    )])
+    )?])
     .rules([
         RuleSpec::when(Material::Dead)
             .require(neighbors(Material::Alive).count().eq(3))
@@ -63,8 +63,7 @@ let spec = Blueprint::builder()
             .require(neighbors(Material::Alive).count().in_range(2..=3).negate())
             .becomes(Material::Dead),
     ])
-    .build()
-    .map_err(|err| format!("{err:?}"))?;
+    .build()?;
 
 let instance = Instance::new(64, 64, 64).map_err(|err| format!("{err:?}"))?;
 let mut solver = Solver::from_spec_instance(instance.with_seed(7), &spec);
@@ -77,7 +76,7 @@ solver.step();
 ## Decoupled Consumer Path
 
 ```rust
-# fn main() -> Result<(), String> {
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 use hyle_ca_interface::{
     Blueprint, CaSolverProvider, Instance, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
     NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuntimeStepping,
@@ -113,9 +112,8 @@ let spec = Blueprint::builder()
         NeighborhoodShape::Moore,
         NeighborhoodRadius::new(1),
         NeighborhoodFalloff::Uniform,
-    )])
-    .build()
-    .map_err(|err| format!("{err:?}"))?;
+    )?])
+    .build()?;
 let provider = CpuSolverProvider::new();
 let instance = Instance::new(16, 16, 16).map_err(|err| format!("{err:?}"))?;
 let mut runtime = provider.build(instance, &spec);
@@ -131,7 +129,7 @@ runtime.step();
 The solver still supports direct construction with built-in topology types:
 
 ```rust
-# fn main() -> Result<(), String> {
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 use hyle_ca_solver::{Solver, TorusTopology};
 
 let _solver = Solver::with_topology(64, 64, 64, TorusTopology)
@@ -205,25 +203,24 @@ let spec = Blueprint::builder()
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
-        ),
+        )?,
         NeighborhoodSpec::new(
             Neighborhood::Far,
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(2),
             NeighborhoodFalloff::Uniform,
-        ),
+        )?,
     ])
     .default_neighborhood(Neighborhood::Adjacent)
     .rules([RuleSpec::when(Material::Dead)
         .using(Neighborhood::Far)
         .require(neighbors(Material::Alive).count().at_least(1))
         .becomes(Material::Alive)])
-    .build()
-    .map_err(|err| format!("{err:?}"))?;
+    .build()?;
 
 let mut solver = Solver::from_spec(8, 8, 8, &spec).map_err(|err| format!("{err:?}"))?;
 solver.step();
-# Ok::<(), String>(())
+# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 ## How It Works

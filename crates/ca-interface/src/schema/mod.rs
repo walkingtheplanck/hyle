@@ -23,5 +23,5 @@ pub use dsl::{
     WeightComparison,
 };
 pub use refs::{AttributeRef, MaterialRef, NeighborhoodRef};
-pub use sets::{AttributeSet, MaterialSet, NeighborhoodSet};
+pub use sets::{AttributeSet, MaterialSet, NeighborhoodSet, SetContractError};
 pub use spec::{AttributeAssignment, Blueprint, ResolvedCondition, Rule, RuleEffect, Semantics};

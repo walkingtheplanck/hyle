@@ -1,11 +1,13 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use crate::{AttributeType, RngStreamId};
+use crate::{AttributeType, RngStreamId, SetContractError};
 
 /// Errors raised while building a [`crate::schema::Blueprint`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BuildError {
+    /// One of the registered schema sets violated its own trait contract.
+    InvalidSetContract(SetContractError),
     /// No material set was registered.
     MissingMaterials,
     /// A material label was duplicated inside one material set.
@@ -76,6 +78,9 @@ pub enum BuildError {
 impl Display for BuildError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            BuildError::InvalidSetContract(error) => {
+                write!(f, "{error}")
+            }
             BuildError::MissingMaterials => {
                 write!(f, "materials::<M>() must be called before build")
             }
@@ -174,3 +179,9 @@ impl Display for BuildError {
 }
 
 impl Error for BuildError {}
+
+impl From<SetContractError> for BuildError {
+    fn from(value: SetContractError) -> Self {
+        Self::InvalidSetContract(value)
+    }
+}
