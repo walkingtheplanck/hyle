@@ -1,8 +1,8 @@
 //! Execution-facing runtime traits.
 
 mod provider;
-mod solver;
 mod runtime;
+mod solver;
 
 pub use provider::CaSolverProvider;
 pub use runtime::{

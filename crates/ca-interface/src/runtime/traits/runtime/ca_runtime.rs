@@ -26,14 +26,13 @@ pub trait CaRuntime:
 {
 }
 
-impl<T> CaRuntime for T
-where
+impl<T> CaRuntime for T where
     T: Send
         + RuntimeMetadata
         + RuntimeCells
         + RuntimeAttributes
         + RuntimeGrid
         + RuntimeStepping
-        + RuntimeMetrics,
+        + RuntimeMetrics
 {
 }

@@ -1,10 +1,8 @@
 //! Solver attribute query capabilities.
 
-use crate::{
-    CellAttributeValue, CellId, CellQueryError, AttributeId, AttributeValue,
-};
+use crate::{AttributeId, AttributeValue, CellAttributeValue, CellId, CellQueryError};
 
-use super::{SolverExecution, SolverMetadata, SolverCells};
+use super::{SolverCells, SolverExecution, SolverMetadata};
 
 /// Attribute-oriented queries derived from core solver execution.
 pub trait SolverAttributes: SolverExecution + SolverMetadata + SolverCells {

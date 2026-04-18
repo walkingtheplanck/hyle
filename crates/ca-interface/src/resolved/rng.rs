@@ -18,13 +18,7 @@ impl Rng {
 
     /// Create from position, step count, and an independent stream identifier.
     #[inline]
-    pub fn with_stream(
-        x: u32,
-        y: u32,
-        z: u32,
-        step: u32,
-        stream: impl Into<RngStreamId>,
-    ) -> Self {
+    pub fn with_stream(x: u32, y: u32, z: u32, step: u32, stream: impl Into<RngStreamId>) -> Self {
         Self::with_stream_and_seed(x, y, z, step, stream, 0)
     }
 

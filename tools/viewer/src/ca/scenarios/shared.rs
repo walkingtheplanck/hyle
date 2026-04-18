@@ -31,7 +31,9 @@ impl ViewerCell {
     }
 
     pub fn from_material_id(material: MaterialId) -> Option<Self> {
-        <Self as MaterialSet>::variants().get(material.index()).copied()
+        <Self as MaterialSet>::variants()
+            .get(material.index())
+            .copied()
     }
 
     pub fn palette_len() -> usize {
@@ -95,13 +97,15 @@ impl Scenario {
     }
 
     pub const fn instance(self) -> Instance {
-        Instance::from_dims(GridDims::from_validated(64, 64, 64, 64 * 64 * 64)).with_seed(match self {
-            Scenario::Life4555 => 1,
-            Scenario::WeightedBloom => 2,
-            Scenario::CrystalForge => 3,
-            Scenario::FireCycle => 4,
-            Scenario::TubeGarden => 5,
-        })
+        Instance::from_dims(GridDims::from_validated(64, 64, 64, 64 * 64 * 64)).with_seed(
+            match self {
+                Scenario::Life4555 => 1,
+                Scenario::WeightedBloom => 2,
+                Scenario::CrystalForge => 3,
+                Scenario::FireCycle => 4,
+                Scenario::TubeGarden => 5,
+            },
+        )
     }
 
     pub fn blueprint(self) -> Blueprint {

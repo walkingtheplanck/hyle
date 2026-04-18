@@ -1,8 +1,7 @@
 //! Public report types returned by runtime analysis.
 
 use hyle_ca_interface::{
-    AttributeId, AttributeType, AttributeValue, CellId, MaterialId, NeighborhoodId,
-    TransitionCount,
+    AttributeId, AttributeType, AttributeValue, CellId, MaterialId, NeighborhoodId, TransitionCount,
 };
 
 /// Population count for one material after a completed step.

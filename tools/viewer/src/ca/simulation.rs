@@ -85,9 +85,7 @@ where
 
     pub fn maybe_auto_step(&mut self, world: &mut SimpleWorld, with_report: bool) -> StepOutcome {
         if !self.auto_step {
-            return StepOutcome {
-                stepped: false,
-            };
+            return StepOutcome { stepped: false };
         }
         if self.last_step.elapsed().as_secs_f64() * 1000.0 >= self.step_interval_ms {
             self.last_step = Instant::now();

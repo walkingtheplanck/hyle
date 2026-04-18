@@ -35,7 +35,12 @@ pub(super) fn blueprint() -> Blueprint {
         )])
         .rules([
             RuleSpec::when(ViewerCell::Alive)
-                .require(neighbors(ViewerCell::Alive).count().in_range(4..=5).negate())
+                .require(
+                    neighbors(ViewerCell::Alive)
+                        .count()
+                        .in_range(4..=5)
+                        .negate(),
+                )
                 .becomes(ViewerCell::Dead),
             RuleSpec::when(ViewerCell::Dead)
                 .require(neighbors(ViewerCell::Alive).count().eq(5))

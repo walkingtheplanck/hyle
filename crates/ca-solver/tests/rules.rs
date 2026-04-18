@@ -114,8 +114,7 @@ fn solver_from_blueprint_matches_from_spec() {
     let blueprint = interpret_blueprint(&spec);
 
     let mut from_spec = Solver::from_spec(4, 4, 4, &spec).expect("valid grid");
-    let mut from_blueprint =
-        Solver::from_blueprint(4, 4, 4, &blueprint).expect("valid grid");
+    let mut from_blueprint = Solver::from_blueprint(4, 4, 4, &blueprint).expect("valid grid");
     from_spec.set(2, 2, 2, M::Alive.id());
     from_blueprint.set(2, 2, 2, M::Alive.id());
     from_spec.step();

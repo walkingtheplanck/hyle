@@ -5,11 +5,11 @@ use std::sync::Arc;
 
 use hyle_ca_interface::resolved::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
-    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, Blueprint,
-    CellAttributeValue, CellId, CellQueryError, GridAccessError, GridDims, GridRegion,
-    GridShapeError, GridSnapshot, Instance, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec,
-    RuleEffect, SolverAttributes, SolverCells, SolverExecution, SolverGrid, SolverMetadata,
-    SolverMetrics, Topology, TransitionCount,
+    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, Blueprint, CellAttributeValue,
+    CellId, CellQueryError, GridAccessError, GridDims, GridRegion, GridShapeError, GridSnapshot,
+    Instance, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec, RuleEffect,
+    SolverAttributes, SolverCells, SolverExecution, SolverGrid, SolverMetadata, SolverMetrics,
+    Topology, TransitionCount,
 };
 
 use crate::attributes::AttributeStore;
@@ -133,7 +133,11 @@ impl Solver<DescriptorTopology> {
             last_transitions: Vec::new(),
         };
 
-        if let Some(defaults) = solver.material_defaults.get(default_material.index()).cloned() {
+        if let Some(defaults) = solver
+            .material_defaults
+            .get(default_material.index())
+            .cloned()
+        {
             for index in 0..solver.grid.cell_count() {
                 solver.attributes.reset_next_to_defaults(index, &defaults);
             }

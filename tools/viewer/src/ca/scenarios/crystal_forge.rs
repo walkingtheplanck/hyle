@@ -1,8 +1,8 @@
 //! Crystal growth and heat spread scenario.
 
 use hyle_ca_interface::{
-    neighbors, rng, Blueprint, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius,
-    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, Weight,
+    neighbors, rng, Blueprint, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
+    NeighborhoodShape, NeighborhoodSpec, RuleSpec, Weight,
 };
 
 use super::shared::{fill_sphere, seed_random_box, ViewerCell};

@@ -1,8 +1,6 @@
 //! Solver metadata capabilities.
 
-use crate::{
-    AttributeDef, AttributeId, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec,
-};
+use crate::{AttributeDef, AttributeId, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec};
 
 /// Static schema metadata exposed by a solver.
 pub trait SolverMetadata {

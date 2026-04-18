@@ -1,14 +1,14 @@
-use crate::AttributeValue;
-use crate::NeighborhoodId;
 use crate::schema::{
     AttributeAssignment, AttributeRef, AttributeSet, Condition, MaterialRef, MaterialSet,
     NeighborhoodRef, NeighborhoodSet, ResolvedCondition, Rule, RuleEffect,
 };
+use crate::AttributeValue;
+use crate::NeighborhoodId;
 
 use super::errors::BuildError;
 use super::materials::{
-    AttributeRegistry, MaterialRegistry, ensure_material_has_attribute,
-    validate_attribute_comparison,
+    ensure_material_has_attribute, validate_attribute_comparison, AttributeRegistry,
+    MaterialRegistry,
 };
 use super::neighborhoods::NeighborhoodRegistry;
 
@@ -138,7 +138,10 @@ impl RuleSpec {
                 });
             }
             ensure_material_has_attribute(materials, target_material, update.attribute)?;
-            attribute_updates.push(AttributeAssignment::new(update.attribute.id(), update.value));
+            attribute_updates.push(AttributeAssignment::new(
+                update.attribute.id(),
+                update.value,
+            ));
         }
 
         Ok(Rule {

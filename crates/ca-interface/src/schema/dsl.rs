@@ -2,11 +2,9 @@
 
 use std::ops::RangeInclusive;
 
+use crate::schema::{AttributeRef, AttributeSet, MaterialRef, MaterialSet};
 use crate::WEIGHT_SCALE;
 use crate::{AttributeType, AttributeValue, RngStreamId};
-use crate::schema::{
-    AttributeRef, AttributeSet, MaterialRef, MaterialSet,
-};
 
 /// A deterministic rule condition.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -211,10 +209,7 @@ impl AttrAssign {
     }
 
     /// Construct a material-scoped attribute assignment with a default value.
-    pub fn with_default<A: AttributeSet>(
-        attribute: A,
-        default: impl Into<AttributeValue>,
-    ) -> Self {
+    pub fn with_default<A: AttributeSet>(attribute: A, default: impl Into<AttributeValue>) -> Self {
         Self {
             attribute: attribute.attribute(),
             default: default.into(),

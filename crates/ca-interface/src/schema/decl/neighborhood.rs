@@ -1,8 +1,8 @@
 //! Declarative neighborhood records.
 
 use crate::{
-    NeighborhoodId, NeighborhoodRadius,
     schema::{NeighborhoodRef, NeighborhoodSet},
+    NeighborhoodId, NeighborhoodRadius,
 };
 
 /// Declarative description of how a rule samples nearby cells.

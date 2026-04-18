@@ -76,7 +76,9 @@ pub enum BuildError {
 impl Display for BuildError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuildError::MissingMaterials => write!(f, "materials::<M>() must be called before build"),
+            BuildError::MissingMaterials => {
+                write!(f, "materials::<M>() must be called before build")
+            }
             BuildError::DuplicateMaterialLabel(label) => {
                 write!(f, "duplicate material label in material set: {label}")
             }
@@ -84,18 +86,30 @@ impl Display for BuildError {
                 write!(f, "material '{label}' belongs to a different material set")
             }
             BuildError::DuplicateMaterialAssignment(label) => {
-                write!(f, "material attributes were assigned more than once for '{label}'")
+                write!(
+                    f,
+                    "material attributes were assigned more than once for '{label}'"
+                )
             }
             BuildError::MissingAttributes => {
-                write!(f, "attributes::<A>() must be called before using attributes")
+                write!(
+                    f,
+                    "attributes::<A>() must be called before using attributes"
+                )
             }
             BuildError::DuplicateAttributeLabel(label) => {
                 write!(f, "duplicate attribute label in attribute set: {label}")
             }
             BuildError::MismatchedAttribute(label) => {
-                write!(f, "attribute '{label}' belongs to a different attribute set")
+                write!(
+                    f,
+                    "attribute '{label}' belongs to a different attribute set"
+                )
             }
-            BuildError::DuplicateMaterialAttribute { material, attribute } => write!(
+            BuildError::DuplicateMaterialAttribute {
+                material,
+                attribute,
+            } => write!(
                 f,
                 "material '{material}' attaches attribute '{attribute}' more than once"
             ),
@@ -117,7 +131,10 @@ impl Display for BuildError {
                 "attribute '{attribute}' does not support comparison '{comparison}' for {:?}",
                 value_type
             ),
-            BuildError::MissingMaterialAttribute { material, attribute } => write!(
+            BuildError::MissingMaterialAttribute {
+                material,
+                attribute,
+            } => write!(
                 f,
                 "material '{material}' does not carry attribute '{attribute}'"
             ),
@@ -125,10 +142,16 @@ impl Display for BuildError {
                 write!(f, "neighborhoods::<N>() must be called before build")
             }
             BuildError::DuplicateNeighborhoodLabel(label) => {
-                write!(f, "duplicate neighborhood label in neighborhood set: {label}")
+                write!(
+                    f,
+                    "duplicate neighborhood label in neighborhood set: {label}"
+                )
             }
             BuildError::MismatchedNeighborhood(label) => {
-                write!(f, "neighborhood '{label}' belongs to a different neighborhood set")
+                write!(
+                    f,
+                    "neighborhood '{label}' belongs to a different neighborhood set"
+                )
             }
             BuildError::DuplicateNeighborhoodSpec(label) => {
                 write!(f, "neighborhood '{label}' was configured more than once")
@@ -137,7 +160,10 @@ impl Display for BuildError {
                 write!(f, "neighborhood '{label}' is missing a specification")
             }
             BuildError::UnknownRuleNeighborhood(label) => {
-                write!(f, "rule references neighborhood '{label}' from a different set")
+                write!(
+                    f,
+                    "rule references neighborhood '{label}' from a different set"
+                )
             }
             BuildError::InvalidRandomChance { stream, one_in } => write!(
                 f,

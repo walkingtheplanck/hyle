@@ -12,13 +12,13 @@ pub mod resolved;
 mod runtime;
 mod schema;
 
+pub use domain::{
+    AttributeType, AttributeValue, GridDataError, GridDims, GridRegion, GridShapeError,
+    GridSnapshot, NeighborhoodRadius, WEIGHT_SCALE,
+};
 pub use handles::{AttributeId, CellId, MaterialId, NeighborhoodId, RngStreamId};
 pub use hyle_ca_interface_derive::MaterialSet;
 pub use resolved::Rng;
-pub use domain::{
-    AttributeType, AttributeValue, GridDataError, GridDims, GridRegion, GridShapeError, GridSnapshot,
-    NeighborhoodRadius, WEIGHT_SCALE,
-};
 pub use runtime::{
     AttributeAccessError, CaRuntime, CaSolver, CaSolverProvider, CellAttributeValue,
     CellQueryError, GridAccessError, Instance, Runtime, RuntimeAttributes, RuntimeCells,

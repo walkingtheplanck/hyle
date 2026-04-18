@@ -1,7 +1,7 @@
 use std::any::TypeId;
 
-use crate::NeighborhoodId;
 use crate::schema::{NeighborhoodRef, NeighborhoodSet, NeighborhoodSpec};
+use crate::NeighborhoodId;
 
 use super::BuildError;
 

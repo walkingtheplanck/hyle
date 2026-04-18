@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, parse_macro_input};
+use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 pub(crate) fn derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -10,12 +10,9 @@ pub(crate) fn derive(input: TokenStream) -> TokenStream {
     let variants = match input.data {
         Data::Enum(data) => data.variants,
         _ => {
-            return syn::Error::new_spanned(
-                ident,
-                "MaterialSet can only be derived for enums",
-            )
-            .to_compile_error()
-            .into();
+            return syn::Error::new_spanned(ident, "MaterialSet can only be derived for enums")
+                .to_compile_error()
+                .into();
         }
     };
 

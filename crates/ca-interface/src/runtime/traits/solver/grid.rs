@@ -20,7 +20,7 @@ pub trait SolverGrid: SolverExecution {
         cells
     }
 
-        /// Read the full current state back to the host.
+    /// Read the full current state back to the host.
     fn readback(&self) -> GridSnapshot<MaterialId> {
         let dims = self.dims();
         let mut cells = vec![MaterialId::default(); dims.cell_count()];

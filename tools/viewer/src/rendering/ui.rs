@@ -147,11 +147,7 @@ pub fn draw_cell_analysis_window(
         });
 }
 
-pub fn draw_static_analysis_window(
-    ctx: &egui::Context,
-    open: &mut bool,
-    analysis: &SpecAnalysis,
-) {
+pub fn draw_static_analysis_window(ctx: &egui::Context, open: &mut bool, analysis: &SpecAnalysis) {
     egui::Window::new("Static Analysis")
         .open(open)
         .resizable(true)
@@ -217,7 +213,11 @@ pub fn draw_runtime_analysis_window(
                         if let Some(material) = ViewerCell::from_material_id(population.material) {
                             ui.label(format!("{}: {}", material.label(), population.count));
                         } else {
-                            ui.label(format!("material {}: {}", population.material.raw(), population.count));
+                            ui.label(format!(
+                                "material {}: {}",
+                                population.material.raw(),
+                                population.count
+                            ));
                         }
                     }
                 });

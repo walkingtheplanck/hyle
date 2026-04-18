@@ -86,7 +86,8 @@ pub fn analyze_cell<R: CaRuntime>(runtime: &R, position: [i32; 3]) -> Option<Cel
             AttributeView {
                 id: entry.attribute,
                 name: attribute.map_or("unknown", |attribute| attribute.name),
-                value_type: attribute.map_or(entry.value.value_type(), |attribute| attribute.value_type),
+                value_type: attribute
+                    .map_or(entry.value.value_type(), |attribute| attribute.value_type),
                 value: entry.value,
             }
         })

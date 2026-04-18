@@ -5,7 +5,9 @@ use std::time::Instant;
 
 use eframe::egui;
 use glam::Vec3;
-use hyle_ca_analysis::{analyze_cell, analyze_runtime, analyze_spec, CellReport, RuntimeReport, SpecAnalysis};
+use hyle_ca_analysis::{
+    analyze_cell, analyze_runtime, analyze_spec, CellReport, RuntimeReport, SpecAnalysis,
+};
 use hyle_ca_interface::{CaSolverProvider, MaterialSet};
 
 use crate::ca::{viewer_world, Materials, Scenario, SimpleWorld, Simulation};

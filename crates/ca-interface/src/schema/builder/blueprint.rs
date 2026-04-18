@@ -1,11 +1,14 @@
-use crate::schema::{Blueprint, NeighborhoodRef, NeighborhoodSet, NeighborhoodSpec, Semantics, TopologyDescriptor};
+use crate::schema::{
+    Blueprint, NeighborhoodRef, NeighborhoodSet, NeighborhoodSpec, Semantics, TopologyDescriptor,
+};
 
 use super::errors::BuildError;
 use super::materials::{
-    AttributeRegistry, MatAttr, MaterialRegistry, apply_material_attributes, register_attributes,
-    register_materials, validate_unique_attribute_labels, validate_unique_material_labels,
+    apply_material_attributes, register_attributes, register_materials,
+    validate_unique_attribute_labels, validate_unique_material_labels, AttributeRegistry, MatAttr,
+    MaterialRegistry,
 };
-use super::neighborhoods::{NeighborhoodRegistry, register_neighborhoods, validate_neighborhoods};
+use super::neighborhoods::{register_neighborhoods, validate_neighborhoods, NeighborhoodRegistry};
 use super::rules::RuleSpec;
 
 /// Typed schema builder.
@@ -107,7 +110,11 @@ impl BlueprintBuilder {
             None => None,
         };
 
-        apply_material_attributes(&mut materials, attributes.as_ref(), &self.material_attributes)?;
+        apply_material_attributes(
+            &mut materials,
+            attributes.as_ref(),
+            &self.material_attributes,
+        )?;
 
         let neighborhoods = self.neighborhoods.ok_or(BuildError::MissingNeighborhoods)?;
         let (neighborhood_specs, default_neighborhood) = validate_neighborhoods(
