@@ -27,7 +27,7 @@ pub trait SolverGrid: SolverExecution {
     ///
     /// The returned snapshot is guaranteed dense because this method enumerates
     /// every logical cell from `dims()` directly.
-    fn readback(&self) -> GridSnapshot<MaterialId> {
+    fn readback(&self) -> GridSnapshot {
         let dims = self.dims();
         let mut cells = vec![MaterialId::default(); dims.cell_count()];
         let width = dims.width() as usize;

@@ -165,7 +165,7 @@ where
         SolverGrid::replace_cells(&mut self.solver, cells)
     }
 
-    fn readback(&self) -> GridSnapshot<MaterialId> {
+    fn readback(&self) -> GridSnapshot {
         SolverGrid::readback(&self.solver)
     }
 }

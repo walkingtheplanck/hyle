@@ -42,5 +42,5 @@ pub trait RuntimeGrid {
     ///
     /// The snapshot owns a dense x-major material buffer suitable for testing,
     /// serialization, or UI upload.
-    fn readback(&self) -> GridSnapshot<MaterialId>;
+    fn readback(&self) -> GridSnapshot;
 }

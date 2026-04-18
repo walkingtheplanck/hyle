@@ -568,7 +568,7 @@ impl<T: Topology> SolverGrid for Solver<T> {
         self.grid.iter_cells()
     }
 
-    fn readback(&self) -> GridSnapshot<MaterialId> {
+    fn readback(&self) -> GridSnapshot {
         GridSnapshot::from_validated(
             self.grid.dims(),
             self.grid.cells[..self.grid.cell_count()].to_vec(),

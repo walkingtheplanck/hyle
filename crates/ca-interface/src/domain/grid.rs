@@ -255,21 +255,21 @@ impl GridRegion {
 ///
 /// Cells are stored in x-major order: x changes fastest, then y, then z.
 #[derive(Clone, Debug)]
-pub struct GridSnapshot<C> {
+pub struct GridSnapshot {
     /// Dimensions of the captured grid.
     pub dims: GridDims,
     /// Captured cell values in x-major order.
-    pub cells: Vec<C>,
+    pub cells: Vec<crate::MaterialId>,
 }
 
-impl<C> GridSnapshot<C> {
+impl GridSnapshot {
     /// Construct a validated grid snapshot.
     ///
     /// # Errors
     ///
     /// Returns [`GridDataError::CellCountMismatch`] when the provided cells do
     /// not fully cover the declared grid shape.
-    pub fn new(dims: GridDims, cells: Vec<C>) -> Result<Self, GridDataError> {
+    pub fn new(dims: GridDims, cells: Vec<crate::MaterialId>) -> Result<Self, GridDataError> {
         if cells.len() != dims.cell_count() {
             return Err(GridDataError::CellCountMismatch {
                 expected: dims.cell_count(),
@@ -291,7 +291,7 @@ impl<C> GridSnapshot<C> {
     /// Runtime readback paths allocate the exact output length themselves, so
     /// rechecking that length here would only duplicate already-proven work.
     #[doc(hidden)]
-    pub const fn from_validated(dims: GridDims, cells: Vec<C>) -> Self {
+    pub const fn from_validated(dims: GridDims, cells: Vec<crate::MaterialId>) -> Self {
         Self { dims, cells }
     }
 
@@ -313,12 +313,12 @@ impl<C> GridSnapshot<C> {
     }
 
     /// Return the cell at a coordinate, if it lies inside the snapshot.
-    pub fn get(&self, coord: [u32; 3]) -> Option<&C> {
+    pub fn get(&self, coord: [u32; 3]) -> Option<&crate::MaterialId> {
         self.index_of(coord).map(|index| &self.cells[index])
     }
 
     /// Iterate all cells with their coordinates in x-major order.
-    pub fn iter_xyz(&self) -> impl Iterator<Item = (u32, u32, u32, &C)> {
+    pub fn iter_xyz(&self) -> impl Iterator<Item = (u32, u32, u32, &crate::MaterialId)> {
         let width = self.dims.width() as usize;
         let height = self.dims.height() as usize;
 
