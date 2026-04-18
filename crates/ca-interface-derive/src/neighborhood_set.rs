@@ -5,7 +5,7 @@ use quote::quote;
 use crate::common::parse_unit_enum;
 
 pub(crate) fn derive(input: TokenStream) -> TokenStream {
-    let parsed = match parse_unit_enum(input, "MaterialSet") {
+    let parsed = match parse_unit_enum(input, "NeighborhoodSet") {
         Ok(parsed) => parsed,
         Err(error) => return error,
     };
@@ -23,7 +23,7 @@ pub(crate) fn derive(input: TokenStream) -> TokenStream {
         .collect::<Vec<_>>();
 
     quote! {
-        impl ::hyle_ca_interface::MaterialSet for #ident {
+        impl ::hyle_ca_interface::NeighborhoodSet for #ident {
             fn variants() -> &'static [Self] {
                 &[#(Self::#variant_idents),*]
             }

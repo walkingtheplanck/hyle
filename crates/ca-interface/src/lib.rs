@@ -17,7 +17,7 @@ pub use domain::{
     GridSnapshot, NeighborhoodRadius, WEIGHT_SCALE,
 };
 pub use handles::{AttributeId, CellId, MaterialId, NeighborhoodId, RngStreamId};
-pub use hyle_ca_interface_derive::MaterialSet;
+pub use hyle_ca_interface_derive::{AttributeSet, MaterialSet, NeighborhoodSet};
 pub use resolved::Rng;
 pub use runtime::{
     AttributeAccessError, CaRuntime, CaSolver, CaSolverProvider, CellAttributeValue,
