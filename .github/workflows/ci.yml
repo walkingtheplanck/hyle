@@ -68,7 +68,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - run: scripts/ci-check.sh fmt
+      - run: sh scripts/ci-check.sh fmt
 
   clippy:
     name: Lint
@@ -80,7 +80,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - run: scripts/ci-check.sh clippy
+      - run: sh scripts/ci-check.sh clippy
 
   test:
     name: Test
@@ -90,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: scripts/ci-check.sh test
+      - run: sh scripts/ci-check.sh test
 
   doc:
     name: Documentation
@@ -100,4 +100,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: scripts/ci-check.sh doc
+      - run: sh scripts/ci-check.sh doc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cargo-doc-${{ github.sha }}
+          path: target-docci/doc
