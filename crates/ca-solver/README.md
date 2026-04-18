@@ -17,6 +17,7 @@ instances through the shared `CaSolverProvider` interface.
 ## Quick Start
 
 ```rust
+# fn main() -> Result<(), String> {
 use hyle_ca_interface::{
     neighbors, Blueprint, Instance, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
     NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, SolverExecution,
@@ -62,16 +63,21 @@ let spec = Blueprint::builder()
             .require(neighbors(Material::Alive).count().in_range(2..=3).negate())
             .becomes(Material::Dead),
     ])
-    .build()?;
+    .build()
+    .map_err(|err| format!("{err:?}"))?;
 
-let mut solver = Solver::from_spec_instance(Instance::new(64, 64, 64).with_seed(7), &spec);
+let instance = Instance::new(64, 64, 64).map_err(|err| format!("{err:?}"))?;
+let mut solver = Solver::from_spec_instance(instance.with_seed(7), &spec);
 solver.step();
-# Ok::<(), hyle_ca_interface::BuildError>(())
+# let _ = solver;
+# Ok(())
+# }
 ```
 
 ## Decoupled Consumer Path
 
 ```rust
+# fn main() -> Result<(), String> {
 use hyle_ca_interface::{
     Blueprint, CaSolverProvider, Instance, MaterialSet, NeighborhoodFalloff, NeighborhoodRadius,
     NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuntimeStepping,
@@ -108,12 +114,16 @@ let spec = Blueprint::builder()
         NeighborhoodRadius::new(1),
         NeighborhoodFalloff::Uniform,
     )])
-    .build()?;
+    .build()
+    .map_err(|err| format!("{err:?}"))?;
 let provider = CpuSolverProvider::new();
-let mut runtime = provider.build(Instance::new(16, 16, 16), &spec);
+let instance = Instance::new(16, 16, 16).map_err(|err| format!("{err:?}"))?;
+let mut runtime = provider.build(instance, &spec);
 
 runtime.step();
-# Ok::<(), hyle_ca_interface::BuildError>(())
+# let _ = runtime;
+# Ok(())
+# }
 ```
 
 ## Topology

@@ -7,6 +7,7 @@ pub(crate) struct Grid {
     pub width: u32,
     pub height: u32,
     pub depth: u32,
+    dims: GridDims,
     pub cells: Vec<MaterialId>,
     pub cells_next: Vec<MaterialId>,
 }
@@ -24,10 +25,12 @@ impl Grid {
             .and_then(|xy| xy.checked_mul(depth as usize))
             .expect("grid cell count must fit in usize");
         let total = n.checked_add(1).expect("grid allocation size overflow");
+        let dims = GridDims::from_validated(width, height, depth, n);
         Self {
             width,
             height,
             depth,
+            dims,
             cells: vec![default_material; total],
             cells_next: vec![default_material; total],
         }
@@ -48,7 +51,7 @@ impl Grid {
     /// Grid dimensions.
     #[inline]
     pub fn dims(&self) -> GridDims {
-        GridDims::new(self.width, self.height, self.depth)
+        self.dims
     }
 
     /// Resolve coordinates to an in-bounds linear index according to topology.

@@ -45,8 +45,8 @@ pub trait SolverCells: SolverExecution + SolverMetadata {
             return Err(GridAccessError::RegionOutOfBounds { region, dims });
         }
 
-        let [ox, oy, oz] = region.origin;
-        let [sx, sy, sz] = region.size;
+        let [ox, oy, oz] = region.origin();
+        let [sx, sy, sz] = region.size();
         let mut cells = Vec::with_capacity(region.cell_count());
 
         for z in oz..oz + sz {

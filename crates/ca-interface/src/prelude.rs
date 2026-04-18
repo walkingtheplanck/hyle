@@ -2,7 +2,7 @@
 
 pub use crate::schema::{
     attr, neighbors, rng, AttrAssign, AttributeDef, AttributeSet, AttributeType, AttributeValue,
-    AxisTopology, Blueprint, BuildError, MatAttr, MaterialSet, NeighborhoodFalloff,
+    AxisTopology, Blueprint, BuildError, GridShapeError, MatAttr, MaterialSet, NeighborhoodFalloff,
     NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
     TopologyDescriptor, Weight,
 };

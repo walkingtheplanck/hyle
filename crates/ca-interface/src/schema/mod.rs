@@ -8,8 +8,8 @@ mod spec;
 
 pub use builder::{BlueprintBuilder, BuildError, MatAttr, RuleSpec};
 pub use defs::{
-    AttributeDef, AttributeType, AttributeValue, AxisTopology, GridDims, GridRegion, GridSnapshot,
-    MaterialAttributeBinding, MaterialDef, NeighborhoodFalloff, NeighborhoodRadius,
+    AttributeDef, AttributeType, AttributeValue, AxisTopology, GridDims, GridRegion,
+    GridShapeError, GridSnapshot, MaterialAttributeBinding, MaterialDef, NeighborhoodFalloff, NeighborhoodRadius,
     NeighborhoodShape, NeighborhoodSpec, TopologyDescriptor, WEIGHT_SCALE,
 };
 pub use dsl::{

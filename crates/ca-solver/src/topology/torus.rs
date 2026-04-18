@@ -12,14 +12,14 @@ impl Topology for TorusTopology {
     }
 
     fn resolve_index(&self, x: i32, y: i32, z: i32, dims: GridDims, guard_idx: usize) -> usize {
-        if dims.width == 0 || dims.height == 0 || dims.depth == 0 {
+        if dims.width() == 0 || dims.height() == 0 || dims.depth() == 0 {
             return guard_idx;
         }
 
-        let x = wrap_axis(x, dims.width);
-        let y = wrap_axis(y, dims.height);
-        let z = wrap_axis(z, dims.depth);
-        linear_index(x, y, z, dims.width, dims.height)
+        let x = wrap_axis(x, dims.width());
+        let y = wrap_axis(y, dims.height());
+        let z = wrap_axis(z, dims.depth());
+        linear_index(x, y, z, dims.width(), dims.height())
     }
 }
 

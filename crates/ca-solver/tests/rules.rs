@@ -179,7 +179,9 @@ fn random_chance_rules_follow_semantic_rng() {
         .build()
         .expect("valid spec");
 
-    let instance = Instance::new(2, 2, 2).with_seed(41);
+    let instance = Instance::new(2, 2, 2)
+        .expect("test instance dimensions should be valid")
+        .with_seed(41);
     let mut solver = Solver::from_spec_instance(instance, &spec);
     let expected = if cell_rng([0, 0, 0], 0, 3, 41).chance(5) {
         M::Alive.id()

@@ -15,9 +15,7 @@ pub trait SolverExecution {
     fn depth(&self) -> u32;
 
     /// Grid dimensions.
-    fn dims(&self) -> GridDims {
-        GridDims::new(self.width(), self.height(), self.depth())
-    }
+    fn dims(&self) -> GridDims;
 
     /// Deterministic run seed used for semantic randomness.
     fn seed(&self) -> u64 {

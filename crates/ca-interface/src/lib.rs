@@ -25,7 +25,7 @@ pub use schema::{
     attr, neighbors, rng, AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef,
     AttributeRef, AttributeSelector, AttributeSet, AttributeType, AttributeValue, AxisTopology,
     Blueprint, BlueprintBuilder, BuildError, Condition, CountComparison, GridDims, GridRegion,
-    GridSnapshot, MatAttr, MaterialAttributeBinding, MaterialDef, MaterialRef, MaterialSet,
+    GridShapeError, GridSnapshot, MatAttr, MaterialAttributeBinding, MaterialDef, MaterialRef, MaterialSet,
     NeighborCount, NeighborSelector, NeighborWeightedSum, NeighborhoodFalloff, NeighborhoodRadius,
     NeighborhoodRef, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RandomSource,
     ResolvedCondition, Rule, RuleEffect, RuleSpec, Semantics, TopologyDescriptor, Weight,

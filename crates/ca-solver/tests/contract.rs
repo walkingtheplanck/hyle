@@ -75,7 +75,7 @@ fn readback_returns_contiguous_snapshot() {
 #[test]
 fn write_region_updates_subvolume_in_x_major_order() {
     let mut s = Solver::new(3, 3, 2);
-    let region = GridRegion::new([1, 1, 0], [2, 2, 1]);
+    let region = GridRegion::new([1, 1, 0], [2, 2, 1]).expect("test region should be valid");
     s.write_region(
         region,
         &[

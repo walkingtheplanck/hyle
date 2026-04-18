@@ -10,9 +10,9 @@ pub trait SolverGrid: SolverExecution {
     fn iter_cells(&self) -> Vec<(u32, u32, u32, MaterialId)> {
         let dims = self.dims();
         let mut cells = Vec::with_capacity(dims.cell_count());
-        for z in 0..dims.depth {
-            for y in 0..dims.height {
-                for x in 0..dims.width {
+        for z in 0..dims.depth() {
+            for y in 0..dims.height() {
+                for x in 0..dims.width() {
                     cells.push((x, y, z, self.get(x as i32, y as i32, z as i32)));
                 }
             }
@@ -20,12 +20,12 @@ pub trait SolverGrid: SolverExecution {
         cells
     }
 
-    /// Read the full current state back to the host.
+        /// Read the full current state back to the host.
     fn readback(&self) -> GridSnapshot<MaterialId> {
         let dims = self.dims();
         let mut cells = vec![MaterialId::default(); dims.cell_count()];
-        let width = dims.width as usize;
-        let height = dims.height as usize;
+        let width = dims.width() as usize;
+        let height = dims.height() as usize;
 
         for (x, y, z, material) in self.iter_cells() {
             let index = (x as usize) + (y as usize) * width + (z as usize) * width * height;
@@ -43,8 +43,8 @@ pub trait SolverGrid: SolverExecution {
         }
 
         let mut cells = Vec::with_capacity(region.cell_count());
-        let [ox, oy, oz] = region.origin;
-        let [sx, sy, sz] = region.size;
+        let [ox, oy, oz] = region.origin();
+        let [sx, sy, sz] = region.size();
 
         for z in oz..oz + sz {
             for y in oy..oy + sy {
@@ -74,8 +74,8 @@ pub trait SolverGrid: SolverExecution {
             });
         }
 
-        let [ox, oy, oz] = region.origin;
-        let [sx, sy, sz] = region.size;
+        let [ox, oy, oz] = region.origin();
+        let [sx, sy, sz] = region.size();
         let mut index = 0;
 
         for z in oz..oz + sz {

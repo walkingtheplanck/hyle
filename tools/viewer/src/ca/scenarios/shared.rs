@@ -1,6 +1,8 @@
 //! Shared viewer material definitions, palette, and seeding helpers.
 
-use hyle_ca_interface::{Blueprint, CaRuntime, Instance, MaterialId, MaterialSet, Rng, RngStreamId};
+use hyle_ca_interface::{
+    Blueprint, CaRuntime, GridDims, Instance, MaterialId, MaterialSet, Rng, RngStreamId,
+};
 
 use crate::ca::world::{Material, Materials};
 
@@ -93,7 +95,7 @@ impl Scenario {
     }
 
     pub const fn instance(self) -> Instance {
-        Instance::new(64, 64, 64).with_seed(match self {
+        Instance::from_dims(GridDims::from_validated(64, 64, 64, 64 * 64 * 64)).with_seed(match self {
             Scenario::Life4555 => 1,
             Scenario::WeightedBloom => 2,
             Scenario::CrystalForge => 3,

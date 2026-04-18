@@ -290,26 +290,32 @@ belongs in blueprint attributes, which solvers can store as SoA channels.
 ## Grid Descriptors
 
 ```rust
+# fn main() -> Result<(), hyle_ca_interface::GridShapeError> {
 use hyle_ca_interface::{GridDims, GridRegion, GridSnapshot, MaterialId};
 
-let dims = GridDims::new(8, 8, 8);
-let region = GridRegion::new([2, 2, 2], [2, 2, 2]);
+let dims = GridDims::new(8, 8, 8)?;
+let region = GridRegion::new([2, 2, 2], [2, 2, 2])?;
 let snapshot = GridSnapshot::new(dims, vec![MaterialId::default(); dims.cell_count()]);
 
 assert!(dims.contains_region(region));
 assert_eq!(snapshot.cells.len(), dims.cell_count());
+# Ok(())
+# }
 ```
 
 ## Deterministic RNG
 
 ```rust
+# fn main() -> Result<(), hyle_ca_interface::GridShapeError> {
 use hyle_ca_interface::{Instance, Rng};
 
-let instance = Instance::new(64, 64, 64).with_seed(42);
+let instance = Instance::new(64, 64, 64)?.with_seed(42);
 let rng = Rng::with_seed(10, 20, 30, 4, instance.seed());
 
 assert!(rng.chance(1));
 assert!(rng.range(8) < 8);
+# Ok(())
+# }
 ```
 
 This RNG is deterministic and portable: the same `(seed, x, y, z, step, stream)`

@@ -1,6 +1,6 @@
 //! Runtime simulation-instance parameters.
 
-use crate::GridDims;
+use crate::{GridDims, GridShapeError};
 
 /// Portable runtime parameters for one solver instance.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -11,11 +11,11 @@ pub struct Instance {
 
 impl Instance {
     /// Construct a new instance with zero seed.
-    pub const fn new(width: u32, height: u32, depth: u32) -> Self {
-        Self {
-            dims: GridDims::new(width, height, depth),
+    pub fn new(width: u32, height: u32, depth: u32) -> Result<Self, GridShapeError> {
+        Ok(Self {
+            dims: GridDims::new(width, height, depth)?,
             seed: 0,
-        }
+        })
     }
 
     /// Construct an instance from existing grid dimensions.

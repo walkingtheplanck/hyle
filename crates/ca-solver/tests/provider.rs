@@ -86,13 +86,18 @@ fn cpu_provider_builds_runtime() {
         .expect("test schema should build");
 
     let provider = CpuSolverProvider::new();
-    let mut runtime = provider.build(Instance::new(4, 4, 4).with_seed(7), &spec);
-    assert_eq!(runtime.solver().dims().width, 4);
+    let mut runtime = provider.build(
+        Instance::new(4, 4, 4)
+            .expect("test instance dimensions should be valid")
+            .with_seed(7),
+        &spec,
+    );
+    assert_eq!(runtime.solver().dims().width(), 4);
 
     runtime.set(1, 1, 1, M::Alive.id());
     runtime
         .write_region(
-            GridRegion::new([0, 0, 0], [2, 1, 1]),
+            GridRegion::new([0, 0, 0], [2, 1, 1]).expect("test region should be valid"),
             &[M::Other.id(), M::Alive.id()],
         )
         .expect("runtime region writes should succeed");
@@ -102,10 +107,12 @@ fn cpu_provider_builds_runtime() {
     runtime.step();
 
     let snapshot = runtime.readback();
-    assert_eq!(runtime.dims().width, 4);
+    assert_eq!(runtime.dims().width(), 4);
     assert_eq!(snapshot.get([1, 0, 0]), Some(&M::Alive.id()));
     assert_eq!(
-        runtime.read_region(GridRegion::new([0, 0, 0], [2, 1, 1])),
+        runtime.read_region(
+            GridRegion::new([0, 0, 0], [2, 1, 1]).expect("test region should be valid"),
+        ),
         Ok(vec![M::Other.id(), M::Alive.id()])
     );
     assert_eq!(
@@ -136,7 +143,10 @@ fn runtime_attribute_writes_report_type_mismatches() {
         .expect("test schema should build");
 
     let provider = CpuSolverProvider::new();
-    let mut runtime = provider.build(Instance::new(2, 2, 2), &spec);
+    let mut runtime = provider.build(
+        Instance::new(2, 2, 2).expect("test instance dimensions should be valid"),
+        &spec,
+    );
 
     assert_eq!(
         runtime.set_attr(A::Heat.id(), 0, 0, 0, AttributeValue::Bool(true)),

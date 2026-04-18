@@ -26,15 +26,15 @@ impl Topology for BoundedTopology {
         let uy = y as u32;
         let uz = z as u32;
         let max_dim = i32::MAX as u32;
-        let in_bounds = (dims.width <= max_dim)
-            & (dims.height <= max_dim)
-            & (dims.depth <= max_dim)
-            & (ux < dims.width)
-            & (uy < dims.height)
-            & (uz < dims.depth);
+        let in_bounds = (dims.width() <= max_dim)
+            & (dims.height() <= max_dim)
+            & (dims.depth() <= max_dim)
+            & (ux < dims.width())
+            & (uy < dims.height())
+            & (uz < dims.depth());
 
         if in_bounds {
-            linear_index(ux, uy, uz, dims.width, dims.height)
+            linear_index(ux, uy, uz, dims.width(), dims.height())
         } else {
             guard_idx
         }

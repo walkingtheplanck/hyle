@@ -20,11 +20,11 @@ impl ResolvedTopology {
     /// Resolve a 3D coordinate to a linear cell index.
     pub fn resolve_index(&self, x: i32, y: i32, z: i32, dims: GridDims, guard_idx: usize) -> usize {
         match (
-            resolve_axis(x, dims.width, self.descriptor.x),
-            resolve_axis(y, dims.height, self.descriptor.y),
-            resolve_axis(z, dims.depth, self.descriptor.z),
+            resolve_axis(x, dims.width(), self.descriptor.x),
+            resolve_axis(y, dims.height(), self.descriptor.y),
+            resolve_axis(z, dims.depth(), self.descriptor.z),
         ) {
-            (Some(x), Some(y), Some(z)) => linear_index(x, y, z, dims.width, dims.height),
+            (Some(x), Some(y), Some(z)) => linear_index(x, y, z, dims.width(), dims.height()),
             _ => guard_idx,
         }
     }

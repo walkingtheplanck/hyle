@@ -1,8 +1,8 @@
 //! Debug-only wrapper that validates all `CaSolver` contracts at runtime.
 
 use crate::{
-    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, CaSolver, MaterialDef,
-    MaterialId, NeighborhoodSpec, TransitionCount,
+    AttributeAccessError, AttributeDef, AttributeId, AttributeValue, CaSolver, GridDims,
+    MaterialDef, MaterialId, NeighborhoodSpec, TransitionCount,
 };
 
 use super::{
@@ -55,6 +55,10 @@ where
     S: CaSolver,
 {
     type Topology = S::Topology;
+
+    fn dims(&self) -> GridDims {
+        GridDims::from_validated(self.width(), self.height(), self.depth(), self.inner.cell_count())
+    }
 
     fn width(&self) -> u32 {
         let w = self.inner.width();
