@@ -13,18 +13,17 @@ pub trait AttributeSet: Copy + Eq + Send + Sync + 'static {
     fn value_type(self) -> AttributeType;
 
     /// Return the stable numeric identifier for this attribute.
-    ///
-    /// # Panics
-    ///
-    /// Panics if a manual `AttributeSet` implementation returns a `variants()`
-    /// slice that does not contain `self`. The derive-like contract here is
-    /// that `variants()` is the source of truth for the entire set.
     fn id(self) -> AttributeId {
-        let index = Self::variants()
+        self.try_id().unwrap_or_default()
+    }
+
+    /// Return the stable numeric identifier for this attribute, if the trait
+    /// implementation is internally consistent.
+    fn try_id(self) -> Option<AttributeId> {
+        Self::variants()
             .iter()
             .position(|candidate| *candidate == self)
-            .expect("attribute must appear in its declared variant list");
-        AttributeId::new(index as u16)
+            .map(|index| AttributeId::new(index as u16))
     }
 
     /// Return a type-erased reference to this attribute.

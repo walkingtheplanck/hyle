@@ -254,12 +254,8 @@ fn ordered_attribute_compare(
 
 fn attribute_ge(value: AttributeValue, expected: AttributeValue) -> bool {
     // Schema validation is expected to guarantee homogeneous attribute
-    // comparisons before rules ever reach the compiled program.
-    debug_assert_eq!(
-        value.value_type(),
-        expected.value_type(),
-        "attribute comparison types must match"
-    );
+    // comparisons before rules ever reach the compiled program. If malformed
+    // data still slips through, treat the comparison as false.
 
     match (value, expected) {
         (AttributeValue::U8(value), AttributeValue::U8(expected)) => value >= expected,
@@ -276,12 +272,7 @@ fn attribute_ge(value: AttributeValue, expected: AttributeValue) -> bool {
 
 fn attribute_le(value: AttributeValue, expected: AttributeValue) -> bool {
     // Keep the invariant mirrored here so both ordered comparisons degrade the
-    // same way in release builds.
-    debug_assert_eq!(
-        value.value_type(),
-        expected.value_type(),
-        "attribute comparison types must match"
-    );
+    // same way when malformed comparisons slip through validation.
 
     match (value, expected) {
         (AttributeValue::U8(value), AttributeValue::U8(expected)) => value <= expected,

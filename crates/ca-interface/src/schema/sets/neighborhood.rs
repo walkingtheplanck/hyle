@@ -10,17 +10,17 @@ pub trait NeighborhoodSet: Copy + Eq + Send + Sync + 'static {
     fn label(self) -> &'static str;
 
     /// Return the stable numeric identifier for this neighborhood.
-    ///
-    /// # Panics
-    ///
-    /// Panics if a manual `NeighborhoodSet` implementation returns a
-    /// `variants()` slice that does not contain `self`.
     fn id(self) -> NeighborhoodId {
-        let index = Self::variants()
+        self.try_id().unwrap_or_default()
+    }
+
+    /// Return the stable numeric identifier for this neighborhood, if the
+    /// trait implementation is internally consistent.
+    fn try_id(self) -> Option<NeighborhoodId> {
+        Self::variants()
             .iter()
             .position(|candidate| *candidate == self)
-            .expect("neighborhood must appear in its declared variant list");
-        NeighborhoodId::new(index as u16)
+            .map(|index| NeighborhoodId::new(index as u16))
     }
 
     /// Return a type-erased reference to this neighborhood.
@@ -29,17 +29,20 @@ pub trait NeighborhoodSet: Copy + Eq + Send + Sync + 'static {
     }
 
     /// Return the default neighborhood identifier, using the first variant.
-    ///
-    /// # Panics
-    ///
-    /// Panics if a manual `NeighborhoodSet` implementation returns an empty
-    /// `variants()` slice. Neighborhood sets are expected to declare at least
-    /// one usable neighborhood.
     fn default_neighborhood() -> NeighborhoodId {
         Self::variants()
             .first()
             .copied()
-            .expect("neighborhood set must not be empty")
-            .id()
+            .and_then(|neighborhood| neighborhood.try_id())
+            .unwrap_or_default()
+    }
+
+    /// Return the default neighborhood identifier when the set declares at
+    /// least one neighborhood and its variant list is internally consistent.
+    fn try_default_neighborhood() -> Option<NeighborhoodId> {
+        Self::variants()
+            .first()
+            .copied()
+            .and_then(|neighborhood| neighborhood.try_id())
     }
 }

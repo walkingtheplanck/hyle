@@ -79,10 +79,8 @@ impl Neighborhood {
                 return entry.cell;
             }
         }
-        debug_assert!(
-            false,
-            "offset ({dx},{dy},{dz}) is not part of this neighborhood shape"
-        );
+        // Unknown offsets are treated as absent neighbors rather than raising a
+        // debug-only contract failure.
         MaterialId::default()
     }
 

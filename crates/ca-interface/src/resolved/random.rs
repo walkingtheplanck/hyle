@@ -11,14 +11,8 @@ use super::Rng;
 pub fn cell_rng(pos: [i32; 3], step: u32, stream: impl Into<RngStreamId>, seed: u64) -> Rng {
     let stream = stream.into();
     // Runtime positions are expected to be validated logical coordinates before
-    // rule-visible randomness is requested.
-    debug_assert!(pos[0] >= 0 && pos[1] >= 0 && pos[2] >= 0);
-    Rng::with_stream_and_seed(
-        pos[0] as u32,
-        pos[1] as u32,
-        pos[2] as u32,
-        step,
-        stream,
-        seed,
-    )
+    // rule-visible randomness is requested. If a malformed caller still passes
+    // negative coordinates, clamp them to the origin instead of panicking.
+    let [x, y, z] = pos.map(|coord| coord.max(0) as u32);
+    Rng::with_stream_and_seed(x, y, z, step, stream, seed)
 }

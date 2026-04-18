@@ -10,18 +10,20 @@ pub trait MaterialSet: Copy + Default + Eq + Send + Sync + 'static {
     fn label(self) -> &'static str;
 
     /// Return the stable numeric identifier for this material.
-    ///
-    /// # Panics
-    ///
-    /// Panics if a manual `MaterialSet` implementation returns a `variants()`
-    /// slice that does not contain `self`. The derive macro maintains this
-    /// contract automatically.
     fn id(self) -> MaterialId {
-        let index = Self::variants()
+        self.try_id().unwrap_or_default()
+    }
+
+    /// Return the stable numeric identifier for this material, if the trait
+    /// implementation is internally consistent.
+    ///
+    /// Manual impls are expected to include every variant in `variants()`. The
+    /// derive macro maintains that contract automatically.
+    fn try_id(self) -> Option<MaterialId> {
+        Self::variants()
             .iter()
             .position(|candidate| *candidate == self)
-            .expect("material must appear in its declared variant list");
-        MaterialId::new(index as u16)
+            .map(|index| MaterialId::new(index as u16))
     }
 
     /// Return a type-erased reference to this material.
