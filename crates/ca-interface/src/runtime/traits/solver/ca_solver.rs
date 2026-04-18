@@ -15,7 +15,7 @@ use super::{
 /// - [`SolverGrid`]: bulk material-grid IO
 /// - [`SolverMetrics`]: latest-step and population metrics
 ///
-/// Contracts (enforced by `ValidatedSolver` in debug builds):
+/// Solver backends are expected to satisfy these contracts:
 /// - `get(x,y,z)` and `set(x,y,z,...)` follow `resolve_index(...)`.
 /// - If `resolve_index(...)` returns `guard_index()`, `get(...)` returns
 ///   `MaterialId::default()` and `set(...)` is a silent no-op.

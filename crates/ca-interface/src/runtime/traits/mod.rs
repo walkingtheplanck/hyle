@@ -11,5 +11,5 @@ pub use runtime::{
 };
 pub use solver::{
     CaSolver, SolverAttributes, SolverCells, SolverExecution, SolverGrid, SolverMetadata,
-    SolverMetrics, ValidatedSolver,
+    SolverMetrics,
 };

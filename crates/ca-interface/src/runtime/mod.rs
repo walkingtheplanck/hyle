@@ -11,5 +11,5 @@ pub use topology::Topology;
 pub use traits::{
     CaRuntime, CaSolver, CaSolverProvider, Runtime, RuntimeAttributes, RuntimeCells, RuntimeGrid,
     RuntimeMetadata, RuntimeMetrics, RuntimeStepping, SolverAttributes, SolverCells,
-    SolverExecution, SolverGrid, SolverMetadata, SolverMetrics, ValidatedSolver,
+    SolverExecution, SolverGrid, SolverMetadata, SolverMetrics,
 };

@@ -19,7 +19,6 @@ pub use runtime::{
     CellQueryError, GridAccessError, Instance, Runtime, RuntimeAttributes, RuntimeCells,
     RuntimeGrid, RuntimeMetadata, RuntimeMetrics, RuntimeStepping, SolverAttributes, SolverCells,
     SolverExecution, SolverGrid, SolverMetadata, SolverMetrics, Topology, TransitionCount,
-    ValidatedSolver,
 };
 pub use schema::{
     attr, neighbors, rng, AttrAssign, AttributeAssignment, AttributeComparison, AttributeDef,

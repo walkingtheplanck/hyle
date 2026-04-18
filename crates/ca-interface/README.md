@@ -32,7 +32,6 @@ It has **zero dependencies** and is split conceptually into:
 | [`Rng`] | Shared deterministic random-number primitive parameterized by seed, position, step, and stream |
 | [`CellId`] | Opaque runtime handle to one logical cell for query-oriented tooling |
 | [`Topology`] / [`TopologyDescriptor`] | Boundary behavior traits and descriptors |
-| [`ValidatedSolver`] | Debug wrapper that asserts solver contracts on every call |
 
 Resolved forms are available under `hyle_ca_interface::resolved`, for example:
 - `hyle_ca_interface::resolved::ResolvedBlueprint`
