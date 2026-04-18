@@ -220,6 +220,7 @@ impl AttrAssign {
     ///
     /// The typed first step keeps the authored API ergonomic while the builder
     /// later validates that the default value matches the attribute's type.
+    #[allow(clippy::new_ret_no_self)]
     pub fn new<A: AttributeSet>(attribute: A) -> PendingAttrAssign {
         PendingAttrAssign {
             attribute: attribute.attribute(),

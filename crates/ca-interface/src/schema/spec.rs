@@ -114,6 +114,7 @@ impl Blueprint {
         BlueprintBuilder::new()
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         semantics: Semantics,
         topology: TopologyDescriptor,

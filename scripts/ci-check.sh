@@ -9,7 +9,7 @@
 
 set -e
 
-PACKAGES="-p hyle-ca-analysis -p hyle-ca-interface -p hyle-ca-solver"
+PACKAGES="-p hyle-ca-analysis -p hyle-ca-interface-derive -p hyle-ca-interface -p hyle-ca-solver"
 
 run_fmt() {
     echo "[fmt] cargo fmt..."
@@ -30,7 +30,9 @@ run_test() {
 
 run_doc() {
     echo "[doc] cargo doc..."
-    RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --quiet
+    CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target-docci}" \
+    RUSTDOCFLAGS="-D warnings" \
+    cargo doc $PACKAGES --no-deps --quiet
 }
 
 case "${1:-all}" in

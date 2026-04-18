@@ -20,7 +20,7 @@ pub trait RuntimeAttributes {
 
     /// Read all declared attached attributes from a resolved cell handle.
     ///
-    /// The returned list is ordered like [`RuntimeMetadata::attribute_defs`],
+    /// The returned list is ordered like [`super::RuntimeMetadata::attribute_defs`],
     /// which makes it stable for UIs and analysis tooling.
     fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError>;
 
