@@ -11,6 +11,9 @@ pub struct NamedNeighborhood {
 
 impl NamedNeighborhood {
     /// Construct an interpreted neighborhood.
+    ///
+    /// This pairs the original declarative spec with its expanded canonical
+    /// representation so tools can keep both views together.
     pub fn new(spec: NeighborhoodSpec, neighborhood: Neighborhood) -> Self {
         Self { spec, neighborhood }
     }
@@ -46,6 +49,9 @@ impl ResolvedBlueprint {
     }
 
     /// Return the interpreted topology descriptor.
+    ///
+    /// This is the canonical behavior a solver should execute, after any
+    /// shorthand declarative representation has been normalized.
     pub fn topology(&self) -> &ResolvedTopology {
         &self.topology
     }
@@ -66,6 +72,9 @@ impl ResolvedBlueprint {
     }
 
     /// Return the interpreted neighborhoods.
+    ///
+    /// Neighborhoods are eagerly expanded here so backends and tools do not need
+    /// to re-interpret the declarative specs repeatedly.
     pub fn neighborhoods(&self) -> &[NamedNeighborhood] {
         &self.neighborhoods
     }
@@ -82,6 +91,9 @@ impl ResolvedBlueprint {
 }
 
 /// Interpret a declarative schema into its canonical semantic form.
+///
+/// This is the boundary between authoring-time declarations and the
+/// solver/tool-facing form that has explicit topology and neighborhood meaning.
 pub fn interpret_blueprint(blueprint: &Blueprint) -> ResolvedBlueprint {
     ResolvedBlueprint {
         semantics: blueprint.semantics(),

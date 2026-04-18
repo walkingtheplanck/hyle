@@ -7,6 +7,9 @@ use super::SolverExecution;
 /// Bulk material-grid IO derived from core solver execution.
 pub trait SolverGrid: SolverExecution {
     /// Read back all logical materials in x-major order.
+    ///
+    /// This is a structural helper for host-side tooling; hot-path solver code
+    /// works on indices directly instead of material tuples.
     fn iter_cells(&self) -> Vec<(u32, u32, u32, MaterialId)> {
         let dims = self.dims();
         let mut cells = Vec::with_capacity(dims.cell_count());
@@ -21,6 +24,9 @@ pub trait SolverGrid: SolverExecution {
     }
 
     /// Read the full current state back to the host.
+    ///
+    /// The returned snapshot is guaranteed dense because this method enumerates
+    /// every logical cell from `dims()` directly.
     fn readback(&self) -> GridSnapshot<MaterialId> {
         let dims = self.dims();
         let mut cells = vec![MaterialId::default(); dims.cell_count()];
@@ -36,6 +42,11 @@ pub trait SolverGrid: SolverExecution {
     }
 
     /// Read a contiguous rectangular region in x-major order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`GridAccessError::RegionOutOfBounds`] when the requested region
+    /// lies outside the solver's logical grid.
     fn read_region(&self, region: GridRegion) -> Result<Vec<MaterialId>, GridAccessError> {
         let dims = self.dims();
         if !dims.contains_region(region) {
@@ -58,6 +69,11 @@ pub trait SolverGrid: SolverExecution {
     }
 
     /// Overwrite a contiguous rectangular region from x-major ordered data.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`GridAccessError`] when the region is out of bounds or the
+    /// provided slice length does not match the region volume.
     fn write_region(
         &mut self,
         region: GridRegion,
@@ -91,6 +107,8 @@ pub trait SolverGrid: SolverExecution {
     }
 
     /// Replace the full solver state from x-major ordered data.
+    ///
+    /// This is the bulk-write counterpart to [`SolverGrid::readback`].
     fn replace_cells(&mut self, cells: &[MaterialId]) -> Result<(), GridAccessError> {
         let dims = self.dims();
         if cells.len() != dims.cell_count() {

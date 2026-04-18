@@ -8,6 +8,9 @@ pub struct ResolvedTopology {
 
 impl ResolvedTopology {
     /// Construct an interpreted topology from a declarative descriptor.
+    ///
+    /// The interpreted form is intentionally thin today, but it gives the crate
+    /// a stable semantic boundary if topology interpretation grows later.
     pub const fn from_descriptor(descriptor: TopologyDescriptor) -> Self {
         Self { descriptor }
     }
@@ -18,6 +21,9 @@ impl ResolvedTopology {
     }
 
     /// Resolve a 3D coordinate to a linear cell index.
+    ///
+    /// Returning `guard_idx` keeps topology resolution aligned with the solver
+    /// contract's sentinel-based execution model.
     pub fn resolve_index(&self, x: i32, y: i32, z: i32, dims: GridDims, guard_idx: usize) -> usize {
         match (
             resolve_axis(x, dims.width(), self.descriptor.x),
@@ -38,6 +44,9 @@ pub const fn interpret_topology(descriptor: TopologyDescriptor) -> ResolvedTopol
 fn resolve_axis(coord: i32, size: u32, topology: AxisTopology) -> Option<u32> {
     match topology {
         AxisTopology::Bounded => {
+            // Coordinates larger than `i32::MAX` are rejected earlier when grid
+            // shapes are constructed, which keeps this cast aligned with the
+            // validated domain types.
             let coord = coord as u32;
             let max_dim = i32::MAX as u32;
             if size <= max_dim && coord < size {
@@ -58,6 +67,8 @@ fn resolve_axis(coord: i32, size: u32, topology: AxisTopology) -> Option<u32> {
 
 #[inline]
 fn linear_index(x: u32, y: u32, z: u32, width: u32, height: u32) -> usize {
+    // All callers already operate on validated grid dimensions, so this can
+    // remain a compact unchecked layout formula.
     (x as usize)
         + (y as usize) * (width as usize)
         + (z as usize) * (width as usize) * (height as usize)

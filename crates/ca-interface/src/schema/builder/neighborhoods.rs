@@ -12,6 +12,7 @@ pub(super) struct NeighborhoodRegistry {
     pub(super) expected_names: Vec<&'static str>,
 }
 
+/// Erase one enum-backed neighborhood set into builder-owned metadata.
 pub(super) fn register_neighborhoods<N: NeighborhoodSet>() -> NeighborhoodRegistry {
     NeighborhoodRegistry {
         owner: TypeId::of::<N>(),
@@ -20,6 +21,10 @@ pub(super) fn register_neighborhoods<N: NeighborhoodSet>() -> NeighborhoodRegist
     }
 }
 
+/// Match declarative neighborhood specs against the declared neighborhood set.
+///
+/// The builder stores neighborhood ids and names separately, so this pass
+/// confirms that every declared enum entry has exactly one matching spec.
 pub(super) fn validate_neighborhoods(
     registry: &NeighborhoodRegistry,
     specs: &[NeighborhoodSpec],

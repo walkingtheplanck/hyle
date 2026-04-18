@@ -7,9 +7,17 @@ use super::RuntimeMetadata;
 /// Cell-oriented queries exposed by a live runtime.
 pub trait RuntimeCells: RuntimeMetadata {
     /// Resolve one logical cell handle from grid coordinates.
+    ///
+    /// This returns `None` for coordinates that the active topology maps to the
+    /// solver's guard cell rather than a live logical cell.
     fn cell_at(&self, x: i32, y: i32, z: i32) -> Option<CellId>;
 
     /// Decode a cell handle back into its canonical grid position.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CellQueryError::UnknownCell`] when the handle does not belong
+    /// to the active runtime.
     fn cell_position(&self, cell: CellId) -> Result<[u32; 3], CellQueryError>;
 
     /// Return `true` when the given cell handle belongs to the active runtime.
@@ -27,12 +35,27 @@ pub trait RuntimeCells: RuntimeMetadata {
     }
 
     /// Resolve all logical cell handles in one region in x-major order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`GridAccessError`] when the region falls outside the active
+    /// grid or cannot be resolved consistently.
     fn cells_in_region(&self, region: GridRegion) -> Result<Vec<CellId>, GridAccessError>;
 
     /// Read one material from a resolved cell handle.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CellQueryError::UnknownCell`] when the handle does not belong
+    /// to the active runtime.
     fn material(&self, cell: CellId) -> Result<MaterialId, CellQueryError>;
 
     /// Resolve all neighbors around one cell for the given neighborhood.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CellQueryError`] when the cell handle is invalid or the
+    /// requested neighborhood is unknown for the active schema/runtime.
     fn neighbors(
         &self,
         cell: CellId,
@@ -40,6 +63,9 @@ pub trait RuntimeCells: RuntimeMetadata {
     ) -> Result<Vec<CellId>, CellQueryError>;
 
     /// Resolve all neighbors and read their current materials.
+    ///
+    /// This is mainly a convenience API for host-side inspection and analysis,
+    /// not a hot-path primitive used by the solver step loop.
     fn neighbor_materials(
         &self,
         cell: CellId,

@@ -30,6 +30,9 @@ pub struct MatAttr {
 
 impl MatAttr {
     /// Construct a new material attribute attachment entry.
+    ///
+    /// This keeps the authoring API typed until the builder later erases the
+    /// reference into schema-owned ids.
     pub fn new<M, I>(material: M, attributes: I) -> Self
     where
         M: MaterialSet,
@@ -42,6 +45,7 @@ impl MatAttr {
     }
 }
 
+/// Erase one enum-backed material set into schema-owned definitions.
 pub(super) fn register_materials<M: MaterialSet>() -> MaterialRegistry {
     MaterialRegistry {
         owner: TypeId::of::<M>(),
@@ -54,6 +58,7 @@ pub(super) fn register_materials<M: MaterialSet>() -> MaterialRegistry {
     }
 }
 
+/// Erase one enum-backed attribute set into schema-owned definitions.
 pub(super) fn register_attributes<A: AttributeSet>() -> AttributeRegistry {
     AttributeRegistry {
         owner: TypeId::of::<A>(),
@@ -67,6 +72,7 @@ pub(super) fn register_attributes<A: AttributeSet>() -> AttributeRegistry {
     }
 }
 
+/// Reject material sets whose declarative labels collide.
 pub(super) fn validate_unique_material_labels(materials: &[MaterialDef]) -> Result<(), BuildError> {
     for (index, material) in materials.iter().enumerate() {
         if materials[index + 1..]
@@ -79,6 +85,7 @@ pub(super) fn validate_unique_material_labels(materials: &[MaterialDef]) -> Resu
     Ok(())
 }
 
+/// Reject attribute sets whose declarative labels collide.
 pub(super) fn validate_unique_attribute_labels(
     attributes: &[AttributeDef],
 ) -> Result<(), BuildError> {
@@ -93,6 +100,10 @@ pub(super) fn validate_unique_attribute_labels(
     Ok(())
 }
 
+/// Attach declared attributes and defaults to the materials that carry them.
+///
+/// This is where the builder turns typed `material_attributes(...)` input into
+/// the material-local bindings that solvers later use for reset defaults.
 pub(super) fn apply_material_attributes(
     materials: &mut MaterialRegistry,
     attributes: Option<&AttributeRegistry>,
@@ -151,6 +162,7 @@ pub(super) fn apply_material_attributes(
     Ok(())
 }
 
+/// Confirm that a material actually carries the attribute a rule wants to use.
 pub(super) fn ensure_material_has_attribute(
     materials: &MaterialRegistry,
     material: crate::MaterialId,
@@ -170,6 +182,7 @@ pub(super) fn ensure_material_has_attribute(
     }
 }
 
+/// Validate that a rule comparison matches the attribute's declared scalar type.
 pub(super) fn validate_attribute_comparison(
     attribute: AttributeRef,
     comparison: AttributeComparison,

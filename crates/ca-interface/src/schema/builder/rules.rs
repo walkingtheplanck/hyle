@@ -30,6 +30,9 @@ pub struct RuleSpec {
 
 impl RuleSpec {
     /// Start a new rule for the given source material.
+    ///
+    /// Rules are authored against the material currently occupying the center
+    /// cell, then later compiled into schema ids during `build()`.
     pub fn when<M: MaterialSet>(material: M) -> Self {
         Self {
             when: material.material(),
@@ -41,12 +44,17 @@ impl RuleSpec {
     }
 
     /// Override the neighborhood used by this rule.
+    ///
+    /// Rules without this call inherit the schema-level default neighborhood.
     pub fn using<N: NeighborhoodSet>(mut self, neighborhood: N) -> Self {
         self.neighborhood = Some(neighborhood.neighborhood());
         self
     }
 
     /// Conjoin an additional condition.
+    ///
+    /// Repeated calls intentionally flatten into one `And(...)` tree so the
+    /// authored rule shape stays compact and predictable.
     pub fn require(mut self, condition: Condition) -> Self {
         self.condition = Some(match self.condition.take() {
             Some(existing) => existing.and(condition),
@@ -56,18 +64,26 @@ impl RuleSpec {
     }
 
     /// Make the rule keep the current material.
+    ///
+    /// This is still meaningful when combined with attribute writes.
     pub fn keep(mut self) -> Self {
         self.effect = RuleEffect::Keep;
         self
     }
 
     /// Make the rule become a different material.
+    ///
+    /// Material changes also cause attribute defaults for the destination
+    /// material to be re-applied by the runtime.
     pub fn becomes<M: MaterialSet>(mut self, material: M) -> Self {
         self.effect = RuleEffect::Become(material.id());
         self
     }
 
     /// Write one attribute when the rule matches.
+    ///
+    /// Updates are validated against the destination material, not just the
+    /// source material, so `becomes(...)` and `set_attr(...)` stay coherent.
     pub fn set_attr<A: AttributeSet>(
         mut self,
         attribute: A,
@@ -80,6 +96,13 @@ impl RuleSpec {
         self
     }
 
+    /// Validate one authored rule and erase it into schema ids.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`BuildError`] when the rule references the wrong enum family,
+    /// uses undeclared attributes, duplicates writes, or contains invalid
+    /// attribute/random predicates.
     pub(super) fn build(
         self,
         materials: &MaterialRegistry,
@@ -154,6 +177,7 @@ impl RuleSpec {
     }
 }
 
+/// Resolve and validate one declarative condition tree.
 fn validate_condition(
     condition: &Condition,
     when: MaterialRef,

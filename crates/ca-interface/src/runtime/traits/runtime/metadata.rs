@@ -7,6 +7,9 @@ use crate::{
 /// Static metadata exposed by a live runtime.
 pub trait RuntimeMetadata {
     /// Logical grid dimensions.
+    ///
+    /// This is a host-side description of the live runtime state, not a schema
+    /// declaration object.
     fn dims(&self) -> GridDims;
 
     /// Number of logical cells in the current grid.
@@ -15,6 +18,9 @@ pub trait RuntimeMetadata {
     }
 
     /// Material descriptors declared on the active schema, if available.
+    ///
+    /// Some runtimes may expose only execution behavior and no schema metadata,
+    /// in which case this slice can be empty.
     fn material_defs(&self) -> &[MaterialDef];
 
     /// Resolve one material descriptor by identifier.

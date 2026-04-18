@@ -7,6 +7,9 @@ use super::{SolverCells, SolverExecution, SolverMetadata};
 /// Attribute-oriented queries derived from core solver execution.
 pub trait SolverAttributes: SolverExecution + SolverMetadata + SolverCells {
     /// Read one attached attribute from a resolved cell handle.
+    ///
+    /// This derives the coordinate from the cell handle and then delegates to
+    /// the backend's low-level `get_attr(...)` implementation.
     fn attribute(
         &self,
         cell: CellId,
@@ -18,6 +21,9 @@ pub trait SolverAttributes: SolverExecution + SolverMetadata + SolverCells {
     }
 
     /// Read all declared attached attributes from a resolved cell handle.
+    ///
+    /// This is intentionally a host-side convenience method built from schema
+    /// metadata plus repeated single-attribute reads.
     fn attributes(&self, cell: CellId) -> Result<Vec<CellAttributeValue>, CellQueryError> {
         let mut values = Vec::with_capacity(self.attribute_defs().len());
         for attribute in self.attribute_defs() {

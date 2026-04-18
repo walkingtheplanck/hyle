@@ -47,6 +47,9 @@ pub enum Condition {
 
 impl Condition {
     /// Combine two conditions with logical AND.
+    ///
+    /// Existing conjunctions are flattened so repeated `.require(...)` calls do
+    /// not build deeply nested binary trees for a simple authored rule.
     #[must_use]
     pub fn and(self, other: Self) -> Self {
         match (self, other) {
@@ -68,6 +71,9 @@ impl Condition {
     }
 
     /// Combine two conditions with logical OR.
+    ///
+    /// Like [`Condition::and`], this keeps authored disjunctions flat and easy
+    /// to validate later.
     #[must_use]
     pub fn or(self, other: Self) -> Self {
         match (self, other) {
@@ -89,6 +95,9 @@ impl Condition {
     }
 
     /// Negate a condition.
+    ///
+    /// Negation remains structural here; semantic validation still happens in
+    /// the builder once the surrounding rule is known.
     #[must_use]
     pub fn negate(self) -> Self {
         Condition::Not(Box::new(self))
@@ -176,11 +185,17 @@ pub struct Weight(u64);
 
 impl Weight {
     /// Construct a weight from raw fixed-point units.
+    ///
+    /// This exists for advanced callers that already speak the portable
+    /// fixed-point representation used by weighted neighborhoods.
     pub const fn raw(units: u64) -> Self {
         Self(units)
     }
 
     /// Construct the weight corresponding to `cells` uniform neighbors.
+    ///
+    /// This is usually the ergonomic entry point when authoring rules against
+    /// uniform neighborhoods.
     pub const fn cells(cells: u32) -> Self {
         Self(cells as u64 * WEIGHT_SCALE as u64)
     }
@@ -202,6 +217,9 @@ pub struct AttrAssign {
 
 impl AttrAssign {
     /// Start building a material-scoped attribute assignment.
+    ///
+    /// The typed first step keeps the authored API ergonomic while the builder
+    /// later validates that the default value matches the attribute's type.
     pub fn new<A: AttributeSet>(attribute: A) -> PendingAttrAssign {
         PendingAttrAssign {
             attribute: attribute.attribute(),
@@ -209,6 +227,8 @@ impl AttrAssign {
     }
 
     /// Construct a material-scoped attribute assignment with a default value.
+    ///
+    /// This is a compact form of `AttrAssign::new(attribute).default(value)`.
     pub fn with_default<A: AttributeSet>(attribute: A, default: impl Into<AttributeValue>) -> Self {
         Self {
             attribute: attribute.attribute(),
@@ -225,6 +245,9 @@ pub struct PendingAttrAssign {
 
 impl PendingAttrAssign {
     /// Finalize the assignment with a material default value.
+    ///
+    /// The builder later checks that this value matches the declared attribute
+    /// scalar type before it reaches the schema.
     pub fn default(self, value: impl Into<AttributeValue>) -> AttrAssign {
         AttrAssign {
             attribute: self.attribute,
@@ -241,6 +264,8 @@ pub struct NeighborSelector {
 
 impl NeighborSelector {
     /// Start a count comparison for the selected material.
+    ///
+    /// This counts matching neighbor cells, not weighted samples.
     pub fn count(self) -> NeighborCount {
         NeighborCount {
             material: self.material,
@@ -248,6 +273,9 @@ impl NeighborSelector {
     }
 
     /// Start a weighted-sum comparison for the selected material.
+    ///
+    /// This uses the neighborhood's interpreted weights rather than plain
+    /// neighbor cardinality.
     pub fn weighted_sum(self) -> NeighborWeightedSum {
         NeighborWeightedSum {
             material: self.material,
@@ -255,11 +283,15 @@ impl NeighborSelector {
     }
 
     /// Require at least one matching neighbor.
+    ///
+    /// This is shorthand for `neighbors(material).count().at_least(1)`.
     pub fn any(self) -> Condition {
         self.count().at_least(1)
     }
 
     /// Require no matching neighbors.
+    ///
+    /// This is shorthand for `neighbors(material).count().eq(0)`.
     pub fn none(self) -> Condition {
         self.count().eq(0)
     }
@@ -374,6 +406,9 @@ impl NeighborWeightedSum {
 }
 
 /// Select neighbors equal to a specific material.
+///
+/// The returned selector is still declarative; no neighborhood is chosen until
+/// the surrounding rule either supplies one or falls back to the schema default.
 pub fn neighbors<M: MaterialSet>(material: M) -> NeighborSelector {
     NeighborSelector {
         material: material.material(),
@@ -388,6 +423,8 @@ pub struct AttributeSelector {
 
 impl AttributeSelector {
     /// Require the attribute to equal an exact value.
+    ///
+    /// Type compatibility is checked later against the declared attribute type.
     pub fn eq(self, value: impl Into<AttributeValue>) -> Condition {
         Condition::Attribute {
             attribute: self.attribute,
@@ -440,12 +477,17 @@ impl AttributeSelector {
     }
 
     /// Return the declared scalar type for this attribute.
+    ///
+    /// This is mostly useful for helper code that wants to branch while still
+    /// staying in the typed DSL world.
     pub const fn value_type(self) -> AttributeType {
         self.attribute.value_type()
     }
 }
 
 /// Select the center cell's attached attribute.
+///
+/// The returned selector targets the rule's center cell, not neighboring cells.
 pub fn attr<A: AttributeSet>(attribute: A) -> AttributeSelector {
     AttributeSelector {
         attribute: attribute.attribute(),
@@ -460,6 +502,9 @@ pub struct RandomSource {
 
 impl RandomSource {
     /// Require a `1 / n` random gate.
+    ///
+    /// The actual random bit is deterministic for a given cell position, step,
+    /// stream, and simulation seed.
     pub fn one_in(self, n: u32) -> Condition {
         Condition::RandomChance {
             stream: self.stream,
@@ -469,6 +514,9 @@ impl RandomSource {
 }
 
 /// Start a deterministic random condition with the given stream id.
+///
+/// Stream ids let unrelated rules draw independent deterministic randomness
+/// without introducing global mutable RNG state.
 pub fn rng(stream: impl Into<RngStreamId>) -> RandomSource {
     RandomSource {
         stream: stream.into(),

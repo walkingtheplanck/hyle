@@ -21,21 +21,33 @@ pub struct Runtime<S> {
 
 impl<S> Runtime<S> {
     /// Wrap a concrete solver in the shared runtime surface.
+    ///
+    /// This is a zero-policy adapter: it forwards behavior to the solver
+    /// instead of adding its own caching or synchronization semantics.
     pub const fn new(solver: S) -> Self {
         Self { solver }
     }
 
     /// Borrow the inner solver directly.
+    ///
+    /// This exists for advanced callers that need backend-specific APIs without
+    /// giving up the standard runtime wrapper entirely.
     pub const fn solver(&self) -> &S {
         &self.solver
     }
 
     /// Mutably borrow the inner solver directly.
+    ///
+    /// Use this when the standard runtime traits are not expressive enough for a
+    /// backend-specific operation.
     pub fn solver_mut(&mut self) -> &mut S {
         &mut self.solver
     }
 
     /// Consume the runtime and return the wrapped solver.
+    ///
+    /// Ownership extraction keeps it possible to transition back from the
+    /// consumer-facing runtime API to backend-specific control.
     pub fn into_solver(self) -> S {
         self.solver
     }

@@ -12,6 +12,9 @@ pub struct NeighborhoodSample {
 
 impl NeighborhoodSample {
     /// Construct a new weighted neighborhood sample.
+    ///
+    /// Samples are the canonical unit solvers iterate over after a neighborhood
+    /// spec has been interpreted.
     pub const fn new(offset: Offset3, weight: u32) -> Self {
         Self { offset, weight }
     }
@@ -41,11 +44,17 @@ impl Neighborhood {
     }
 
     /// Return the canonical weighted samples included by the neighborhood.
+    ///
+    /// Samples preserve both offset and weight so uniform and weighted
+    /// neighborhoods share one execution representation.
     pub fn samples(&self) -> &[NeighborhoodSample] {
         &self.samples
     }
 
     /// Return the canonical offsets included by the neighborhood.
+    ///
+    /// This is mainly a convenience view for callers that do not care about
+    /// falloff weights.
     pub fn offsets(&self) -> impl Iterator<Item = Offset3> + '_ {
         self.samples.iter().map(|sample| sample.offset())
     }
@@ -56,6 +65,9 @@ impl Neighborhood {
     }
 
     /// Construct an interpreted neighborhood directly from a declarative spec.
+    ///
+    /// Interpretation is eager so later callers can treat neighborhoods as plain
+    /// offset/weight tables.
     pub fn from_spec(spec: NeighborhoodSpec) -> Self {
         Self {
             spec,
@@ -65,16 +77,24 @@ impl Neighborhood {
 }
 
 /// Expand a declarative neighborhood into canonical offsets and metadata.
+///
+/// This is a named free-function mirror of [`Neighborhood::from_spec`] for
+/// callers that prefer a more functional style.
 pub fn expand_neighborhood(spec: NeighborhoodSpec) -> Neighborhood {
     Neighborhood::from_spec(spec)
 }
 
 /// Return the exact number of neighbor positions included by a neighborhood spec.
+///
+/// This counts samples after center-cell exclusion and shape/radius expansion.
 pub fn neighbor_count(spec: NeighborhoodSpec) -> u32 {
     shape_neighbor_count(spec.shape(), spec.radius().get())
 }
 
 /// Return the maximum weighted sum for a fully matching neighborhood spec.
+///
+/// This is useful for validating rule thresholds against the largest possible
+/// weighted total a neighborhood can contribute.
 pub fn max_weighted_sum(spec: NeighborhoodSpec) -> u64 {
     samples(spec)
         .into_iter()
@@ -83,6 +103,9 @@ pub fn max_weighted_sum(spec: NeighborhoodSpec) -> u64 {
 }
 
 /// Return the canonical weighted neighborhood samples for a declarative spec.
+///
+/// Sample order is deterministic and follows x-major iteration over the
+/// neighborhood cube, which keeps solver preprocessing stable.
 pub fn samples(spec: NeighborhoodSpec) -> Vec<NeighborhoodSample> {
     let radius = spec.radius().get() as i32;
     let mut samples = Vec::with_capacity(neighbor_count(spec) as usize);
@@ -105,6 +128,9 @@ pub fn samples(spec: NeighborhoodSpec) -> Vec<NeighborhoodSample> {
 }
 
 /// Return the canonical neighborhood offsets for a declarative spec.
+///
+/// This drops weights but preserves the same canonical sample order as
+/// [`samples`].
 pub fn offsets(spec: NeighborhoodSpec) -> Vec<Offset3> {
     samples(spec)
         .into_iter()
@@ -140,6 +166,9 @@ fn weight(falloff: NeighborhoodFalloff, offset: Offset3) -> u32 {
 fn shape_neighbor_count(shape: NeighborhoodShape, radius: u32) -> u32 {
     const MAX_PRECOMPUTED_RADIUS: u32 = 100;
 
+    // Small radii dominate normal schema usage, so table lookup keeps common
+    // neighborhood queries branch-light while still allowing exact fallback for
+    // very large radii.
     if radius <= MAX_PRECOMPUTED_RADIUS {
         return match shape {
             NeighborhoodShape::Moore => MOORE_NEIGHBOR_COUNTS[radius as usize],
