@@ -28,19 +28,10 @@ enum Material {
     Alive,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, NeighborhoodSet)]
 enum Neighborhood {
+    #[label("adjacent")]
     Adjacent,
-}
-
-impl NeighborhoodSet for Neighborhood {
-    fn variants() -> &'static [Self] {
-        &[Neighborhood::Adjacent]
-    }
-
-    fn label(self) -> &'static str {
-        "adjacent"
-    }
 }
 
 let spec = Blueprint::builder()
@@ -86,39 +77,19 @@ use hyle_ca_interface::{
 };
 use hyle_ca_solver::Solver;
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, MaterialSet)]
 enum Material {
     #[default]
+    #[label("dead")]
     Dead,
+    #[label("alive")]
     Alive,
 }
 
-impl MaterialSet for Material {
-    fn variants() -> &'static [Self] {
-        &[Material::Dead, Material::Alive]
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Material::Dead => "dead",
-            Material::Alive => "alive",
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, NeighborhoodSet)]
 enum Neighborhood {
+    #[label("adjacent")]
     Adjacent,
-}
-
-impl NeighborhoodSet for Neighborhood {
-    fn variants() -> &'static [Self] {
-        &[Neighborhood::Adjacent]
-    }
-
-    fn label(self) -> &'static str {
-        "adjacent"
-    }
 }
 
 let spec = Blueprint::builder()
@@ -157,39 +128,19 @@ use hyle_ca_interface::{
 };
 use hyle_ca_solver::Solver;
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, MaterialSet)]
 enum Material {
     #[default]
+    #[label("dead")]
     Dead,
+    #[label("alive")]
     Alive,
 }
 
-impl MaterialSet for Material {
-    fn variants() -> &'static [Self] {
-        &[Material::Dead, Material::Alive]
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Material::Dead => "dead",
-            Material::Alive => "alive",
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, NeighborhoodSet)]
 enum Neighborhood {
+    #[label("adjacent")]
     Adjacent,
-}
-
-impl NeighborhoodSet for Neighborhood {
-    fn variants() -> &'static [Self] {
-        &[Neighborhood::Adjacent]
-    }
-
-    fn label(self) -> &'static str {
-        "adjacent"
-    }
 }
 
 let spec = Blueprint::builder()

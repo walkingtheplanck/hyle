@@ -82,19 +82,10 @@ enum Material {
     Alive,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, NeighborhoodSet)]
 enum Neighborhood {
+    #[label("adjacent")]
     Adjacent,
-}
-
-impl NeighborhoodSet for Neighborhood {
-    fn variants() -> &'static [Self] {
-        &[Neighborhood::Adjacent]
-    }
-
-    fn label(self) -> &'static str {
-        "adjacent"
-    }
 }
 
 let spec = Blueprint::builder()
@@ -128,70 +119,34 @@ Blueprints can declare named attached per-cell attributes and use them in rules:
 
 ```rust
 use hyle_ca_interface::{
-    attr, AttrAssign, AttributeSet, AttributeType, AttributeValue, Blueprint, MatAttr,
-    MaterialSet, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape,
-    NeighborhoodSpec, RuleSpec,
+    attr, AttrAssign, AttributeSet, AttributeValue, Blueprint, MatAttr, MaterialSet,
+    NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
+    RuleSpec,
 };
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, MaterialSet)]
 enum Material {
     #[default]
+    #[label("idle")]
     Idle,
+    #[label("hot")]
     Hot,
 }
 
-impl MaterialSet for Material {
-    fn variants() -> &'static [Self] {
-        &[Material::Idle, Material::Hot]
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Material::Idle => "idle",
-            Material::Hot => "hot",
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, AttributeSet)]
 enum Attribute {
+    #[label("heat")]
+    #[attribute_type(U8)]
     Heat,
+    #[label("charged")]
+    #[attribute_type(Bool)]
     Charged,
 }
 
-impl AttributeSet for Attribute {
-    fn variants() -> &'static [Self] {
-        &[Attribute::Heat, Attribute::Charged]
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Attribute::Heat => "heat",
-            Attribute::Charged => "charged",
-        }
-    }
-
-    fn value_type(self) -> AttributeType {
-        match self {
-            Attribute::Heat => AttributeType::U8,
-            Attribute::Charged => AttributeType::Bool,
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, NeighborhoodSet)]
 enum Neighborhood {
+    #[label("adjacent")]
     Adjacent,
-}
-
-impl NeighborhoodSet for Neighborhood {
-    fn variants() -> &'static [Self] {
-        &[Neighborhood::Adjacent]
-    }
-
-    fn label(self) -> &'static str {
-        "adjacent"
-    }
 }
 
 let spec = Blueprint::builder()
@@ -237,15 +192,11 @@ standard [`Runtime<S>`] wrapper over a concrete solver:
 use hyle_ca_interface::{Blueprint, CaRuntime, CaSolverProvider, Instance, MaterialSet};
 use hyle_ca_solver::CpuSolverProvider;
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, MaterialSet)]
 enum Material {
     #[default]
+    #[label("empty")]
     Empty,
-}
-
-impl MaterialSet for Material {
-    fn variants() -> &'static [Self] { &[Material::Empty] }
-    fn label(self) -> &'static str { "empty" }
 }
 
 let spec = Blueprint::builder().materials::<Material>().build()?;
@@ -263,38 +214,26 @@ bundled report object.
 
 ## Defining Symbol Sets
 
-```rust
-use hyle_ca_interface::{AttributeSet, AttributeType, MaterialSet};
+Prefer the derive macros for all three set traits. They keep labels, ids, and
+attribute value types consistent automatically.
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+```rust
+use hyle_ca_interface::{AttributeSet, MaterialSet};
+
+#[derive(Copy, Clone, Default, PartialEq, Eq, MaterialSet)]
 enum Material {
     #[default]
+    #[label("empty")]
     Empty,
+    #[label("fluid")]
     Fluid,
 }
 
-impl MaterialSet for Material {
-    fn variants() -> &'static [Self] {
-        &[Material::Empty, Material::Fluid]
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Material::Empty => "empty",
-            Material::Fluid => "fluid",
-        }
-    }
-}
- 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, AttributeSet)]
 enum Attribute {
+    #[label("density")]
+    #[attribute_type(U8)]
     Density,
-}
-
-impl AttributeSet for Attribute {
-    fn variants() -> &'static [Self] { &[Attribute::Density] }
-    fn label(self) -> &'static str { "density" }
-    fn value_type(self) -> AttributeType { AttributeType::U8 }
 }
 ```
 
@@ -343,20 +282,12 @@ use hyle_ca_interface::{
     NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, NeighborhoodSet)]
 enum Neighborhood {
+    #[label("adjacent")]
     Adjacent,
+    #[label("far")]
     Far,
-}
-
-impl NeighborhoodSet for Neighborhood {
-    fn variants() -> &'static [Self] { &[Neighborhood::Adjacent, Neighborhood::Far] }
-    fn label(self) -> &'static str {
-        match self {
-            Neighborhood::Adjacent => "adjacent",
-            Neighborhood::Far => "far",
-        }
-    }
 }
 
 let adjacent = NeighborhoodSpec::new(
@@ -386,21 +317,13 @@ Weighted predicates use the same portable units:
 ```ignore
 use hyle_ca_interface::{neighbors, MaterialSet, Weight};
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, MaterialSet)]
 enum Material {
     #[default]
+    #[label("dead")]
     Dead,
+    #[label("alive")]
     Alive,
-}
-
-impl MaterialSet for Material {
-    fn variants() -> &'static [Self] { &[Material::Dead, Material::Alive] }
-    fn label(self) -> &'static str {
-        match self {
-            Material::Dead => "dead",
-            Material::Alive => "alive",
-        }
-    }
 }
 
 let condition = neighbors(Material::Alive)

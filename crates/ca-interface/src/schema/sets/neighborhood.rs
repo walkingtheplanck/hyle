@@ -4,6 +4,10 @@ use crate::schema::{refs::NeighborhoodRef, SetContractError};
 use crate::NeighborhoodId;
 
 /// Enum-backed neighborhood universe used by a schema.
+///
+/// Prefer `#[derive(NeighborhoodSet)]` for downstream enums. Manual
+/// implementations remain an escape hatch, but the derive is the supported
+/// path.
 pub trait NeighborhoodSet: Copy + Eq + Send + Sync + 'static {
     /// Return the full ordered neighborhood set.
     fn variants() -> &'static [Self];

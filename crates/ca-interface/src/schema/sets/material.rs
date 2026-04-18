@@ -4,6 +4,9 @@ use crate::schema::{refs::MaterialRef, SetContractError};
 use crate::MaterialId;
 
 /// Enum-backed material universe used by a schema.
+///
+/// Prefer `#[derive(MaterialSet)]` for downstream enums. Manual implementations
+/// remain an escape hatch, but the derive is the supported path.
 pub trait MaterialSet: Copy + Default + Eq + Send + Sync + 'static {
     /// Return the full ordered material set.
     fn variants() -> &'static [Self];

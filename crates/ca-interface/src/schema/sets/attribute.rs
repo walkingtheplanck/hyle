@@ -4,6 +4,9 @@ use crate::schema::{refs::AttributeRef, SetContractError};
 use crate::{AttributeId, AttributeType, AttributeValue};
 
 /// Enum-backed attribute universe used by a schema.
+///
+/// Prefer `#[derive(AttributeSet)]` for downstream enums. Manual implementations
+/// remain an escape hatch, but the derive is the supported path.
 pub trait AttributeSet: Copy + Eq + Send + Sync + 'static {
     /// Return the full ordered attribute set.
     fn variants() -> &'static [Self];
