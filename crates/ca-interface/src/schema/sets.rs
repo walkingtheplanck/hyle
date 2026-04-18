@@ -4,6 +4,6 @@ mod attribute;
 mod material;
 mod neighborhood;
 
-pub use attribute::{AttributeRef, AttributeSet};
-pub use material::{MaterialRef, MaterialSet};
-pub use neighborhood::{NeighborhoodRef, NeighborhoodSet};
+pub use attribute::AttributeSet;
+pub use material::MaterialSet;
+pub use neighborhood::NeighborhoodSet;

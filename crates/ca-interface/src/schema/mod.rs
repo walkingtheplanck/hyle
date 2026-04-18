@@ -8,6 +8,7 @@
 mod builder;
 mod decl;
 mod dsl;
+pub mod refs;
 mod sets;
 mod spec;
 
@@ -21,7 +22,6 @@ pub use dsl::{
     CountComparison, NeighborCount, NeighborSelector, NeighborWeightedSum, RandomSource, Weight,
     WeightComparison,
 };
-pub use sets::{
-    AttributeRef, AttributeSet, MaterialRef, MaterialSet, NeighborhoodRef, NeighborhoodSet,
-};
+pub use refs::{AttributeRef, MaterialRef, NeighborhoodRef};
+pub use sets::{AttributeSet, MaterialSet, NeighborhoodSet};
 pub use spec::{AttributeAssignment, Blueprint, ResolvedCondition, Rule, RuleEffect, Semantics};
