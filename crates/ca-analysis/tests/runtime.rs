@@ -42,7 +42,7 @@ fn runtime_analysis_tracks_living_birth_and_death_counts() {
         .build()
         .expect("valid spec");
 
-    let mut runtime = Runtime::new(Solver::from_spec(2, 2, 2, &spec));
+    let mut runtime = Runtime::new(Solver::from_spec(2, 2, 2, &spec).expect("valid grid"));
     runtime.set(0, 0, 0, M::Alive.id());
     runtime.set(1, 1, 1, M::Alive.id());
     runtime.step();
@@ -74,7 +74,7 @@ fn cell_analysis_reports_material_attributes_and_neighborhoods() {
         .build()
         .expect("valid spec");
 
-    let mut runtime = Runtime::new(Solver::from_spec(3, 3, 3, &spec));
+    let mut runtime = Runtime::new(Solver::from_spec(3, 3, 3, &spec).expect("valid grid"));
     runtime.set(1, 1, 1, M::Alive.id());
     runtime.set(2, 1, 1, M::Alive.id());
 

@@ -304,12 +304,13 @@ belongs in blueprint attributes, which solvers can store as SoA channels.
 ## Grid Descriptors
 
 ```rust
-# fn main() -> Result<(), hyle_ca_interface::GridShapeError> {
+# fn main() -> Result<(), String> {
 use hyle_ca_interface::{GridDims, GridRegion, GridSnapshot, MaterialId};
 
-let dims = GridDims::new(8, 8, 8)?;
-let region = GridRegion::new([2, 2, 2], [2, 2, 2])?;
-let snapshot = GridSnapshot::new(dims, vec![MaterialId::default(); dims.cell_count()]);
+let dims = GridDims::new(8, 8, 8).map_err(|err| format!("{err:?}"))?;
+let region = GridRegion::new([2, 2, 2], [2, 2, 2]).map_err(|err| format!("{err:?}"))?;
+let snapshot = GridSnapshot::new(dims, vec![MaterialId::default(); dims.cell_count()])
+    .map_err(|err| format!("{err:?}"))?;
 
 assert!(dims.contains_region(region));
 assert_eq!(snapshot.cells.len(), dims.cell_count());

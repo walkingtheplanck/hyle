@@ -32,7 +32,7 @@ pub trait SolverGrid: SolverExecution {
             cells[index] = material;
         }
 
-        GridSnapshot::new(dims, cells)
+        GridSnapshot::from_validated(dims, cells)
     }
 
     /// Read a contiguous rectangular region in x-major order.

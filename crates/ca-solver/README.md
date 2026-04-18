@@ -131,9 +131,13 @@ runtime.step();
 The solver still supports direct construction with built-in topology types:
 
 ```rust
+# fn main() -> Result<(), String> {
 use hyle_ca_solver::{Solver, TorusTopology};
 
-let _solver = Solver::with_topology(64, 64, 64, TorusTopology);
+let _solver = Solver::with_topology(64, 64, 64, TorusTopology)
+    .map_err(|err| format!("{err:?}"))?;
+# Ok(())
+# }
 ```
 
 When you create a solver from a `Blueprint`, the solver interprets that
@@ -214,11 +218,12 @@ let spec = Blueprint::builder()
         .using(Neighborhood::Far)
         .require(neighbors(Material::Alive).count().at_least(1))
         .becomes(Material::Alive)])
-    .build()?;
+    .build()
+    .map_err(|err| format!("{err:?}"))?;
 
-let mut solver = Solver::from_spec(8, 8, 8, &spec);
+let mut solver = Solver::from_spec(8, 8, 8, &spec).map_err(|err| format!("{err:?}"))?;
 solver.step();
-# Ok::<(), hyle_ca_interface::BuildError>(())
+# Ok::<(), String>(())
 ```
 
 ## How It Works

@@ -5,6 +5,17 @@
 /// Errors raised while constructing validated grid descriptors.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GridShapeError {
+    /// One or more axes exceed the framework coordinate range.
+    CoordinateRangeOverflow {
+        /// Requested grid width.
+        width: u32,
+        /// Requested grid height.
+        height: u32,
+        /// Requested grid depth.
+        depth: u32,
+        /// Largest supported axis length.
+        max: u32,
+    },
     /// Grid dimensions overflow `usize` when computing the logical cell count.
     GridCellCountOverflow {
         /// Requested grid width.
@@ -30,8 +41,20 @@ pub enum GridShapeError {
     },
 }
 
-/// Immutable grid dimensions in cells.
+/// Errors raised while building host-side grid data containers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GridDataError {
+    /// The provided host-side cell slice length does not match the grid shape.
+    CellCountMismatch {
+        /// Number of cells implied by the grid dimensions.
+        expected: usize,
+        /// Number of cells actually provided by the caller.
+        actual: usize,
+    },
+}
+
+/// Immutable grid dimensions in cells.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct GridDims {
     width: u32,
     height: u32,
@@ -39,20 +62,19 @@ pub struct GridDims {
     cell_count: usize,
 }
 
-impl Default for GridDims {
-    fn default() -> Self {
-        Self {
-            width: 0,
-            height: 0,
-            depth: 0,
-            cell_count: 0,
-        }
-    }
-}
-
 impl GridDims {
     /// Construct a new set of grid dimensions.
     pub fn new(width: u32, height: u32, depth: u32) -> Result<Self, GridShapeError> {
+        let max = i32::MAX as u32;
+        if width > max || height > max || depth > max {
+            return Err(GridShapeError::CoordinateRangeOverflow {
+                width,
+                height,
+                depth,
+                max,
+            });
+        }
+
         let Some(cell_count) = (width as usize)
             .checked_mul(height as usize)
             .and_then(|xy| xy.checked_mul(depth as usize))
@@ -125,23 +147,12 @@ impl GridDims {
 }
 
 /// A rectangular subregion of the grid.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct GridRegion {
     origin: [u32; 3],
     size: [u32; 3],
     end_exclusive: [u32; 3],
     cell_count: usize,
-}
-
-impl Default for GridRegion {
-    fn default() -> Self {
-        Self {
-            origin: [0, 0, 0],
-            size: [0, 0, 0],
-            end_exclusive: [0, 0, 0],
-            cell_count: 0,
-        }
-    }
 }
 
 impl GridRegion {
@@ -221,12 +232,19 @@ pub struct GridSnapshot<C> {
 
 impl<C> GridSnapshot<C> {
     /// Construct a validated grid snapshot.
-    pub fn new(dims: GridDims, cells: Vec<C>) -> Self {
-        assert_eq!(
-            cells.len(),
-            dims.cell_count(),
-            "snapshot cell count must match grid dimensions"
-        );
+    pub fn new(dims: GridDims, cells: Vec<C>) -> Result<Self, GridDataError> {
+        if cells.len() != dims.cell_count() {
+            return Err(GridDataError::CellCountMismatch {
+                expected: dims.cell_count(),
+                actual: cells.len(),
+            });
+        }
+
+        Ok(Self { dims, cells })
+    }
+
+    #[doc(hidden)]
+    pub const fn from_validated(dims: GridDims, cells: Vec<C>) -> Self {
         Self { dims, cells }
     }
 

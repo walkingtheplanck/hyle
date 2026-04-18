@@ -82,12 +82,11 @@ pub fn analyze_cell<R: CaRuntime>(runtime: &R, position: [i32; 3]) -> Option<Cel
             let attribute = runtime
                 .attribute_defs()
                 .iter()
-                .find(|candidate| candidate.id == entry.attribute)
-                .expect("runtime attribute query must reference declared attributes");
+                .find(|candidate| candidate.id == entry.attribute);
             AttributeView {
-                id: attribute.id,
-                name: attribute.name,
-                value_type: attribute.value_type,
+                id: entry.attribute,
+                name: attribute.map_or("unknown", |attribute| attribute.name),
+                value_type: attribute.map_or(entry.value.value_type(), |attribute| attribute.value_type),
                 value: entry.value,
             }
         })

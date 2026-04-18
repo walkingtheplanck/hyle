@@ -7,7 +7,7 @@ pub use crate::schema::{
 };
 pub use crate::{
     AttributeAccessError, AttributeId, AttributeType, AttributeValue, CaRuntime,
-    CaSolverProvider, CellId, CellQueryError, GridAccessError, GridShapeError, Instance,
-    MaterialId, NeighborhoodRadius, Rng, RngStreamId, Runtime, RuntimeAttributes, RuntimeCells,
-    RuntimeGrid, RuntimeMetadata, RuntimeMetrics, RuntimeStepping,
+    CaSolverProvider, CellId, CellQueryError, GridAccessError, GridDataError, GridShapeError,
+    Instance, MaterialId, NeighborhoodRadius, Rng, RngStreamId, Runtime, RuntimeAttributes,
+    RuntimeCells, RuntimeGrid, RuntimeMetadata, RuntimeMetrics, RuntimeStepping,
 };

@@ -55,11 +55,12 @@ let spec = Blueprint::builder()
     .rules([RuleSpec::when(Material::Dead)
         .require(neighbors(Material::Alive).count().eq(3))
         .becomes(Material::Alive)])
-    .build()?;
+    .build()
+    .map_err(|err| format!("{err:?}"))?;
 
 let analysis = analyze_spec(&spec);
 assert_eq!(analysis.summary.rule_count, 1);
-# Ok::<(), hyle_ca_interface::BuildError>(())
+# Ok::<(), String>(())
 ```
 
 ## What It Analyzes
@@ -131,16 +132,17 @@ let spec = Blueprint::builder()
         NeighborhoodFalloff::Uniform,
     )])
     .rules([RuleSpec::when(Material::Alive).becomes(Material::Dead)])
-    .build()?;
+    .build()
+    .map_err(|err| format!("{err:?}"))?;
 
-let mut runtime = Runtime::new(Solver::from_spec(2, 2, 2, &spec));
+let mut runtime = Runtime::new(Solver::from_spec(2, 2, 2, &spec).map_err(|err| format!("{err:?}"))?);
 runtime.set(0, 0, 0, Material::Alive.id());
 runtime.step();
 
 let report = analyze_runtime(&runtime, &[Material::Alive.id()]);
 assert_eq!(report.living_cells, 0);
 assert_eq!(report.died_cells, 1);
-# Ok::<(), hyle_ca_interface::BuildError>(())
+# Ok::<(), String>(())
 ```
 
 ### Cell Analysis
@@ -201,15 +203,16 @@ let spec = Blueprint::builder()
         NeighborhoodRadius::new(1),
         NeighborhoodFalloff::Uniform,
     )])
-    .build()?;
+    .build()
+    .map_err(|err| format!("{err:?}"))?;
 
-let mut runtime = Runtime::new(Solver::from_spec(3, 3, 3, &spec));
+let mut runtime = Runtime::new(Solver::from_spec(3, 3, 3, &spec).map_err(|err| format!("{err:?}"))?);
 runtime.set(1, 1, 1, Material::Alive.id());
 
 let report = analyze_cell(&runtime, [1, 1, 1]).expect("cell exists");
 assert_eq!(report.material.name, "alive");
 assert_eq!(report.neighborhoods[0].name, "adjacent");
-# Ok::<(), hyle_ca_interface::BuildError>(())
+# Ok::<(), String>(())
 ```
 
 ## Relationship To Other Crates

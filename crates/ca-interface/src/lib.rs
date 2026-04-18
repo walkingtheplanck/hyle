@@ -16,7 +16,7 @@ pub use handles::{AttributeId, CellId, MaterialId, NeighborhoodId, RngStreamId};
 pub use hyle_ca_interface_derive::MaterialSet;
 pub use resolved::Rng;
 pub use domain::{
-    AttributeType, AttributeValue, GridDims, GridRegion, GridShapeError, GridSnapshot,
+    AttributeType, AttributeValue, GridDataError, GridDims, GridRegion, GridShapeError, GridSnapshot,
     NeighborhoodRadius, WEIGHT_SCALE,
 };
 pub use runtime::{

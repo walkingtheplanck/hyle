@@ -31,7 +31,7 @@ impl NeighborhoodSet for N {
 
 #[test]
 fn dimensions_match_constructor() {
-    let s = Solver::new(8, 16, 4);
+    let s = Solver::new(8, 16, 4).expect("valid grid");
     assert_eq!(s.width(), 8);
     assert_eq!(s.height(), 16);
     assert_eq!(s.depth(), 4);
@@ -39,21 +39,21 @@ fn dimensions_match_constructor() {
 
 #[test]
 fn default_materials_are_zero() {
-    let s = Solver::new(4, 4, 4);
+    let s = Solver::new(4, 4, 4).expect("valid grid");
     assert_eq!(s.get(0, 0, 0), MaterialId::default());
     assert_eq!(s.get(3, 3, 3), MaterialId::default());
 }
 
 #[test]
 fn set_then_get_roundtrip() {
-    let mut s = Solver::new(4, 4, 4);
+    let mut s = Solver::new(4, 4, 4).expect("valid grid");
     s.set(1, 2, 3, MaterialId::new(42));
     assert_eq!(s.get(1, 2, 3), MaterialId::new(42));
 }
 
 #[test]
 fn readback_returns_contiguous_snapshot() {
-    let mut s = Solver::new(2, 2, 2);
+    let mut s = Solver::new(2, 2, 2).expect("valid grid");
     s.set(1, 0, 0, MaterialId::new(5));
     s.set(0, 1, 1, MaterialId::new(9));
 
@@ -74,7 +74,7 @@ fn readback_returns_contiguous_snapshot() {
 
 #[test]
 fn write_region_updates_subvolume_in_x_major_order() {
-    let mut s = Solver::new(3, 3, 2);
+    let mut s = Solver::new(3, 3, 2).expect("valid grid");
     let region = GridRegion::new([1, 1, 0], [2, 2, 1]).expect("test region should be valid");
     s.write_region(
         region,
@@ -99,7 +99,7 @@ fn write_region_updates_subvolume_in_x_major_order() {
 
 #[test]
 fn torus_topology_wraps_coordinates() {
-    let mut s = Solver::with_topology(4, 4, 4, TorusTopology);
+    let mut s = Solver::with_topology(4, 4, 4, TorusTopology).expect("valid grid");
     s.set(-1, 0, 0, MaterialId::new(11));
     assert_eq!(s.get(3, 0, 0), MaterialId::new(11));
     assert_eq!(s.get(7, 0, 0), MaterialId::new(11));
@@ -123,7 +123,7 @@ fn from_spec_uses_descriptor_topology() {
         .build()
         .expect("valid spec");
 
-    let solver = Solver::from_spec(4, 4, 4, &spec);
+    let solver = Solver::from_spec(4, 4, 4, &spec).expect("valid grid");
     assert_eq!(
         solver.topology(),
         &DescriptorTopology::new(TopologyDescriptor::wrap())
@@ -132,7 +132,7 @@ fn from_spec_uses_descriptor_topology() {
 
 #[test]
 fn neighborhood_queries_without_schema_report_missing_schema() {
-    let solver = Solver::new(2, 2, 2);
+    let solver = Solver::new(2, 2, 2).expect("valid grid");
     let cell = solver.cell_at(0, 0, 0).expect("origin cell should exist");
 
     assert_eq!(
@@ -142,7 +142,16 @@ fn neighborhood_queries_without_schema_report_missing_schema() {
 }
 
 #[test]
-#[should_panic(expected = "width must be <= i32::MAX")]
 fn constructor_rejects_dimensions_larger_than_i32() {
-    let _ = Solver::new(i32::MAX as u32 + 1, 1, 1);
+    let max = i32::MAX as u32;
+    let too_wide = i32::MAX as u32 + 1;
+    assert!(matches!(
+        Solver::new(too_wide, 1, 1),
+        Err(hyle_ca_interface::GridShapeError::CoordinateRangeOverflow {
+            width,
+            height: 1,
+            depth: 1,
+            max: actual_max,
+        }) if width == too_wide && actual_max == max
+    ));
 }

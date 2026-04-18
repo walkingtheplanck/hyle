@@ -160,6 +160,13 @@ impl AttributeBuffer {
     }
 
     fn set_next(&mut self, cell_index: usize, value: AttributeValue) {
+        let expected = self.value_type();
+        let actual = value.value_type();
+        debug_assert_eq!(
+            expected, actual,
+            "attribute value type must match its storage buffer"
+        );
+
         match (self, value) {
             (Self::Bool { next, .. }, AttributeValue::Bool(value)) => next[cell_index] = value,
             (Self::U8 { next, .. }, AttributeValue::U8(value)) => next[cell_index] = value,
@@ -168,7 +175,7 @@ impl AttributeBuffer {
             (Self::I8 { next, .. }, AttributeValue::I8(value)) => next[cell_index] = value,
             (Self::I16 { next, .. }, AttributeValue::I16(value)) => next[cell_index] = value,
             (Self::I32 { next, .. }, AttributeValue::I32(value)) => next[cell_index] = value,
-            _ => panic!("attribute value type must match its storage buffer"),
+            _ => {}
         }
     }
 

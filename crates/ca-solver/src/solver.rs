@@ -7,7 +7,7 @@ use hyle_ca_interface::resolved::{interpret_blueprint, ResolvedBlueprint};
 use hyle_ca_interface::{
     AttributeAccessError, AttributeDef, AttributeId, AttributeValue, Blueprint,
     CellAttributeValue, CellId, CellQueryError, GridAccessError, GridDims, GridRegion,
-    GridSnapshot, Instance, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec,
+    GridShapeError, GridSnapshot, Instance, MaterialDef, MaterialId, NeighborhoodId, NeighborhoodSpec,
     RuleEffect, SolverAttributes, SolverCells, SolverExecution, SolverGrid, SolverMetadata,
     SolverMetrics, Topology, TransitionCount,
 };
@@ -38,10 +38,10 @@ pub struct Solver<T: Topology = BoundedTopology> {
 
 impl Solver<BoundedTopology> {
     /// Create a new bounded solver filled with the default material.
-    pub fn new(width: u32, height: u32, depth: u32) -> Self {
-        let grid = Grid::new(width, height, depth, MaterialId::default());
+    pub fn new(width: u32, height: u32, depth: u32) -> Result<Self, GridShapeError> {
+        let grid = Grid::new(width, height, depth, MaterialId::default())?;
         let dims = grid.dims();
-        Solver {
+        Ok(Solver {
             grid,
             attributes: AttributeStore::new(dims.cell_count() + 1, &[]),
             schema: None,
@@ -52,7 +52,7 @@ impl Solver<BoundedTopology> {
             seed: 0,
             last_changed_cells: 0,
             last_transitions: Vec::new(),
-        }
+        })
     }
 
     /// Create a new solver filled with the default material and the given topology.
@@ -61,10 +61,10 @@ impl Solver<BoundedTopology> {
         height: u32,
         depth: u32,
         topology: U,
-    ) -> Solver<U> {
-        let grid = Grid::new(width, height, depth, MaterialId::default());
+    ) -> Result<Solver<U>, GridShapeError> {
+        let grid = Grid::new(width, height, depth, MaterialId::default())?;
         let dims = grid.dims();
-        Solver {
+        Ok(Solver {
             grid,
             attributes: AttributeStore::new(dims.cell_count() + 1, &[]),
             schema: None,
@@ -75,7 +75,7 @@ impl Solver<BoundedTopology> {
             seed: 0,
             last_changed_cells: 0,
             last_transitions: Vec::new(),
-        }
+        })
     }
 
     /// Create a new solver from a runtime instance and topology policy.
@@ -85,12 +85,7 @@ impl Solver<BoundedTopology> {
         default_material: MaterialId,
     ) -> Solver<U> {
         Solver {
-            grid: Grid::new(
-                instance.dims().width(),
-                instance.dims().height(),
-                instance.dims().depth(),
-                default_material,
-            ),
+            grid: Grid::from_dims(instance.dims(), default_material),
             attributes: AttributeStore::new(instance.dims().cell_count() + 1, &[]),
             schema: None,
             material_defaults: Vec::new(),
@@ -111,7 +106,7 @@ impl Solver<DescriptorTopology> {
         height: u32,
         depth: u32,
         blueprint: &ResolvedBlueprint,
-    ) -> Self {
+    ) -> Result<Self, GridShapeError> {
         let schema = Arc::new(RuntimeSchema {
             resolved: blueprint.clone(),
             neighborhood_specs: blueprint
@@ -122,7 +117,7 @@ impl Solver<DescriptorTopology> {
         });
         let material_defaults = compile_material_defaults(&schema.resolved);
         let default_material = schema.resolved.default_material();
-        let grid = Grid::new(width, height, depth, default_material);
+        let grid = Grid::new(width, height, depth, default_material)?;
         let dims = grid.dims();
 
         let mut solver = Solver {
@@ -145,7 +140,7 @@ impl Solver<DescriptorTopology> {
             solver.attributes.swap();
         }
 
-        solver
+        Ok(solver)
     }
 
     /// Create a solver from a runtime instance and interpreted schema.
@@ -162,12 +157,7 @@ impl Solver<DescriptorTopology> {
         let default_material = schema.resolved.default_material();
 
         let mut solver = Solver {
-            grid: Grid::new(
-                instance.dims().width(),
-                instance.dims().height(),
-                instance.dims().depth(),
-                default_material,
-            ),
+            grid: Grid::from_dims(instance.dims(), default_material),
             attributes: AttributeStore::new(
                 instance.dims().cell_count() + 1,
                 schema.resolved.attributes(),
@@ -198,7 +188,12 @@ impl Solver<DescriptorTopology> {
     }
 
     /// Interpret a declarative schema and create a solver from it.
-    pub fn from_spec(width: u32, height: u32, depth: u32, blueprint: &Blueprint) -> Self {
+    pub fn from_spec(
+        width: u32,
+        height: u32,
+        depth: u32,
+        blueprint: &Blueprint,
+    ) -> Result<Self, GridShapeError> {
         let resolved = interpret_blueprint(blueprint);
         Self::from_blueprint(width, height, depth, &resolved)
     }
@@ -570,7 +565,7 @@ impl<T: Topology> SolverGrid for Solver<T> {
     }
 
     fn readback(&self) -> GridSnapshot<MaterialId> {
-        GridSnapshot::new(
+        GridSnapshot::from_validated(
             self.grid.dims(),
             self.grid.cells[..self.grid.cell_count()].to_vec(),
         )

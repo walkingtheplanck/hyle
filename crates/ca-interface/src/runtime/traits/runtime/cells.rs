@@ -18,9 +18,8 @@ pub trait RuntimeCells: RuntimeMetadata {
     }
 
     /// Resolve every logical cell handle in the active grid in x-major order.
-    fn cells(&self) -> Vec<CellId> {
+    fn cells(&self) -> Result<Vec<CellId>, GridAccessError> {
         self.cells_in_region(self.dims().as_region())
-            .expect("the full runtime region must lie within runtime dimensions")
     }
 
     /// Resolve all logical cell handles in one region in x-major order.

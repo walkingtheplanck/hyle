@@ -9,5 +9,5 @@ mod grid;
 mod neighborhood;
 
 pub use attribute::{AttributeType, AttributeValue};
-pub use grid::{GridDims, GridRegion, GridShapeError, GridSnapshot};
+pub use grid::{GridDataError, GridDims, GridRegion, GridShapeError, GridSnapshot};
 pub use neighborhood::{NeighborhoodRadius, WEIGHT_SCALE};

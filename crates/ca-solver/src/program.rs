@@ -253,6 +253,12 @@ fn ordered_attribute_compare(
 }
 
 fn attribute_ge(value: AttributeValue, expected: AttributeValue) -> bool {
+    debug_assert_eq!(
+        value.value_type(),
+        expected.value_type(),
+        "attribute comparison types must match"
+    );
+
     match (value, expected) {
         (AttributeValue::U8(value), AttributeValue::U8(expected)) => value >= expected,
         (AttributeValue::U16(value), AttributeValue::U16(expected)) => value >= expected,
@@ -260,11 +266,17 @@ fn attribute_ge(value: AttributeValue, expected: AttributeValue) -> bool {
         (AttributeValue::I8(value), AttributeValue::I8(expected)) => value >= expected,
         (AttributeValue::I16(value), AttributeValue::I16(expected)) => value >= expected,
         (AttributeValue::I32(value), AttributeValue::I32(expected)) => value >= expected,
-        _ => panic!("attribute comparison types must match"),
+        _ => false,
     }
 }
 
 fn attribute_le(value: AttributeValue, expected: AttributeValue) -> bool {
+    debug_assert_eq!(
+        value.value_type(),
+        expected.value_type(),
+        "attribute comparison types must match"
+    );
+
     match (value, expected) {
         (AttributeValue::U8(value), AttributeValue::U8(expected)) => value <= expected,
         (AttributeValue::U16(value), AttributeValue::U16(expected)) => value <= expected,
@@ -272,6 +284,6 @@ fn attribute_le(value: AttributeValue, expected: AttributeValue) -> bool {
         (AttributeValue::I8(value), AttributeValue::I8(expected)) => value <= expected,
         (AttributeValue::I16(value), AttributeValue::I16(expected)) => value <= expected,
         (AttributeValue::I32(value), AttributeValue::I32(expected)) => value <= expected,
-        _ => panic!("attribute comparison types must match"),
+        _ => false,
     }
 }

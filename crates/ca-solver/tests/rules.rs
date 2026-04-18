@@ -100,7 +100,7 @@ fn kill_all_spec() -> Blueprint {
 
 #[test]
 fn rule_kill_all() {
-    let mut solver = Solver::from_spec(4, 4, 4, &kill_all_spec());
+    let mut solver = Solver::from_spec(4, 4, 4, &kill_all_spec()).expect("valid grid");
     solver.set(2, 2, 2, M::Alive.id());
     solver.set(1, 1, 1, M::Alive.id());
     solver.step();
@@ -113,8 +113,9 @@ fn solver_from_blueprint_matches_from_spec() {
     let spec = kill_all_spec();
     let blueprint = interpret_blueprint(&spec);
 
-    let mut from_spec = Solver::from_spec(4, 4, 4, &spec);
-    let mut from_blueprint = Solver::from_blueprint(4, 4, 4, &blueprint);
+    let mut from_spec = Solver::from_spec(4, 4, 4, &spec).expect("valid grid");
+    let mut from_blueprint =
+        Solver::from_blueprint(4, 4, 4, &blueprint).expect("valid grid");
     from_spec.set(2, 2, 2, M::Alive.id());
     from_blueprint.set(2, 2, 2, M::Alive.id());
     from_spec.step();
@@ -134,7 +135,7 @@ fn rule_spread_to_neighbors() {
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(5, 5, 5, &spec);
+    let mut solver = Solver::from_spec(5, 5, 5, &spec).expect("valid grid");
     solver.set(2, 2, 2, M::Alive.id());
     solver.step();
     assert_eq!(solver.get(1, 1, 1), M::Alive.id());
@@ -152,7 +153,7 @@ fn rule_type_interaction() {
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(5, 5, 5, &spec);
+    let mut solver = Solver::from_spec(5, 5, 5, &spec).expect("valid grid");
     solver.set(2, 2, 2, M::Water.id());
     for dz in -1..=1 {
         for dy in -1..=1 {
@@ -213,7 +214,7 @@ fn attribute_updates_apply_on_keep_rules() {
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(3, 3, 3, &spec);
+    let mut solver = Solver::from_spec(3, 3, 3, &spec).expect("valid grid");
     solver.set(1, 1, 1, M::Alive.id());
     solver
         .set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(1))
@@ -244,7 +245,7 @@ fn material_changes_reset_attributes_to_destination_defaults() {
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(3, 3, 3, &spec);
+    let mut solver = Solver::from_spec(3, 3, 3, &spec).expect("valid grid");
     solver.set(1, 1, 1, M::Alive.id());
     solver
         .set_attr(A::Heat.id(), 1, 1, 1, AttributeValue::U8(7))
@@ -273,7 +274,7 @@ fn attribute_writes_return_type_mismatch_errors() {
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(2, 2, 2, &spec);
+    let mut solver = Solver::from_spec(2, 2, 2, &spec).expect("valid grid");
     assert_eq!(
         solver.set_attr(A::Heat.id(), 0, 0, 0, AttributeValue::Bool(true)),
         Err(AttributeAccessError::TypeMismatch {
@@ -300,7 +301,7 @@ fn weighted_sum_rules_work() {
         .build()
         .expect("valid spec");
 
-    let mut solver = Solver::from_spec(5, 5, 5, &spec);
+    let mut solver = Solver::from_spec(5, 5, 5, &spec).expect("valid grid");
     solver.set(2, 2, 1, M::Alive.id());
     solver.set(2, 2, 3, M::Alive.id());
     solver.step();
@@ -309,7 +310,7 @@ fn weighted_sum_rules_work() {
 
 #[test]
 fn step_metrics_track_populations_and_transitions() {
-    let mut solver = Solver::from_spec(4, 4, 4, &kill_all_spec());
+    let mut solver = Solver::from_spec(4, 4, 4, &kill_all_spec()).expect("valid grid");
     solver.set(1, 1, 1, M::Alive.id());
     solver.set(2, 2, 2, M::Alive.id());
 
