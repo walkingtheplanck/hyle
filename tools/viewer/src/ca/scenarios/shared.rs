@@ -2,9 +2,13 @@
 
 use hyle_ca_interface::{
     Blueprint, CaRuntime, GridDims, Instance, MaterialId, MaterialSet, Rng, RngStreamId,
+    SetContractError,
 };
 
-use crate::ca::world::{Material, Materials};
+use crate::ca::{
+    world::{Material, Materials},
+    ViewerResult,
+};
 
 use super::{crystal_forge, fire_cycle, life_4555, tube_garden, weighted_bloom};
 
@@ -108,14 +112,16 @@ impl Scenario {
         )
     }
 
-    pub fn blueprint(self) -> Blueprint {
-        match self {
+    pub fn blueprint(self) -> ViewerResult<Blueprint> {
+        let blueprint = match self {
             Scenario::Life4555 => life_4555::blueprint(),
             Scenario::WeightedBloom => weighted_bloom::blueprint(),
             Scenario::CrystalForge => crystal_forge::blueprint(),
             Scenario::FireCycle => fire_cycle::blueprint(),
             Scenario::TubeGarden => tube_garden::blueprint(),
-        }
+        };
+
+        blueprint.map_err(|error| format!("failed to build the {} scenario: {error}", self.label()))
     }
 
     pub fn materials(self) -> Materials {
@@ -173,14 +179,16 @@ impl Scenario {
         }
     }
 
-    pub fn seed(self, ca: &mut impl CaRuntime) {
-        match self {
+    pub fn seed(self, ca: &mut impl CaRuntime) -> ViewerResult<()> {
+        let result = match self {
             Scenario::Life4555 => life_4555::seed(ca),
             Scenario::WeightedBloom => weighted_bloom::seed(ca),
             Scenario::CrystalForge => crystal_forge::seed(ca),
             Scenario::FireCycle => fire_cycle::seed(ca),
             Scenario::TubeGarden => tube_garden::seed(ca),
-        }
+        };
+
+        result.map_err(|error| format!("failed to seed the {} scenario: {error}", self.label()))
     }
 }
 
@@ -190,14 +198,18 @@ pub(super) fn fill_box(
     y_range: std::ops::Range<i32>,
     z_range: std::ops::Range<i32>,
     cell: ViewerCell,
-) {
+) -> Result<(), SetContractError> {
+    let material = cell.id()?;
+
     for z in z_range.clone() {
         for y in y_range.clone() {
             for x in x_range.clone() {
-                ca.set(x, y, z, cell.id());
+                ca.set(x, y, z, material);
             }
         }
     }
+
+    Ok(())
 }
 
 pub(super) fn fill_sphere(
@@ -205,7 +217,8 @@ pub(super) fn fill_sphere(
     center: [i32; 3],
     radius: i32,
     cell: ViewerCell,
-) {
+) -> Result<(), SetContractError> {
+    let material = cell.id()?;
     let [cx, cy, cz] = center;
     let radius_sq = radius * radius;
     for z in (cz - radius)..=(cz + radius) {
@@ -215,11 +228,13 @@ pub(super) fn fill_sphere(
                 let dy = y - cy;
                 let dz = z - cz;
                 if dx * dx + dy * dy + dz * dz <= radius_sq {
-                    ca.set(x, y, z, cell.id());
+                    ca.set(x, y, z, material);
                 }
             }
         }
     }
+
+    Ok(())
 }
 
 pub(super) fn seed_random_box(
@@ -231,16 +246,19 @@ pub(super) fn seed_random_box(
     chance: u32,
     seed: u64,
     stream: impl Into<RngStreamId>,
-) {
+) -> Result<(), SetContractError> {
+    let material = cell.id()?;
     let stream = stream.into();
     for z in z_range.clone() {
         for y in y_range.clone() {
             for x in x_range.clone() {
                 let rng = Rng::with_stream_and_seed(x as u32, y as u32, z as u32, 0, stream, seed);
                 if rng.chance(chance) {
-                    ca.set(x, y, z, cell.id());
+                    ca.set(x, y, z, material);
                 }
             }
         }
     }
+
+    Ok(())
 }

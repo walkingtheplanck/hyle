@@ -13,8 +13,8 @@ use hyle_ca_interface::{CaSolverProvider, MaterialSet};
 use crate::ca::{viewer_world, Materials, Scenario, SimpleWorld, Simulation};
 use crate::input::InputState;
 use crate::rendering::{
-    draw_cell_analysis_window, draw_runtime_analysis_window, draw_static_analysis_window,
-    draw_toolbar, render, Camera, GpuRaytracer,
+    draw_cell_analysis_window, draw_error_window, draw_runtime_analysis_window,
+    draw_static_analysis_window, draw_toolbar, render, Camera, GpuRaytracer,
 };
 
 pub struct ViewerApp<P>
@@ -33,6 +33,7 @@ where
     show_cell_analysis: bool,
     static_analysis: SpecAnalysis,
     runtime_analysis: Option<RuntimeReport>,
+    viewer_error: Option<String>,
     inspected_position: [i32; 3],
     cell_analysis: Option<CellReport>,
     frame_times: VecDeque<f64>,
@@ -43,7 +44,7 @@ impl<P> ViewerApp<P>
 where
     P: CaSolverProvider,
 {
-    pub fn new(cc: &eframe::CreationContext, provider: P) -> Self {
+    pub fn new(cc: &eframe::CreationContext, provider: P) -> Result<Self, String> {
         let render_state = cc
             .wgpu_render_state
             .as_ref()
@@ -53,10 +54,10 @@ where
         let mut renderer = render_state.renderer.write();
 
         let mut world = viewer_world();
-        let mut sim = Simulation::new(provider);
-        sim.reset(&mut world);
+        let mut sim = Simulation::new(provider)?;
+        sim.reset(&mut world)?;
         let materials = sim.materials();
-        let static_analysis = analyze_spec(&sim.scenario().blueprint());
+        let static_analysis = analyze_spec(&sim.scenario().blueprint()?);
 
         let gpu = GpuRaytracer::new(device, queue, &mut renderer, &world, &materials);
         drop(renderer);
@@ -64,7 +65,7 @@ where
         // Look at the center of the 64³ world.
         let camera = Camera::new(Vec3::new(32.0, 32.0, 32.0), 120.0);
 
-        Self {
+        Ok(Self {
             world,
             materials,
             camera,
@@ -77,11 +78,12 @@ where
             show_cell_analysis: false,
             static_analysis,
             runtime_analysis: None,
+            viewer_error: None,
             inspected_position: [0, 0, 0],
             cell_analysis: None,
             frame_times: VecDeque::with_capacity(60),
             last_frame: Instant::now(),
-        }
+        })
     }
 
     fn fps(&self) -> f64 {
@@ -111,18 +113,28 @@ where
 
         ctx.request_repaint();
 
-        let auto_step = self
+        match self
             .sim
-            .maybe_auto_step(&mut self.world, self.show_runtime_analysis);
-        if auto_step.stepped {
-            self.world_dirty = true;
-            self.update_runtime_analysis();
+            .maybe_auto_step(&mut self.world, self.show_runtime_analysis)
+        {
+            Ok(auto_step) if auto_step.stepped => {
+                self.world_dirty = true;
+                if let Err(error) = self.update_runtime_analysis() {
+                    self.report_error(error);
+                }
+            }
+            Ok(_) => {}
+            Err(error) => self.report_error(error),
         }
 
         let actions = self.input.handle_keyboard(ctx, &mut self.camera);
         if actions.reset {
-            self.sim.reset(&mut self.world);
-            self.world_dirty = true;
+            match self.sim.reset(&mut self.world) {
+                Ok(()) => {
+                    self.world_dirty = true;
+                }
+                Err(error) => self.report_error(error),
+            }
         }
 
         let vp_size = ctx.available_rect().size();
@@ -150,20 +162,32 @@ where
             .clone();
 
         if let Some(scenario) = toolbar.scenario_selected {
-            self.apply_scenario(&render_state, scenario);
+            if let Err(error) = self.apply_scenario(&render_state, scenario) {
+                self.report_error(error);
+            }
         }
 
         if toolbar.step_requested {
-            let step = self.sim.step(&mut self.world, self.show_runtime_analysis);
-            self.world_dirty = true;
-            if step.stepped {
-                self.update_runtime_analysis();
+            match self.sim.step(&mut self.world, self.show_runtime_analysis) {
+                Ok(step) => {
+                    self.world_dirty = true;
+                    if step.stepped {
+                        if let Err(error) = self.update_runtime_analysis() {
+                            self.report_error(error);
+                        }
+                    }
+                }
+                Err(error) => self.report_error(error),
             }
         }
         if toolbar.reset_requested {
-            self.sim.reset(&mut self.world);
-            self.world_dirty = true;
-            self.runtime_analysis = None;
+            match self.sim.reset(&mut self.world) {
+                Ok(()) => {
+                    self.world_dirty = true;
+                    self.runtime_analysis = None;
+                }
+                Err(error) => self.report_error(error),
+            }
         }
 
         egui::CentralPanel::default()
@@ -200,6 +224,7 @@ where
                 self.cell_analysis.as_ref(),
             );
         }
+        draw_error_window(ctx, &mut self.viewer_error);
     }
 }
 
@@ -211,32 +236,46 @@ where
         &mut self,
         render_state: &eframe::egui_wgpu::RenderState,
         scenario: Scenario,
-    ) {
-        if !self.sim.set_scenario(scenario, &mut self.world) {
-            return;
+    ) -> Result<(), String> {
+        if !self.sim.set_scenario(scenario, &mut self.world)? {
+            return Ok(());
         }
 
         self.materials = self.sim.materials();
-        self.static_analysis = analyze_spec(&self.sim.scenario().blueprint());
+        self.static_analysis = analyze_spec(&self.sim.scenario().blueprint()?);
         self.runtime_analysis = None;
         self.cell_analysis = None;
         self.gpu
             .upload_palette(&render_state.device, &render_state.queue, &self.materials);
         self.world_dirty = true;
+        Ok(())
     }
 
-    fn update_runtime_analysis(&mut self) {
+    fn update_runtime_analysis(&mut self) -> Result<(), String> {
         let alive_materials = self
             .sim
             .scenario()
             .alive_materials()
             .iter()
             .map(|material| material.id())
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| {
+                format!(
+                    "failed to analyze the {} runtime: {error}",
+                    self.sim.scenario().label()
+                )
+            })?;
         self.runtime_analysis = Some(analyze_runtime(self.sim.runtime(), &alive_materials));
+        Ok(())
     }
 
     fn update_cell_analysis(&mut self) {
         self.cell_analysis = analyze_cell(self.sim.runtime(), self.inspected_position);
+    }
+
+    fn report_error(&mut self, error: String) {
+        self.sim.auto_step = false;
+        self.runtime_analysis = None;
+        self.viewer_error = Some(error);
     }
 }

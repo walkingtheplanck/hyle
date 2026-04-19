@@ -1,8 +1,8 @@
 //! Weighted inverse-square growth scenario.
 
 use hyle_ca_interface::{
-    neighbors, rng, Blueprint, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
-    NeighborhoodShape, NeighborhoodSpec, RuleSpec, Weight,
+    neighbors, rng, Blueprint, BuildError, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, SetContractError, Weight,
 };
 
 use super::shared::{fill_sphere, seed_random_box, ViewerCell};
@@ -22,7 +22,7 @@ impl NeighborhoodSet for Neighborhoods {
     }
 }
 
-pub(super) fn blueprint() -> Blueprint {
+pub(super) fn blueprint() -> Result<Blueprint, BuildError> {
     Blueprint::builder()
         .materials::<ViewerCell>()
         .neighborhoods::<Neighborhoods>()
@@ -31,7 +31,7 @@ pub(super) fn blueprint() -> Blueprint {
             NeighborhoodShape::Spherical,
             NeighborhoodRadius::new(4),
             NeighborhoodFalloff::InverseSquare,
-        )])
+        )?])
         .rules([
             RuleSpec::when(ViewerCell::Bloom)
                 .require(
@@ -54,12 +54,11 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Bloom),
         ])
         .build()
-        .expect("weighted bloom schema should build")
 }
 
-pub(super) fn seed(ca: &mut impl CaRuntime) {
-    fill_sphere(ca, [20, 22, 20], 3, ViewerCell::Bloom);
-    fill_sphere(ca, [42, 30, 40], 3, ViewerCell::Bloom);
-    fill_sphere(ca, [30, 44, 28], 2, ViewerCell::Bloom);
-    seed_random_box(ca, 16..48, 16..48, 16..48, ViewerCell::Bloom, 28, 19, 1);
+pub(super) fn seed(ca: &mut impl CaRuntime) -> Result<(), SetContractError> {
+    fill_sphere(ca, [20, 22, 20], 3, ViewerCell::Bloom)?;
+    fill_sphere(ca, [42, 30, 40], 3, ViewerCell::Bloom)?;
+    fill_sphere(ca, [30, 44, 28], 2, ViewerCell::Bloom)?;
+    seed_random_box(ca, 16..48, 16..48, 16..48, ViewerCell::Bloom, 28, 19, 1)
 }

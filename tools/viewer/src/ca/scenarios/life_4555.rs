@@ -1,8 +1,8 @@
 //! Classic wrapped 3D Life 4555 scenario.
 
 use hyle_ca_interface::{
-    neighbors, Blueprint, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
-    NeighborhoodShape, NeighborhoodSpec, RuleSpec, TopologyDescriptor,
+    neighbors, Blueprint, BuildError, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, TopologyDescriptor,
 };
 
 use super::shared::{seed_random_box, ViewerCell};
@@ -22,7 +22,7 @@ impl NeighborhoodSet for Neighborhoods {
     }
 }
 
-pub(super) fn blueprint() -> Blueprint {
+pub(super) fn blueprint() -> Result<Blueprint, BuildError> {
     Blueprint::builder()
         .materials::<ViewerCell>()
         .topology(TopologyDescriptor::wrap())
@@ -32,7 +32,7 @@ pub(super) fn blueprint() -> Blueprint {
             NeighborhoodShape::Moore,
             NeighborhoodRadius::new(1),
             NeighborhoodFalloff::Uniform,
-        )])
+        )?])
         .rules([
             RuleSpec::when(ViewerCell::Alive)
                 .require(
@@ -47,9 +47,8 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Alive),
         ])
         .build()
-        .expect("life schema should build")
 }
 
-pub(super) fn seed(ca: &mut impl CaRuntime) {
-    seed_random_box(ca, 24..40, 24..40, 24..40, ViewerCell::Alive, 6, 11, 0);
+pub(super) fn seed(ca: &mut impl CaRuntime) -> Result<(), hyle_ca_interface::SetContractError> {
+    seed_random_box(ca, 24..40, 24..40, 24..40, ViewerCell::Alive, 6, 11, 0)
 }

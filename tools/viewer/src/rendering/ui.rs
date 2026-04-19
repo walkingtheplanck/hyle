@@ -147,6 +147,32 @@ pub fn draw_cell_analysis_window(
         });
 }
 
+pub fn draw_error_window(ctx: &egui::Context, error: &mut Option<String>) {
+    let Some(message) = error.as_deref() else {
+        return;
+    };
+
+    let mut open = true;
+    let mut dismissed = false;
+
+    egui::Window::new("Viewer Error")
+        .open(&mut open)
+        .collapsible(false)
+        .resizable(true)
+        .default_width(420.0)
+        .show(ctx, |ui| {
+            ui.colored_label(egui::Color32::from_rgb(220, 92, 92), message);
+            ui.separator();
+            if ui.button("Dismiss").clicked() {
+                dismissed = true;
+            }
+        });
+
+    if !open || dismissed {
+        *error = None;
+    }
+}
+
 pub fn draw_static_analysis_window(ctx: &egui::Context, open: &mut bool, analysis: &SpecAnalysis) {
     egui::Window::new("Static Analysis")
         .open(open)

@@ -1,8 +1,8 @@
 //! Grass, fire, ember, ash, and stone ecology.
 
 use hyle_ca_interface::{
-    neighbors, rng, Blueprint, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
-    NeighborhoodShape, NeighborhoodSpec, RuleSpec, Weight,
+    neighbors, rng, Blueprint, BuildError, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, SetContractError, Weight,
 };
 
 use super::shared::{fill_box, fill_sphere, seed_random_box, ViewerCell};
@@ -26,7 +26,7 @@ impl NeighborhoodSet for Neighborhoods {
     }
 }
 
-pub(super) fn blueprint() -> Blueprint {
+pub(super) fn blueprint() -> Result<Blueprint, BuildError> {
     Blueprint::builder()
         .materials::<ViewerCell>()
         .neighborhoods::<Neighborhoods>()
@@ -36,13 +36,13 @@ pub(super) fn blueprint() -> Blueprint {
                 NeighborhoodShape::Moore,
                 NeighborhoodRadius::new(1),
                 NeighborhoodFalloff::Uniform,
-            ),
+            )?,
             NeighborhoodSpec::new(
                 Neighborhoods::EmberField,
                 NeighborhoodShape::Spherical,
                 NeighborhoodRadius::new(2),
                 NeighborhoodFalloff::InverseSquare,
-            ),
+            )?,
         ])
         .rules([
             RuleSpec::when(ViewerCell::Stone).keep(),
@@ -73,15 +73,14 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Grass),
         ])
         .build()
-        .expect("fire cycle schema should build")
 }
 
-pub(super) fn seed(ca: &mut impl CaRuntime) {
-    fill_box(ca, 8..56, 6..30, 8..56, ViewerCell::Grass);
-    fill_sphere(ca, [20, 16, 20], 4, ViewerCell::Stone);
-    fill_sphere(ca, [42, 14, 38], 3, ViewerCell::Stone);
-    fill_sphere(ca, [28, 18, 44], 3, ViewerCell::Stone);
-    fill_sphere(ca, [16, 12, 16], 2, ViewerCell::Fire);
-    fill_sphere(ca, [48, 14, 44], 2, ViewerCell::Fire);
-    seed_random_box(ca, 10..54, 6..24, 10..54, ViewerCell::Grass, 18, 29, 3);
+pub(super) fn seed(ca: &mut impl CaRuntime) -> Result<(), SetContractError> {
+    fill_box(ca, 8..56, 6..30, 8..56, ViewerCell::Grass)?;
+    fill_sphere(ca, [20, 16, 20], 4, ViewerCell::Stone)?;
+    fill_sphere(ca, [42, 14, 38], 3, ViewerCell::Stone)?;
+    fill_sphere(ca, [28, 18, 44], 3, ViewerCell::Stone)?;
+    fill_sphere(ca, [16, 12, 16], 2, ViewerCell::Fire)?;
+    fill_sphere(ca, [48, 14, 44], 2, ViewerCell::Fire)?;
+    seed_random_box(ca, 10..54, 6..24, 10..54, ViewerCell::Grass, 18, 29, 3)
 }

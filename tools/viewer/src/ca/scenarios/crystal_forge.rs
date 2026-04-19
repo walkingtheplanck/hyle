@@ -1,8 +1,8 @@
 //! Crystal growth and heat spread scenario.
 
 use hyle_ca_interface::{
-    neighbors, rng, Blueprint, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet,
-    NeighborhoodShape, NeighborhoodSpec, RuleSpec, Weight,
+    neighbors, rng, Blueprint, BuildError, CaRuntime, NeighborhoodFalloff, NeighborhoodRadius,
+    NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec, SetContractError, Weight,
 };
 
 use super::shared::{fill_sphere, seed_random_box, ViewerCell};
@@ -26,7 +26,7 @@ impl NeighborhoodSet for Neighborhoods {
     }
 }
 
-pub(super) fn blueprint() -> Blueprint {
+pub(super) fn blueprint() -> Result<Blueprint, BuildError> {
     Blueprint::builder()
         .materials::<ViewerCell>()
         .neighborhoods::<Neighborhoods>()
@@ -36,13 +36,13 @@ pub(super) fn blueprint() -> Blueprint {
                 NeighborhoodShape::Moore,
                 NeighborhoodRadius::new(1),
                 NeighborhoodFalloff::Uniform,
-            ),
+            )?,
             NeighborhoodSpec::new(
                 Neighborhoods::Heat,
                 NeighborhoodShape::Spherical,
                 NeighborhoodRadius::new(3),
                 NeighborhoodFalloff::InverseSquare,
-            ),
+            )?,
         ])
         .rules([
             RuleSpec::when(ViewerCell::Hot)
@@ -76,13 +76,12 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Hot),
         ])
         .build()
-        .expect("crystal forge schema should build")
 }
 
-pub(super) fn seed(ca: &mut impl CaRuntime) {
-    fill_sphere(ca, [32, 32, 32], 3, ViewerCell::Crystal);
-    fill_sphere(ca, [32, 32, 32], 1, ViewerCell::Hot);
-    fill_sphere(ca, [20, 24, 20], 2, ViewerCell::Crystal);
-    fill_sphere(ca, [44, 40, 44], 2, ViewerCell::Crystal);
-    seed_random_box(ca, 18..46, 18..46, 18..46, ViewerCell::Crystal, 32, 23, 2);
+pub(super) fn seed(ca: &mut impl CaRuntime) -> Result<(), SetContractError> {
+    fill_sphere(ca, [32, 32, 32], 3, ViewerCell::Crystal)?;
+    fill_sphere(ca, [32, 32, 32], 1, ViewerCell::Hot)?;
+    fill_sphere(ca, [20, 24, 20], 2, ViewerCell::Crystal)?;
+    fill_sphere(ca, [44, 40, 44], 2, ViewerCell::Crystal)?;
+    seed_random_box(ca, 18..46, 18..46, 18..46, ViewerCell::Crystal, 32, 23, 2)
 }

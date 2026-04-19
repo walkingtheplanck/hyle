@@ -17,6 +17,7 @@ mod rendering;
 
 use eframe::egui;
 use hyle_ca_solver::CpuSolverProvider;
+use std::io::Error;
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -29,6 +30,10 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Hyle Viewer",
         options,
-        Box::new(|cc| Ok(Box::new(app::ViewerApp::new(cc, CpuSolverProvider::new())))),
+        Box::new(|cc| {
+            app::ViewerApp::new(cc, CpuSolverProvider::new())
+                .map(|app| Box::new(app) as Box<dyn eframe::App>)
+                .map_err(|error| Box::new(Error::other(error)) as _)
+        }),
     )
 }

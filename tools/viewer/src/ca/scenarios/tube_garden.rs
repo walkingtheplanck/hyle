@@ -1,9 +1,9 @@
 //! Mixed-axis topology with simple flow-like growth around walls.
 
 use hyle_ca_interface::{
-    neighbors, rng, AxisTopology, Blueprint, CaRuntime, MaterialSet, NeighborhoodFalloff,
-    NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec, RuleSpec,
-    TopologyDescriptor,
+    neighbors, rng, AxisTopology, Blueprint, BuildError, CaRuntime, MaterialSet,
+    NeighborhoodFalloff, NeighborhoodRadius, NeighborhoodSet, NeighborhoodShape, NeighborhoodSpec,
+    RuleSpec, SetContractError, TopologyDescriptor,
 };
 
 use super::shared::{seed_random_box, ViewerCell};
@@ -27,7 +27,7 @@ impl NeighborhoodSet for Neighborhoods {
     }
 }
 
-pub(super) fn blueprint() -> Blueprint {
+pub(super) fn blueprint() -> Result<Blueprint, BuildError> {
     Blueprint::builder()
         .materials::<ViewerCell>()
         .topology(TopologyDescriptor::by_axis(
@@ -43,13 +43,13 @@ pub(super) fn blueprint() -> Blueprint {
                 NeighborhoodShape::VonNeumann,
                 NeighborhoodRadius::new(1),
                 NeighborhoodFalloff::Uniform,
-            ),
+            )?,
             NeighborhoodSpec::new(
                 Neighborhoods::Support,
                 NeighborhoodShape::Moore,
                 NeighborhoodRadius::new(1),
                 NeighborhoodFalloff::Uniform,
-            ),
+            )?,
         ])
         .rules([
             RuleSpec::when(ViewerCell::Wall).keep(),
@@ -75,17 +75,18 @@ pub(super) fn blueprint() -> Blueprint {
                 .becomes(ViewerCell::Alive),
         ])
         .build()
-        .expect("tube garden schema should build")
 }
 
-pub(super) fn seed(ca: &mut impl CaRuntime) {
+pub(super) fn seed(ca: &mut impl CaRuntime) -> Result<(), SetContractError> {
+    let wall = ViewerCell::Wall.id()?;
+
     for x in (8..56).step_by(16) {
         for z in (8..56).step_by(16) {
             for y in 6..58 {
-                ca.set(x, y, z, ViewerCell::Wall.id());
+                ca.set(x, y, z, wall);
             }
         }
     }
 
-    seed_random_box(ca, 6..58, 10..54, 6..58, ViewerCell::Alive, 20, 31, 4);
+    seed_random_box(ca, 6..58, 10..54, 6..58, ViewerCell::Alive, 20, 31, 4)
 }
