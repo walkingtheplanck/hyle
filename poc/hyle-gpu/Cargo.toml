@@ -1,0 +1,13 @@
+[package]
+name = "hyle-gpu"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Disposable GPU proof-of-concept backend for Hyle."
+publish = false
+
+[dependencies]
+hyle-ir = { path = "../../crates/hyle-ir" }
+hyle-runtime = { path = "../../crates/hyle-runtime" }

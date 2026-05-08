@@ -1,0 +1,25 @@
+# <type>: <description>
+#
+# [optional body]
+#
+# [optional footer(s)]
+#
+# Types: feat, fix, refactor, chore, docs, test, perf, ci
+#
+# Rules:
+#   - Subject line: <type>: <lowercase description> (no period)
+#   - Body: explain what and why, not how (wrap at 72 chars)
+#   - Footer: Co-Authored-By, Breaking-Change, Fixes #123, etc.
+#
+# Examples:
+#   feat: add GPU solver backend
+#   fix: prevent out-of-bounds panic in Neighborhood::get
+#   refactor: merge Neighborhood and Region into single type
+#
+#   feat: add world pass support for global operations
+#
+#   World passes run after all per-cell rules and have full
+#   grid access via GridReader + GridWriter. Useful for pressure
+#   solving, gravity fields, and conservation correction.
+#
+#   Co-Authored-By: Someone <someone@example.com>

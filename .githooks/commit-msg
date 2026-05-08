@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Enforces conventional commit format on the SUBJECT LINE only.
+# Body and footers are free-form.
+#
+# Format: <type>: <lowercase description>
+# Types:  feat, fix, refactor, chore, config, docs, test, perf, ci
+
+# Extract first non-comment, non-empty line (the subject)
+SUBJECT=$(grep -v '^#' "$1" | grep -v '^$' | head -1)
+
+# Allow merge commits
+if echo "$SUBJECT" | grep -qE '^Merge '; then
+    exit 0
+fi
+
+PATTERN='^(feat|fix|refactor|chore|config|docs|test|perf|ci): [a-z].*[^.]$'
+
+if ! echo "$SUBJECT" | grep -qE "$PATTERN"; then
+    echo ""
+    echo "ERROR: commit subject does not follow conventional format."
+    echo ""
+    echo "  Expected: <type>: <lowercase description>"
+    echo "  Got:      $SUBJECT"
+    echo ""
+    echo "  Types: feat, fix, refactor, chore, config, docs, test, perf, ci"
+    echo "  Description must start lowercase, no trailing period."
+    echo ""
+    exit 1
+fi

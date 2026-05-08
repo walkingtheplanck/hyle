@@ -1,0 +1,38 @@
+name: Package publishable crates
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  verify-ci:
+    name: Verify CI passed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that CI workflow passed on this commit
+        run: |
+          STATUS=$(gh run list --workflow=ci.yml --commit ${{ github.sha }} --json conclusion --jq '.[0].conclusion')
+          if [ "$STATUS" != "success" ]; then
+            echo "CI workflow has not passed on this commit (status: $STATUS)"
+            echo "Push to master and wait for CI to pass before packaging."
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+  package:
+    name: Cargo package dry run
+    needs: verify-ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Package hyle-ir
+        run: cargo package -p hyle-ir
+      - name: Package hyle-compiler
+        run: cargo package -p hyle-compiler --config 'patch.crates-io.hyle-ir.path="crates/hyle-ir"'
+      - name: Package hyle-runtime
+        run: cargo package -p hyle-runtime --config 'patch.crates-io.hyle-ir.path="crates/hyle-ir"'
