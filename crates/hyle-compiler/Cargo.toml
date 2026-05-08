@@ -9,3 +9,5 @@ description = "Compiler scaffold for Hyle config and DSL sources."
 
 [dependencies]
 hyle-ir = { path = "../hyle-ir" }
+kdl = "6.5"
+serde.workspace = true

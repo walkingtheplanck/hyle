@@ -22,7 +22,7 @@ edition = "2021"
 version = "0.1.0"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/walkingtheplanck/hyle"
-rust-version = "1.78"
+rust-version = "1.82"
 
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }

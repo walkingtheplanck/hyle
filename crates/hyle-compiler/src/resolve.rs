@@ -4,7 +4,7 @@ use crate::dsl::DslAst;
 use crate::source::SourceFile;
 
 /// Resolved inputs ready for type checking and lowering.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ResolvedModule {
     /// Placeholder module name used during lowering.
     pub module_name: String,

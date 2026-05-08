@@ -35,8 +35,8 @@ pub struct CompileOutput {
 
 /// Compiles config and DSL sources into Hyle IR.
 ///
-/// This scaffold does not perform real parsing. It preserves source boundaries,
-/// performs minimal empty-input checks, and lowers to placeholder IR.
+/// The config side performs real KDL decoding for the current scaffolded
+/// document shape. DSL parsing and lowering remain placeholder stages.
 pub fn compile(
     input: CompileInput,
     options: CompileOptions,
