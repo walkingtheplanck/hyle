@@ -1,4 +1,8 @@
-use hyle_compiler::config::parse_config;
+use hyle_compiler::config::{
+    parse_config, BoundsConfig, ConfigAst, FieldConfig, HyleDirective, InputConfig, LatticeConfig,
+    ModelConfig, NeighborhoodConfig, PipelineConfig, RunConfig, SimulationConfig, SpacingConfig,
+    StageConfig, WorldConfig,
+};
 use hyle_compiler::SourceFile;
 
 const CONFIG: &str = r#"
@@ -48,48 +52,70 @@ simulation "WildfireMvp" {
 fn parses_requested_hyle_kdl_shape() {
     let config = parse_config(&SourceFile::new("hyle.kdl", CONFIG)).expect("config should parse");
 
-    assert_eq!(config.source_path, "hyle.kdl");
-    assert_eq!(config.hyle.version, "0.1");
-    assert_eq!(config.world.dimensions, 3);
+    assert_eq!(config, expected_config());
+}
 
-    let lattice = &config.lattices[0];
-    assert_eq!(lattice.name, "Grid");
-    assert_eq!(lattice.cell, "Cube");
-    assert_eq!(lattice.spacing.x, 1.0);
-    assert_eq!(lattice.spacing.y, 1.0);
-    assert_eq!(lattice.spacing.z, 1.0);
+#[test]
+fn parsed_config_preserves_all_fields_through_serde() {
+    let config = parse_config(&SourceFile::new("hyle.kdl", CONFIG)).expect("config should parse");
+    let value = serde_json::to_value(&config).expect("config should serialize");
+    let round_tripped: ConfigAst =
+        serde_json::from_value(value).expect("config should deserialize");
 
-    let neighborhood = &config.neighborhoods[0];
-    assert_eq!(neighborhood.name, "von_neumann_1");
-    assert_eq!(neighborhood.radius, 1);
-    assert!(!neighborhood.center);
-    assert_eq!(neighborhood.metric, "Manhattan");
+    assert_eq!(round_tripped, expected_config());
+}
 
-    let model = &config.models[0];
-    assert_eq!(model.name, "Fire");
-    assert_eq!(model.lattice, "Grid");
-    assert_eq!(model.fields.len(), 1);
-
-    let field = &model.fields[0];
-    assert_eq!(field.name, "intensity");
-    assert_eq!(field.field_type, "f32");
-    assert_eq!(field.default, 0.5);
-    assert_eq!(field.bounds.min, 0.0);
-    assert_eq!(field.bounds.max, 1.0);
-    assert_eq!(field.storage, "Dense");
-
-    let simulation = &config.simulations[0];
-    assert_eq!(simulation.name, "WildfireMvp");
-    assert_eq!(simulation.use_models, vec!["Fire"]);
-    assert_eq!(simulation.inputs.len(), 1);
-    assert_eq!(simulation.inputs[0].name, "wind_speed");
-    assert_eq!(simulation.inputs[0].input_type, "f32");
-    assert_eq!(simulation.inputs[0].default, 0.01);
-
-    let stage = &simulation.pipeline.stages[0];
-    assert_eq!(stage.name, "local");
-    assert_eq!(stage.runs.len(), 1);
-    assert_eq!(stage.runs[0].name, "fire_local");
-    assert_eq!(stage.runs[0].model, "Fire");
-    assert_eq!(stage.runs[0].neighborhood, "von_neumann_1");
+fn expected_config() -> ConfigAst {
+    ConfigAst {
+        source_path: "hyle.kdl".to_owned(),
+        hyle: HyleDirective {
+            version: "0.1".to_owned(),
+        },
+        world: WorldConfig { dimensions: 3 },
+        lattices: vec![LatticeConfig {
+            name: "Grid".to_owned(),
+            cell: "Cube".to_owned(),
+            spacing: SpacingConfig {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+        }],
+        neighborhoods: vec![NeighborhoodConfig {
+            name: "von_neumann_1".to_owned(),
+            radius: 1,
+            center: false,
+            metric: "Manhattan".to_owned(),
+        }],
+        models: vec![ModelConfig {
+            name: "Fire".to_owned(),
+            lattice: "Grid".to_owned(),
+            fields: vec![FieldConfig {
+                name: "intensity".to_owned(),
+                field_type: "f32".to_owned(),
+                default: 0.5,
+                bounds: BoundsConfig { min: 0.0, max: 1.0 },
+                storage: "Dense".to_owned(),
+            }],
+        }],
+        simulations: vec![SimulationConfig {
+            name: "WildfireMvp".to_owned(),
+            use_models: vec!["Fire".to_owned()],
+            inputs: vec![InputConfig {
+                name: "wind_speed".to_owned(),
+                input_type: "f32".to_owned(),
+                default: 0.01,
+            }],
+            pipeline: PipelineConfig {
+                stages: vec![StageConfig {
+                    name: "local".to_owned(),
+                    runs: vec![RunConfig {
+                        name: "fire_local".to_owned(),
+                        model: "Fire".to_owned(),
+                        neighborhood: "von_neumann_1".to_owned(),
+                    }],
+                }],
+            },
+        }],
+    }
 }
