@@ -1,0 +1,194 @@
+// Version is important because syntax and semantics may change over time.
+// This must be the first line of the file.
+#hyle 0.1
+
+// Dimensions of the world.
+// Lattices with different dimensions cannot exist in the same world.
+// Minimum: 1, maximum: 4.
+#dimensions 3
+
+// Cell shape of the world.
+// Each world uses a single cell shape. Allowing different cell shapes per model
+// would make indexing, sampling, and execution much harder, and is not worth it for now.
+//
+// Available shapes:
+// 1D: Line
+// 2D: Triangle, Square, Hexagon
+// 3D: Cube, Tetrahedron, TruncatedOctahedron, RhombicDodecahedron
+// 4D: Tesseract
+#cell Cube
+
+neighborhood VonNeumann1 {
+    // Radius threshold that defines whether a cell is inside the neighborhood.
+    radius 1
+
+    // Whether the center cell itself is included in the neighborhood.
+    // Defaults to false, since including it would often lead to duplicate operations.
+    center false
+
+    // Formula used to calculate the distance from the center cell to a neighbor.
+    //
+    // For example, Manhattan with radius 2      And Euclidean with radius 2.5
+    // would yield this neighborhood:           would yield this neighborhood:
+    //
+    //        X                                           X X X
+    //      X X X                                       X X X X X
+    //    X X C X X                                     X X C X X
+    //      X X X                                       X X X X X
+    //        X                                           X X X
+    metric Manhattan
+}
+
+// Model definition.
+// Each model represents a material cell with its own fields and behavior.
+
+model Fire {
+    // Resolution represents how finely this model is subdivided relative to the base world cell.
+    //
+    // For Cube cells, the number of subcells per base cell is:
+    //   2^((r - 1) * D)
+    //
+    // Where:
+    //   r = resolution
+    //   D = world dimensions
+    //
+    // For example, in 3D with resolution 2:
+    //   2^((2 - 1) * 3) = 2^3 = 8
+    //
+    // So one resolution-1 cube is equivalent to eight resolution-2 cubes.
+    //
+    // TODO: Define refinement formulas for all supported cell shapes.
+    // Note: Not all cell shapes support regular same-shape subdivision.
+    resolution 2
+
+    // Default neighborhood used by this model unless a rule overrides it with `range`.
+    range VonNeumann1
+
+    // Fields define the stored data for this model.
+    //
+    // Supported logical field types:
+    //   Int, Float, Bool
+    //
+    // The value inside <> is the initial value.
+    // If omitted, the default is 0 for numbers and false for booleans.
+    //
+    // The range after the type defines runtime-checked bounds.
+    // Square brackets are closed bounds and parentheses are open bounds:
+    //   [a b]  includes both a and b
+    //   [a b)  includes a, excludes b
+    //   (a b]  excludes a, includes b
+    //   (a b)  excludes both
+    //
+    // TODO: Consider making ranges mandatory.
+    // Note: Concrete runtime types such as f32, u16, etc. are inferred by the compiler.
+    fields {
+        intensity: Float<0.5> [0.0 1.0)
+    }
+}
+
+model Grass {
+    range VonNeumann1
+
+    fields {
+        humidity: Float<0.5> [0.0 1.0)
+        biomass: Float<0.5> [0.0 10.0]
+    }
+}
+
+model Ash {
+    range VonNeumann1
+
+    fields {
+        amount: Float [0.0 1.0)
+    }
+}
+
+// External simulation inputs.
+in wind_speed: Float<0.01>;
+
+// Local update rule.
+//
+// `Fire => Fire` means:
+// - dispatch one kernel invocation per Fire cell
+// - read the previous Fire state
+// - write the next Fire state
+Fire -> Fire {
+    let incoming = sum n in neighbors(Fire) {
+        n.intensity
+    };
+
+    next Fire.intensity = clamp(
+        Fire.intensity + incoming - 0.01 - wind_speed,
+        0.0,
+        1.0
+    );
+}
+
+// Sampling syntax.
+//
+// The sampling algorithm is written between parentheses before the sampled model:
+//
+//   Fire + (Average) Grass => Fire
+//
+// The first non-sampled model on the left side is the anchor model.
+// The anchor model defines the dispatch grid.
+//
+// In the example above:
+// - Fire is the anchor
+// - Grass is sampled into Fire's resolution
+// - the rule writes Fire
+//
+// Sampling is used when models have different resolutions.
+//
+// Example with Average sampling and resolution 2:
+//
+//   x x x x
+//   x ◼ ◼ x
+//   x ◼ ◼ x
+//   x x x x
+//
+// ◼ represents one resolution-1 cell.
+// x represents individual resolution-2 cells.
+//
+// Average calculates the average value of the sampled cells and exposes it
+// as if it were available at the anchor cell.
+//
+// Supported sampling algorithms:
+//   - Average
+//   - Nearest
+//   - Sum
+//   - All
+//
+// TODO: Decide whether sampling should have a default.
+Fire + (Average) Grass -> Fire
+range VonNeumann1 {
+    next Fire.intensity = clamp(
+        Fire.intensity + Grass.biomass * 0.01,
+        0.0,
+        1.0
+    );
+}
+
+Grass + (Average) Fire -> Grass
+range VonNeumann1 {
+    next Grass.humidity = clamp(
+        Grass.humidity - Fire.intensity * 0.05,
+        0.0,
+        1.0
+    );
+}
+
+// Transform rule.
+//
+// `Grass + (Average) Fire -> Ash` means:
+// - Grass is the anchor model
+// - Fire is sampled into Grass's resolution
+// - if `when` is false, the rule does nothing
+// - if `when` is true, the rule emits Ash for the current Grass cell
+//
+// For MVP, transform output should have the same resolution as the anchor.
+Grass + (Average) Fire -> Ash
+range VonNeumann1
+when Grass.humidity <= 0.05 && Fire.intensity > 0.3 {
+    next Ash.amount = Grass.biomass;
+}
