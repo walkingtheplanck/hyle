@@ -19,8 +19,7 @@ These standards apply to the core crates under `crates/`:
 - `main.rs`, `lib.rs`, and `mod.rs` are entry points and re-exports only.
 - Use semantically named files instead of catch-all modules.
 - Keep the current ownership split explicit:
-  - `hyle-ir`: shared typed IR and light validation
-  - `hyle-compiler`: source ingestion, parsing, diagnostics, and lowering
+  - `hyle-compiler`: source ingestion, parsing, diagnostics, IR, and lowering
   - `hyle-runtime`: backend-facing contracts
 
 The backend crates under `backends/` and development utilities under `tools/`

@@ -8,5 +8,5 @@ rust-version.workspace = true
 description = "Runtime contracts shared by Hyle backends."
 
 [dependencies]
-hyle-ir = { path = "../hyle-ir" }
+hyle-compiler = { path = "../hyle-compiler" }
 thiserror.workspace = true

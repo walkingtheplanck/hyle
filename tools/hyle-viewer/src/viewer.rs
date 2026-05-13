@@ -1,4 +1,4 @@
-use hyle_ir::ModuleIr;
+use hyle_compiler::ir::ModuleIr;
 
 /// Placeholder viewer-facing state holder.
 #[derive(Default)]

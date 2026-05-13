@@ -1,70 +1,33 @@
 use hyle_compiler::{compile, CompileInput, CompileOptions, SourceFile};
 
-const CONFIG: &str = r#"
-hyle version="0.1"
-
-world {
-    dimensions 3
-}
-
-lattice "Grid" cell="Cube" {
-    spacing 1.0 1.0 1.0
-}
-
-neighborhood "von_neumann_1" {
-    radius 1
-    center #false
-    metric "Manhattan"
-}
-
-model "Fire" on="Grid" {
-    field "intensity" type="f32" {
-        default 0.5
-        bounds 0.0 1.0
-        storage "Dense"
-    }
-}
-
-simulation "WildfireMvp" {
-    use-models "Fire"
-
-    input "wind_speed" type="f32" {
-        default 0.01
-    }
-
-    pipeline {
-        stage "local" {
-            run "fire_local" {
-                model "Fire"
-                neighborhood "von_neumann_1"
-            }
-        }
-    }
-}
-"#;
+const GAME: &str = include_str!("../../../examples/game.hyle");
 
 #[test]
-fn compiles_placeholder_sources() {
+fn compiles_single_hyle_script() {
     let output = compile(
         CompileInput {
-            config: SourceFile::new("hyle.kdl", CONFIG),
-            logic: vec![SourceFile::new("logic.hyle", "rule placeholder")],
-            module_name: Some("life".to_owned()),
+            source: SourceFile::new("game.hyle", GAME),
+            module_name: Some("wildfire".to_owned()),
         },
         CompileOptions::default(),
     )
     .expect("compile should succeed");
 
-    assert_eq!(output.module.name.as_str(), "life");
+    assert_eq!(output.module.name.as_str(), "wildfire");
+    assert_eq!(output.module.lattice.dimensions, 3);
+    assert_eq!(output.module.lattice.cell, "Cube");
+    assert_eq!(output.module.neighborhoods.len(), 1);
+    assert_eq!(output.module.models.len(), 3);
+    assert_eq!(output.module.inputs.len(), 1);
+    assert_eq!(output.module.rules.len(), 4);
     assert_eq!(output.module.pipeline.stages.len(), 1);
 }
 
 #[test]
-fn rejects_empty_config_source() {
+fn rejects_empty_source() {
     let result = compile(
         CompileInput {
-            config: SourceFile::new("hyle.kdl", "   "),
-            logic: vec![SourceFile::new("logic.hyle", "rule placeholder")],
+            source: SourceFile::new("empty.hyle", "   "),
             module_name: None,
         },
         CompileOptions::default(),

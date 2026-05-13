@@ -1,4 +1,4 @@
-use hyle_ir::{Identifier, ModuleIr};
+use hyle_compiler::ir::{Identifier, ModuleIr};
 use hyle_runtime::{DispatchTarget, Instance, LoadedModule};
 
 #[test]

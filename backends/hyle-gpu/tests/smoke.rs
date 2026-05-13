@@ -1,5 +1,5 @@
+use hyle_compiler::ir::{Identifier, ModuleIr};
 use hyle_gpu::GpuSolver;
-use hyle_ir::{Identifier, ModuleIr};
 use hyle_runtime::Solver;
 
 #[test]

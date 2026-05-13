@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{Identifier, LatticeIr, ModelIr, PipelineIr, RuleIr, SchemaVersion};
+use crate::ir::{
+    Identifier, InputIr, LatticeIr, ModelIr, NeighborhoodIr, PipelineIr, RuleIr, SchemaVersion,
+};
 
 /// The top-level IR artifact produced by the compiler.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -11,8 +13,12 @@ pub struct ModuleIr {
     pub name: Identifier,
     /// Lattice declaration.
     pub lattice: LatticeIr,
-    /// Model fields referenced by the module.
-    pub model: ModelIr,
+    /// Named neighborhoods declared by the source.
+    pub neighborhoods: Vec<NeighborhoodIr>,
+    /// Models declared by the source.
+    pub models: Vec<ModelIr>,
+    /// External simulation inputs.
+    pub inputs: Vec<InputIr>,
     /// Rules lowered from the DSL.
     pub rules: Vec<RuleIr>,
     /// Ordered pipeline stages.

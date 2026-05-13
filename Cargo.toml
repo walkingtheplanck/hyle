@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "crates/hyle-ir",
     "crates/hyle-compiler",
     "crates/hyle-runtime",
     "backends/hyle-cpu",
@@ -8,7 +7,6 @@ members = [
     "tools/hyle-viewer",
 ]
 default-members = [
-    "crates/hyle-ir",
     "crates/hyle-compiler",
     "crates/hyle-runtime",
     "backends/hyle-cpu",

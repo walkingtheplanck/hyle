@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::Identifier;
+use crate::ir::Identifier;
 
 /// A field type exposed by the Hyle IR.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -8,10 +8,10 @@ use crate::Identifier;
 pub enum TypeIr {
     /// Boolean scalar.
     Bool,
-    /// Signed 32-bit integer scalar.
-    I32,
-    /// 32-bit floating-point scalar.
-    F32,
+    /// Integer scalar.
+    Int,
+    /// Floating-point scalar.
+    Float,
     /// Named type placeholder for future aliases or structs.
     Custom(Identifier),
 }

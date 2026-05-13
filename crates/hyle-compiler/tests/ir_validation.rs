@@ -1,5 +1,6 @@
-use hyle_ir::{
-    validate_module, FieldIr, Identifier, ModelIr, ModuleIr, PipelineIr, RuleIr, StageIr, TypeIr,
+use hyle_compiler::ir::{
+    validate_module, FieldIr, Identifier, ModelIr, ModuleIr, PipelineIr, RuleIr, RuleSourceIr,
+    RuleStatementIr, StageIr, TypeIr,
 };
 
 fn identifier(value: &str) -> Identifier {
@@ -10,15 +11,31 @@ fn identifier(value: &str) -> Identifier {
 fn validates_basic_module() {
     let module = ModuleIr {
         name: identifier("life"),
-        model: ModelIr {
+        models: vec![ModelIr {
+            name: identifier("Cell"),
+            resolution: 1,
+            default_neighborhood: None,
             fields: vec![FieldIr {
                 name: identifier("state"),
                 ty: TypeIr::Bool,
+                default: None,
+                bounds: None,
             }],
-        },
+        }],
         rules: vec![RuleIr {
             name: identifier("step"),
-            expression: "placeholder".to_owned(),
+            sources: vec![RuleSourceIr {
+                model: identifier("Cell"),
+                sampling: None,
+            }],
+            output: identifier("Cell"),
+            range: None,
+            condition: None,
+            statements: vec![RuleStatementIr::Next {
+                model: identifier("Cell"),
+                field: identifier("state"),
+                expression: "true".to_owned(),
+            }],
         }],
         pipeline: PipelineIr {
             stages: vec![StageIr {

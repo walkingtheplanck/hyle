@@ -1,4 +1,4 @@
-use hyle_ir::ModuleIr;
+use hyle_compiler::ir::ModuleIr;
 
 use crate::{DispatchTarget, Instance, LoadedModule, RuntimeError};
 

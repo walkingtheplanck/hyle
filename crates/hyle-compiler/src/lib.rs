@@ -1,14 +1,18 @@
-//! Compiler scaffold for Hyle source inputs.
+//! Compiler for Hyle source inputs.
 
+pub mod codegen;
 pub mod compile;
-pub mod config;
 pub mod diagnostics;
-pub mod dsl;
-pub mod lower;
-pub mod resolve;
+pub mod ir;
+pub mod semantics;
 pub mod source;
-pub mod typecheck;
+pub mod syntax;
 
 pub use compile::{compile, CompileInput, CompileOptions, CompileOutput};
 pub use diagnostics::{Diagnostic, DiagnosticReport, DiagnosticSeverity};
+pub use ir::{
+    validate_module, BoundsIr, FieldIr, HyleIrError, Identifier, InputIr, LatticeIr, LiteralIr,
+    ModelIr, ModuleIr, NeighborhoodIr, PipelineIr, RuleIr, RuleSourceIr, RuleStatementIr,
+    SamplingIr, SchemaVersion, StageIr, TypeIr,
+};
 pub use source::SourceFile;

@@ -1,19 +1,17 @@
 # Hyle
 
 Hyle is a backend-agnostic frontend/runtime experiment for lattice simulation
-languages. It is being reset around a config + DSL pipeline that compiles into a
-typed IR and then validates execution semantics through CPU and GPU
-proof-of-concept backends.
+languages. It is being reset around a single `.hyle` script pipeline that parses
+and lowers into typed compiler IR before future `.sole` code generation.
 
 The current repository state is a scaffold. It does not yet ship a production
 parser, compiler, solver, GPU backend, or viewer.
 
 ## Scope
 
-- `hyle-ir` defines the shared typed IR, schema versioning, serde support, and
-  light validation.
-- `hyle-compiler` owns KDL config parsing, Hyle DSL parsing, diagnostics, name
-  resolution, type checking, and lowering into IR.
+- `hyle-compiler` owns syntax analysis, semantic lowering, typed IR, schema
+  versioning, serde support, light validation, and the future `.sole` codegen
+  stage.
 - `hyle-runtime` defines backend-facing contracts shared by solver
   implementations.
 - `backends/hyle-cpu` and `backends/hyle-gpu` are experimental backend
@@ -29,7 +27,6 @@ releases; this scaffold does not automate crates.io changes.
 
 ```text
 crates/
-  hyle-ir/
   hyle-compiler/
   hyle-runtime/
 
@@ -47,32 +44,35 @@ Implemented now:
 
 - workspace scaffold
 - placeholder public APIs
-- minimal IR validation
+- parser and lexer for the single-file `.hyle` script format
+- semantic lowering into compiler-owned IR
+- code generation scaffold for future `.sole` output
 - compiler/runtime/backend wiring that compiles and tests
 
 Planned later:
 
-- real `hyle.kdl` parsing
-- real `logic.hyle` parsing
 - diagnostics with source spans
-- semantic resolution and type checking
+- expression IR and full type checking
+- `.sole` code generation
 - executable CPU/GPU solvers
 - viewer integration
 
-## Intended Future Inputs
-
-`hyle.kdl`
-
-```kdl
-module "life"
-lattice dimensions=2 topology="rect"
-```
-
-`logic.hyle`
+## Input
 
 ```text
-rule survive when alive_neighbors in 2..=3
-rule birth when alive_neighbors == 3
+#hyle 0.1
+#dimensions 3
+#cell Cube
+
+model Fire {
+    fields {
+        intensity: Float<0.5> [0.0 1.0)
+    }
+}
+
+Fire -> Fire {
+    next Fire.intensity = Fire.intensity;
+}
 ```
 
 Intended `ModuleIr` JSON shape:
@@ -85,13 +85,9 @@ Intended `ModuleIr` JSON shape:
     "dimensions": 2,
     "topology": "rect"
   },
-  "model": {
-    "fields": [
-      { "name": "state", "ty": "bool" }
-    ]
-  },
+  "models": [],
   "rules": [
-    { "name": "survive", "expression": "..." }
+    { "name": "rule_0_Fire_to_Fire", "sources": [], "output": "Fire" }
   ],
   "pipeline": {
     "stages": [
@@ -101,4 +97,4 @@ Intended `ModuleIr` JSON shape:
 }
 ```
 
-That JSON is aspirational. The current scaffold only produces placeholder IR.
+The `.sole` output is intentionally still a scaffold.

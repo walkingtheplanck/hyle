@@ -9,4 +9,4 @@ description = "Disposable viewer scaffold for Hyle."
 publish = false
 
 [dependencies]
-hyle-ir = { path = "../../crates/hyle-ir" }
+hyle-compiler = { path = "../../crates/hyle-compiler" }

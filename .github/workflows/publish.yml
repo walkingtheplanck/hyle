@@ -30,9 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Package hyle-ir
-        run: cargo package -p hyle-ir
       - name: Package hyle-compiler
-        run: cargo package -p hyle-compiler --config 'patch.crates-io.hyle-ir.path="crates/hyle-ir"'
+        run: cargo package -p hyle-compiler
       - name: Package hyle-runtime
-        run: cargo package -p hyle-runtime --config 'patch.crates-io.hyle-ir.path="crates/hyle-ir"'
+        run: cargo package -p hyle-runtime

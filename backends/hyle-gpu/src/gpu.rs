@@ -1,4 +1,4 @@
-use hyle_ir::ModuleIr;
+use hyle_compiler::ir::ModuleIr;
 use hyle_runtime::{DispatchTarget, Instance, LoadedModule, RuntimeError, Solver};
 
 /// Placeholder GPU solver used to validate runtime wiring.
