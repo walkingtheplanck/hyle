@@ -26,6 +26,7 @@ Use this file as the strict operational checklist for working in this repo.
 - The repository is a scaffold-only reset for a backend-agnostic frontend/runtime experiment.
 - The old `hyle-ca-*` implementation is obsolete in this checkout.
 - The core crates are `hyle-ir`, `hyle-compiler`, and `hyle-runtime`.
-- The POC crates under `poc/` are disposable and should stay shallow.
+- The backend crates under `backends/` and tools under `tools/` are
+  experimental and should stay shallow.
 
 For repo context, terminology, docs to read first, testing expectations, and publishing guidance, read [`AI_INSTRUCTIONS.md`](./AI_INSTRUCTIONS.md).

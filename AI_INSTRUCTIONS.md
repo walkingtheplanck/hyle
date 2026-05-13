@@ -14,8 +14,8 @@
   - `crates/hyle-ir`
   - `crates/hyle-compiler`
   - `crates/hyle-runtime`
-- Treat `poc/hyle-cpu`, `poc/hyle-gpu`, and `poc/hyle-viewer` as disposable
-  proof-of-concept crates.
+- Treat `backends/hyle-cpu`, `backends/hyle-gpu`, and `tools/hyle-viewer` as
+  experimental non-core crates.
 
 ## Workflow Guidance
 
@@ -33,5 +33,6 @@
 
 - Published crates from the old scope are immutable on crates.io.
 - Do not automate yanks or publishes as part of routine scaffold work.
-- If publishable crates are added later, keep POC crates out of the publish
-  path unless there is a deliberate reason to ship them.
+- If publishable crates are added later, keep experimental backend and tool
+  crates out of the publish path unless there is a deliberate reason to ship
+  them.

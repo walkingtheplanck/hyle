@@ -16,8 +16,9 @@ parser, compiler, solver, GPU backend, or viewer.
   resolution, type checking, and lowering into IR.
 - `hyle-runtime` defines backend-facing contracts shared by solver
   implementations.
-- `poc/hyle-cpu` and `poc/hyle-gpu` are disposable proof-of-concept backends.
-- `poc/hyle-viewer` is a disposable visualization placeholder.
+- `backends/hyle-cpu` and `backends/hyle-gpu` are experimental backend
+  implementations.
+- `tools/hyle-viewer` is a disposable visualization placeholder.
 
 The old `hyle-ca-*` crates are obsolete in this repository. Some historical
 versions were published to crates.io and remain immutable there. Any cleanup of
@@ -32,9 +33,11 @@ crates/
   hyle-compiler/
   hyle-runtime/
 
-poc/
+backends/
   hyle-cpu/
   hyle-gpu/
+
+tools/
   hyle-viewer/
 ```
 

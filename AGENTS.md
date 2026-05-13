@@ -54,10 +54,10 @@ Use this file as the strict operational checklist for working in this repo.
   - `crates/hyle-ir`
   - `crates/hyle-compiler`
   - `crates/hyle-runtime`
-  - `poc/hyle-cpu`
-  - `poc/hyle-gpu`
-  - `poc/hyle-viewer`
+  - `backends/hyle-cpu`
+  - `backends/hyle-gpu`
+  - `tools/hyle-viewer`
 - Prefer deletion over adaptation when dealing with obsolete code.
-- Keep POC crates disposable and avoid treating them as stable APIs.
+- Keep backend and tool crates outside the stable core API surface.
 
 For repo context, terminology, docs to read first, testing expectations, and publishing guidance, read [`AI_INSTRUCTIONS.md`](./AI_INSTRUCTIONS.md).

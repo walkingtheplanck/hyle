@@ -3,17 +3,17 @@ members = [
     "crates/hyle-ir",
     "crates/hyle-compiler",
     "crates/hyle-runtime",
-    "poc/hyle-cpu",
-    "poc/hyle-gpu",
-    "poc/hyle-viewer",
+    "backends/hyle-cpu",
+    "backends/hyle-gpu",
+    "tools/hyle-viewer",
 ]
 default-members = [
     "crates/hyle-ir",
     "crates/hyle-compiler",
     "crates/hyle-runtime",
-    "poc/hyle-cpu",
-    "poc/hyle-gpu",
-    "poc/hyle-viewer",
+    "backends/hyle-cpu",
+    "backends/hyle-gpu",
+    "tools/hyle-viewer",
 ]
 resolver = "2"
 

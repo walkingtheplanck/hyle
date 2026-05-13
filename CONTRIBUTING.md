@@ -23,9 +23,10 @@ These standards apply to the core crates under `crates/`:
   - `hyle-compiler`: source ingestion, parsing, diagnostics, and lowering
   - `hyle-runtime`: backend-facing contracts
 
-The proof-of-concept crates under `poc/` are intentionally disposable. Keep them
-small and avoid introducing stable APIs there unless the architecture is already
-settled in the core crates.
+The backend crates under `backends/` and development utilities under `tools/`
+are intentionally outside the core API surface. Keep them small and avoid
+introducing stable APIs there unless the architecture is already settled in the
+core crates.
 
 ## Documentation
 
@@ -101,4 +102,4 @@ scripts/ci-check.sh doc
 - Do not automate crates.io changes during scaffold work.
 - Old published `hyle-ca-*` crates remain immutable historical artifacts.
 - Keep future publish workflows focused on the core crates unless there is a
-  deliberate reason to ship a POC crate.
+  deliberate reason to ship a backend or tool crate.
