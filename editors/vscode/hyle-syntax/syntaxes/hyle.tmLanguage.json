@@ -1,0 +1,70 @@
+{
+  "scopeName": "source.hyle",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#directives" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#constants" },
+    { "include": "#numbers" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.hyle",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "directives": {
+      "patterns": [
+        {
+          "name": "keyword.control.directive.hyle",
+          "match": "\\B#(?:hyle|dimensions|cell)\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.hyle",
+          "match": "\\b(?:model|fields|neighborhood|range|in|let|next|when|sum|neighbors)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.hyle",
+          "match": "\\b(?:Int|Float|Bool)\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.hyle",
+          "match": "\\b(?:true|false|Line|Triangle|Square|Hexagon|Cube|Tetrahedron|TruncatedOctahedron|RhombicDodecahedron|Tesseract|Manhattan|Euclidean|Chebyshev|Average|Nearest|Sum|All)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hyle",
+          "match": "\\b\\d+(?:\\.\\d+)?\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.hyle",
+          "match": "=>|->|==|!=|<=|>=|&&|\\|\\||[+\\-*/<>:=]"
+        }
+      ]
+    }
+  }
+}

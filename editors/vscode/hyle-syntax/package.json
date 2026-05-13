@@ -1,0 +1,37 @@
+{
+  "name": "hyle-syntax",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/walkingtheplanck/hyle.git"
+  },
+  "license": "MIT",
+  "displayName": "Hyle Syntax",
+  "description": "Syntax highlighting for Hyle simulation files.",
+  "version": "0.0.1",
+  "publisher": "walkingtheplanck",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "hyle",
+        "aliases": ["Hyle", "hyle"],
+        "extensions": [".hyle"],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/vscode_icon_hyle_logo.png",
+          "dark": "./icons/vscode_icon_hyle_logo.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "hyle",
+        "scopeName": "source.hyle",
+        "path": "./syntaxes/hyle.tmLanguage.json"
+      }
+    ]
+  }
+}
