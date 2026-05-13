@@ -1,0 +1,23 @@
+<idea-plugin>
+    <id>dev.hyle.intellij</id>
+    <name>Hyle</name>
+    <vendor email="valentindmtr115@gmail.com">walkingtheplanck</vendor>
+    <description>Syntax highlighting for the Hyle simulation language.</description>
+
+    <idea-version since-build="243"/>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType
+                name="Hyle"
+                language="Hyle"
+                implementationClass="dev.hyle.intellij.HyleFileType"
+                fieldName="INSTANCE"
+                extensions="hyle"/>
+
+        <syntaxHighlighterFactory
+                language="Hyle"
+                implementationClass="dev.hyle.intellij.HyleSyntaxHighlighterFactory"/>
+    </extensions>
+</idea-plugin>
