@@ -1,8 +1,8 @@
-use crate::diagnostics::DiagnosticReport;
+use crate::diagnostics::{Diagnostic, DiagnosticReport};
 use crate::ir::{ModuleIr, SchemaVersion};
 use crate::semantics::lower_script;
 use crate::source::SourceFile;
-use crate::syntax::{parse_script, ScriptAst};
+use crate::syntax::{parse, ScriptAst, SyntaxError};
 
 /// Source input expected by the compiler.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -41,7 +41,9 @@ pub fn compile(
     input: CompileInput,
     options: CompileOptions,
 ) -> Result<CompileOutput, DiagnosticReport> {
-    let syntax = parse_script(&input.source)?;
+    let mut syntax =
+        parse(&input.source.contents).map_err(|error| syntax_report(&input.source, error))?;
+    syntax.source_path = input.source.path.clone();
     let module = lower_script(
         &syntax,
         input.module_name.as_deref(),
@@ -56,4 +58,13 @@ pub fn compile(
         module,
         sole,
     })
+}
+
+fn syntax_report(source: &SourceFile, error: SyntaxError) -> DiagnosticReport {
+    let mut report = DiagnosticReport::new();
+    report.push(Diagnostic::error(
+        Some(source.path.clone()),
+        error.to_string(),
+    ));
+    report
 }

@@ -7,8 +7,8 @@ use crate::ir::{
     SchemaVersion, StageIr, TypeIr,
 };
 use crate::syntax::{
-    BoundsAst, FieldAst, InputAst, LiteralAst, ModelAst, RuleAst, RuleSourceAst, RuleStatementAst,
-    SamplingAst, ScriptAst, TypeAst,
+    BinaryOpAst, BoundsAst, ExprAst, ExprKindAst, FieldAst, InputAst, LiteralAst, ModelAst,
+    ReductionOpAst, RuleAst, RuleStatementAst, SamplingAst, ScriptAst, TypeAst, UnaryOpAst,
 };
 
 /// Lowers a parsed script into compiler IR.
@@ -56,7 +56,7 @@ pub fn lower_script(
             .iter()
             .map(|neighborhood| NeighborhoodIr {
                 name: ident(&neighborhood.name),
-                radius: neighborhood.radius.clone(),
+                radius: lower_literal_text(&neighborhood.radius),
                 center: neighborhood.center,
                 metric: neighborhood.metric.clone(),
             })
@@ -169,7 +169,9 @@ impl<'a> SemanticChecker<'a> {
     }
 
     fn check_default_matches_type(&mut self, model_name: &str, field: &FieldAst) {
-        if let (TypeAst::Bool, Some(LiteralAst::Number(_))) = (&field.ty, &field.default) {
+        if let (TypeAst::Bool, Some(LiteralAst::Integer(_) | LiteralAst::Float(_))) =
+            (&field.ty, &field.default)
+        {
             self.error(format!(
                 "field `{}.{}` has numeric default for Bool field",
                 model_name, field.name
@@ -183,7 +185,9 @@ impl<'a> SemanticChecker<'a> {
             if !inputs.insert(input.name.as_str()) {
                 self.error(format!("duplicate input `{}`", input.name));
             }
-            if let (TypeAst::Bool, Some(LiteralAst::Number(_))) = (&input.ty, &input.default) {
+            if let (TypeAst::Bool, Some(LiteralAst::Integer(_) | LiteralAst::Float(_))) =
+                (&input.ty, &input.default)
+            {
                 self.error(format!(
                     "input `{}` has numeric default for Bool input",
                     input.name
@@ -202,10 +206,17 @@ impl<'a> SemanticChecker<'a> {
                 ));
             }
 
-            for source in &rule.sources {
+            if !self.models.contains_key(rule.anchor.as_str()) {
+                self.error(format!(
+                    "rule `{rule_name}` references unknown anchor model `{}`",
+                    rule.anchor
+                ));
+            }
+
+            if let Some(source) = &rule.sampled {
                 if !self.models.contains_key(source.model.as_str()) {
                     self.error(format!(
-                        "rule `{rule_name}` references unknown source model `{}`",
+                        "rule `{rule_name}` references unknown sampled model `{}`",
                         source.model
                     ));
                 }
@@ -281,29 +292,35 @@ fn lower_input(input: &InputAst) -> InputIr {
 fn lower_rule(index: usize, rule: &RuleAst) -> RuleIr {
     RuleIr {
         name: ident(rule_name(index, rule)),
-        sources: rule.sources.iter().map(lower_rule_source).collect(),
+        sources: lower_rule_sources(rule),
         output: ident(&rule.output),
         range: rule.range.as_deref().map(ident),
-        condition: rule
-            .condition
-            .as_ref()
-            .map(|condition| condition.text.clone()),
+        condition: rule.condition.as_ref().map(lower_expr),
         statements: rule.statements.iter().map(lower_statement).collect(),
     }
 }
 
-fn lower_rule_source(source: &RuleSourceAst) -> RuleSourceIr {
-    RuleSourceIr {
-        model: ident(&source.model),
-        sampling: source.sampling.as_ref().map(lower_sampling),
+fn lower_rule_sources(rule: &RuleAst) -> Vec<RuleSourceIr> {
+    let mut sources = vec![RuleSourceIr {
+        model: ident(&rule.anchor),
+        sampling: None,
+    }];
+
+    if let Some(source) = &rule.sampled {
+        sources.push(RuleSourceIr {
+            model: ident(&source.model),
+            sampling: source.sampling.as_ref().map(lower_sampling),
+        });
     }
+
+    sources
 }
 
 fn lower_statement(statement: &RuleStatementAst) -> RuleStatementIr {
     match statement {
         RuleStatementAst::Let { name, expression } => RuleStatementIr::Let {
             name: ident(name),
-            expression: expression.text.clone(),
+            expression: lower_expr(expression),
         },
         RuleStatementAst::Next {
             model,
@@ -312,8 +329,76 @@ fn lower_statement(statement: &RuleStatementAst) -> RuleStatementIr {
         } => RuleStatementIr::Next {
             model: ident(model),
             field: ident(field),
-            expression: expression.text.clone(),
+            expression: lower_expr(expression),
         },
+    }
+}
+
+fn lower_expr(expression: &ExprAst) -> String {
+    match &expression.kind {
+        ExprKindAst::Literal(literal) => lower_literal_text(literal),
+        ExprKindAst::Name(name) => name.clone(),
+        ExprKindAst::Field { base, field } => format!("{}.{}", lower_expr(base), field),
+        ExprKindAst::Call { callee, arguments } => {
+            let arguments = arguments
+                .iter()
+                .map(lower_expr)
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("{}({arguments})", lower_expr(callee))
+        }
+        ExprKindAst::Unary { op, expression } => {
+            format!("{}{}", lower_unary_op(*op), lower_expr(expression))
+        }
+        ExprKindAst::Binary { left, op, right } => {
+            format!(
+                "{} {} {}",
+                lower_expr(left),
+                lower_binary_op(*op),
+                lower_expr(right)
+            )
+        }
+        ExprKindAst::Reduction {
+            op,
+            binding,
+            iterable,
+            body,
+        } => format!(
+            "{} {binding} in {} {{ {} }}",
+            lower_reduction_op(*op),
+            lower_expr(iterable),
+            lower_expr(body)
+        ),
+    }
+}
+
+fn lower_unary_op(op: UnaryOpAst) -> &'static str {
+    match op {
+        UnaryOpAst::Neg => "-",
+        UnaryOpAst::Not => "!",
+    }
+}
+
+fn lower_binary_op(op: BinaryOpAst) -> &'static str {
+    match op {
+        BinaryOpAst::Add => "+",
+        BinaryOpAst::Sub => "-",
+        BinaryOpAst::Mul => "*",
+        BinaryOpAst::Div => "/",
+        BinaryOpAst::Eq => "==",
+        BinaryOpAst::NotEq => "!=",
+        BinaryOpAst::Less => "<",
+        BinaryOpAst::LessEq => "<=",
+        BinaryOpAst::Greater => ">",
+        BinaryOpAst::GreaterEq => ">=",
+        BinaryOpAst::And => "&&",
+        BinaryOpAst::Or => "||",
+    }
+}
+
+fn lower_reduction_op(op: ReductionOpAst) -> &'static str {
+    match op {
+        ReductionOpAst::Sum => "sum",
     }
 }
 
@@ -328,17 +413,24 @@ fn lower_type(ty: &TypeAst) -> TypeIr {
 
 fn lower_literal(literal: &LiteralAst) -> LiteralIr {
     match literal {
-        LiteralAst::Number(value) => LiteralIr::Number(value.clone()),
+        LiteralAst::Integer(value) | LiteralAst::Float(value) => LiteralIr::Number(value.clone()),
         LiteralAst::Bool(value) => LiteralIr::Bool(*value),
     }
 }
 
 fn lower_bounds(bounds: &BoundsAst) -> BoundsIr {
     BoundsIr {
-        lower: bounds.lower.clone(),
+        lower: lower_literal_text(&bounds.lower),
         lower_inclusive: bounds.lower_inclusive,
-        upper: bounds.upper.clone(),
+        upper: lower_literal_text(&bounds.upper),
         upper_inclusive: bounds.upper_inclusive,
+    }
+}
+
+fn lower_literal_text(literal: &LiteralAst) -> String {
+    match literal {
+        LiteralAst::Integer(value) | LiteralAst::Float(value) => value.clone(),
+        LiteralAst::Bool(value) => value.to_string(),
     }
 }
 
@@ -357,12 +449,11 @@ fn ident(value: impl AsRef<str>) -> Identifier {
 }
 
 fn rule_name(index: usize, rule: &RuleAst) -> String {
-    let sources = rule
-        .sources
-        .iter()
-        .map(|source| source.model.as_str())
-        .collect::<Vec<_>>()
-        .join("_");
+    let sources = if let Some(sampled) = &rule.sampled {
+        format!("{}_{}", rule.anchor, sampled.model)
+    } else {
+        rule.anchor.clone()
+    };
     format!("rule_{index}_{sources}_to_{}", rule.output)
 }
 

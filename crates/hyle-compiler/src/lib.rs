@@ -16,3 +16,4 @@ pub use ir::{
     SamplingIr, SchemaVersion, StageIr, TypeIr,
 };
 pub use source::SourceFile;
+pub use syntax::parse;

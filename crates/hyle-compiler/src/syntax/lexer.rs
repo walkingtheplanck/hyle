@@ -1,55 +1,9 @@
 use thiserror::Error;
 
-/// Byte span in a source file.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Span {
-    /// Inclusive start byte.
-    pub start: usize,
-    /// Exclusive end byte.
-    pub end: usize,
-}
-
-/// Token emitted by the lexer.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Token {
-    /// Token kind.
-    pub kind: TokenKind,
-    /// Original token text.
-    pub text: String,
-    /// Source span.
-    pub span: Span,
-}
-
-/// Lexical token kind.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum TokenKind {
-    /// Identifier or keyword.
-    Identifier,
-    /// Number literal.
-    Number,
-    /// String literal without quotes.
-    String,
-    /// `#name` directive.
-    Directive,
-    /// `->`.
-    Arrow,
-    /// `==`.
-    EqEq,
-    /// `!=`.
-    BangEq,
-    /// `<=`.
-    LessEq,
-    /// `>=`.
-    GreaterEq,
-    /// `&&`.
-    AndAnd,
-    /// `||`.
-    OrOr,
-    /// Single-character symbol.
-    Symbol(char),
-    /// End of input.
-    Eof,
-}
+use crate::syntax::token::{
+    Span, Token, TokenKind, DECIMAL_SEPARATOR, DIRECTIVE_PREFIX, LINE_COMMENT_PREFIX,
+    LINE_TERMINATOR, STRING_DELIMITER, STRING_ESCAPE,
+};
 
 /// Lexing failure.
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
@@ -62,6 +16,12 @@ pub enum LexError {
     UnexpectedCharacter {
         /// Unexpected character.
         character: char,
+        /// Byte span.
+        span: Span,
+    },
+    /// A numeric literal was malformed.
+    #[error("invalid numeric literal")]
+    InvalidNumber {
         /// Byte span.
         span: Span,
     },
@@ -95,14 +55,7 @@ impl Lexer<'_> {
         self.skip_trivia();
 
         let Some((start, character)) = self.peek_char() else {
-            return Ok(Token {
-                kind: TokenKind::Eof,
-                text: String::new(),
-                span: Span {
-                    start: self.offset,
-                    end: self.offset,
-                },
-            });
+            return Ok(Token::eof(self.offset));
         };
 
         if is_ident_start(character) {
@@ -110,75 +63,72 @@ impl Lexer<'_> {
             while matches!(self.peek_char(), Some((_, next)) if is_ident_part(next)) {
                 self.bump_char();
             }
-            return Ok(self.token(TokenKind::Identifier, start, self.offset));
+            return Ok(Token::identifier_from_source(
+                self.source,
+                start,
+                self.offset,
+            ));
         }
 
         if character.is_ascii_digit()
-            || (character == '.'
+            || (character == DECIMAL_SEPARATOR
                 && matches!(self.peek_next_char(), Some(next) if next.is_ascii_digit()))
         {
             self.bump_char();
-            while matches!(self.peek_char(), Some((_, next)) if next.is_ascii_digit() || next == '.')
+            while matches!(self.peek_char(), Some((_, next)) if next.is_ascii_digit() || next == DECIMAL_SEPARATOR)
             {
                 self.bump_char();
             }
-            return Ok(self.token(TokenKind::Number, start, self.offset));
+            return Token::number_from_source(self.source, start, self.offset).ok_or(
+                LexError::InvalidNumber {
+                    span: Span::new(start, self.offset),
+                },
+            );
         }
 
-        if character == '#' {
+        if character == DIRECTIVE_PREFIX {
             self.bump_char();
             while matches!(self.peek_char(), Some((_, next)) if is_ident_part(next)) {
                 self.bump_char();
             }
-            return Ok(self.token(TokenKind::Directive, start, self.offset));
+            return Ok(Token::directive_from_source(
+                self.source,
+                start,
+                self.offset,
+            ));
         }
 
-        if character == '"' {
+        if character == STRING_DELIMITER {
             self.bump_char();
             let mut escaped = false;
             while let Some((_, next)) = self.peek_char() {
                 self.bump_char();
                 if escaped {
                     escaped = false;
-                } else if next == '\\' {
+                } else if next == STRING_ESCAPE {
                     escaped = true;
-                } else if next == '"' {
-                    let mut token = self.token(TokenKind::String, start, self.offset);
-                    token.text = token.text[1..token.text.len() - 1].to_owned();
-                    return Ok(token);
+                } else if next == STRING_DELIMITER {
+                    return Ok(Token::string_from_source(self.source, start, self.offset));
                 }
             }
             return Err(LexError::UnterminatedString);
         }
 
-        let two = self.source[start..].chars().take(2).collect::<String>();
-        let two_kind = match two.as_str() {
-            "->" => Some(TokenKind::Arrow),
-            "==" => Some(TokenKind::EqEq),
-            "!=" => Some(TokenKind::BangEq),
-            "<=" => Some(TokenKind::LessEq),
-            ">=" => Some(TokenKind::GreaterEq),
-            "&&" => Some(TokenKind::AndAnd),
-            "||" => Some(TokenKind::OrOr),
-            _ => None,
-        };
-        if let Some(kind) = two_kind {
-            self.bump_char();
+        if let Some(fixed) = TokenKind::from_fixed_prefix(&self.source[start..]) {
+            for _ in fixed.text.chars() {
+                self.bump_char();
+            }
+            return Ok(self.token(fixed.kind, start, self.offset));
+        }
+
+        if let Some(kind) = TokenKind::from_symbol_char(character) {
             self.bump_char();
             return Ok(self.token(kind, start, self.offset));
         }
 
-        if "{}()[]<>+-*/=:.;,.".contains(character) {
-            self.bump_char();
-            return Ok(self.token(TokenKind::Symbol(character), start, self.offset));
-        }
-
         Err(LexError::UnexpectedCharacter {
             character,
-            span: Span {
-                start,
-                end: start + character.len_utf8(),
-            },
+            span: Span::new(start, start + character.len_utf8()),
         })
     }
 
@@ -188,10 +138,10 @@ impl Lexer<'_> {
                 self.bump_char();
             }
 
-            if self.source[self.offset..].starts_with("//") {
+            if self.source[self.offset..].starts_with(LINE_COMMENT_PREFIX) {
                 while let Some((_, character)) = self.peek_char() {
                     self.bump_char();
-                    if character == '\n' {
+                    if character == LINE_TERMINATOR {
                         break;
                     }
                 }
@@ -203,11 +153,7 @@ impl Lexer<'_> {
     }
 
     fn token(&self, kind: TokenKind, start: usize, end: usize) -> Token {
-        Token {
-            kind,
-            text: self.source[start..end].to_owned(),
-            span: Span { start, end },
-        }
+        Token::fixed(kind, start, end)
     }
 
     fn peek_char(&self) -> Option<(usize, char)> {

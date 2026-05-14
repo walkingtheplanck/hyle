@@ -24,8 +24,8 @@ pub struct ScriptAst {
 pub struct NeighborhoodAst {
     /// Neighborhood name.
     pub name: String,
-    /// Radius expression.
-    pub radius: String,
+    /// Radius literal.
+    pub radius: LiteralAst,
     /// Whether the center cell is included.
     pub center: bool,
     /// Distance metric.
@@ -85,8 +85,10 @@ pub enum TypeAst {
 /// Literal value.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LiteralAst {
-    /// Numeric literal text.
-    Number(String),
+    /// Integer literal text.
+    Integer(String),
+    /// Floating-point literal text.
+    Float(String),
     /// Boolean literal.
     Bool(bool),
 }
@@ -95,11 +97,11 @@ pub enum LiteralAst {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BoundsAst {
     /// Lower bound literal.
-    pub lower: String,
+    pub lower: LiteralAst,
     /// Whether the lower bound is inclusive.
     pub lower_inclusive: bool,
     /// Upper bound literal.
-    pub upper: String,
+    pub upper: LiteralAst,
     /// Whether the upper bound is inclusive.
     pub upper_inclusive: bool,
 }
@@ -107,8 +109,10 @@ pub struct BoundsAst {
 /// Rule declaration.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuleAst {
-    /// Model sources read by the rule.
-    pub sources: Vec<RuleSourceAst>,
+    /// Anchor model that defines the dispatch grid.
+    pub anchor: String,
+    /// Optional sampled model read by the rule.
+    pub sampled: Option<RuleSourceAst>,
     /// Output model written or emitted by the rule.
     pub output: String,
     /// Optional rule-specific neighborhood.
@@ -143,6 +147,108 @@ pub enum SamplingAst {
     Custom(String),
 }
 
+/// Expression syntax.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ExprAst {
+    /// Parsed expression tree.
+    pub kind: ExprKindAst,
+}
+
+/// Parsed expression form.
+#[derive(Clone, Debug, PartialEq)]
+pub enum ExprKindAst {
+    /// Literal value.
+    Literal(LiteralAst),
+    /// Named value or model reference.
+    Name(String),
+    /// Field access.
+    Field {
+        /// Base expression.
+        base: Box<ExprAst>,
+        /// Field name.
+        field: String,
+    },
+    /// Function call.
+    Call {
+        /// Callee expression.
+        callee: Box<ExprAst>,
+        /// Call arguments.
+        arguments: Vec<ExprAst>,
+    },
+    /// Prefix operator expression.
+    Unary {
+        /// Operator.
+        op: UnaryOpAst,
+        /// Operand.
+        expression: Box<ExprAst>,
+    },
+    /// Binary operator expression.
+    Binary {
+        /// Left operand.
+        left: Box<ExprAst>,
+        /// Operator.
+        op: BinaryOpAst,
+        /// Right operand.
+        right: Box<ExprAst>,
+    },
+    /// Reduction over a neighborhood or sampled collection.
+    Reduction {
+        /// Reduction operation.
+        op: ReductionOpAst,
+        /// Binding name for each element.
+        binding: String,
+        /// Iterable expression.
+        iterable: Box<ExprAst>,
+        /// Reduction body expression.
+        body: Box<ExprAst>,
+    },
+}
+
+/// Prefix expression operator.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UnaryOpAst {
+    /// Numeric negation.
+    Neg,
+    /// Boolean negation.
+    Not,
+}
+
+/// Binary expression operator.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BinaryOpAst {
+    /// Addition.
+    Add,
+    /// Subtraction.
+    Sub,
+    /// Multiplication.
+    Mul,
+    /// Division.
+    Div,
+    /// Equality.
+    Eq,
+    /// Inequality.
+    NotEq,
+    /// Less-than comparison.
+    Less,
+    /// Less-than-or-equal comparison.
+    LessEq,
+    /// Greater-than comparison.
+    Greater,
+    /// Greater-than-or-equal comparison.
+    GreaterEq,
+    /// Boolean conjunction.
+    And,
+    /// Boolean disjunction.
+    Or,
+}
+
+/// Reduction expression operator.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ReductionOpAst {
+    /// Sum reduction.
+    Sum,
+}
+
 /// Rule body statement.
 #[derive(Clone, Debug, PartialEq)]
 pub enum RuleStatementAst {
@@ -162,11 +268,4 @@ pub enum RuleStatementAst {
         /// Expression text.
         expression: ExprAst,
     },
-}
-
-/// Expression placeholder.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ExprAst {
-    /// Source text for the expression.
-    pub text: String,
 }
