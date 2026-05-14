@@ -9,5 +9,5 @@ description = "Disposable CPU proof-of-concept backend for Hyle."
 publish = false
 
 [dependencies]
-hyle-compiler = { path = "../../crates/hyle-compiler" }
-hyle-runtime = { path = "../../crates/hyle-runtime" }
+hyle-compiler = { path = "../../hyle-compiler" }
+hyle-runtime = { path = "../../hyle-runtime" }
