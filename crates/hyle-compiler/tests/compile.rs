@@ -21,6 +21,31 @@ fn compiles_single_hyle_script() {
     assert_eq!(output.module.inputs.len(), 1);
     assert_eq!(output.module.rules.len(), 4);
     assert_eq!(output.module.pipeline.stages.len(), 1);
+
+    let grass = output
+        .module
+        .models
+        .iter()
+        .find(|model| model.name.as_str() == "Grass")
+        .expect("grass model");
+    let humidity = grass
+        .fields
+        .iter()
+        .find(|field| field.name.as_str() == "humidity")
+        .expect("humidity field");
+    let biomass = grass
+        .fields
+        .iter()
+        .find(|field| field.name.as_str() == "biomass")
+        .expect("biomass field");
+    assert_eq!(humidity.precision, "1e-3");
+    assert_eq!(biomass.precision, "f32");
+
+    let wind_speed = &output.module.inputs[0];
+    let bounds = wind_speed.bounds.as_ref().expect("wind speed bounds");
+    assert_eq!(wind_speed.precision, "f32");
+    assert_eq!(bounds.lower, "0.0");
+    assert_eq!(bounds.upper, "250");
 }
 
 #[test]

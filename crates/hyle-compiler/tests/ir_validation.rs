@@ -20,6 +20,7 @@ fn validates_basic_module() {
                 ty: TypeIr::Bool,
                 default: None,
                 bounds: None,
+                precision: "f32".to_owned(),
             }],
         }],
         rules: vec![RuleIr {

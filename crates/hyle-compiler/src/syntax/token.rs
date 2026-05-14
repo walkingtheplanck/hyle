@@ -127,7 +127,10 @@ impl TokenKind {
 
     /// Returns the token kind for numeric source text.
     pub fn from_number_text(text: &str) -> Option<Self> {
-        if text.contains(DECIMAL_SEPARATOR) {
+        if text.contains(DECIMAL_SEPARATOR)
+            || text.contains(EXPONENT_LOWER)
+            || text.contains(EXPONENT_UPPER)
+        {
             text.parse::<f64>().ok()?;
             Some(Self::Float(text.to_owned()))
         } else {
@@ -327,6 +330,8 @@ pub enum Symbol {
     Comma,
     /// `!`.
     Bang,
+    /// `~`.
+    Tilde,
 }
 
 impl Symbol {
@@ -359,6 +364,7 @@ impl Symbol {
             Self::Semicolon => ';',
             Self::Comma => ',',
             Self::Bang => '!',
+            Self::Tilde => '~',
         }
     }
 }
@@ -424,6 +430,7 @@ pub const SYMBOL_TOKENS: &[Symbol] = &[
     Symbol::Semicolon,
     Symbol::Comma,
     Symbol::Bang,
+    Symbol::Tilde,
 ];
 
 /// `hyle` directive name.
@@ -440,6 +447,18 @@ pub const DIRECTIVE_PREFIX: char = '#';
 
 /// Character that separates integer and fractional parts in numeric literals.
 pub const DECIMAL_SEPARATOR: char = '.';
+
+/// Lowercase exponent marker in numeric literals.
+pub const EXPONENT_LOWER: char = 'e';
+
+/// Uppercase exponent marker in numeric literals.
+pub const EXPONENT_UPPER: char = 'E';
+
+/// Plus sign after numeric exponent marker.
+pub const EXPONENT_PLUS: char = '+';
+
+/// Minus sign after numeric exponent marker.
+pub const EXPONENT_MINUS: char = '-';
 
 /// Character that delimits string literals.
 pub const STRING_DELIMITER: char = '"';

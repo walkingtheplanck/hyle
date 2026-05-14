@@ -1,8 +1,9 @@
 use thiserror::Error;
 
 use crate::syntax::token::{
-    Span, Token, TokenKind, DECIMAL_SEPARATOR, DIRECTIVE_PREFIX, LINE_COMMENT_PREFIX,
-    LINE_TERMINATOR, STRING_DELIMITER, STRING_ESCAPE,
+    Span, Token, TokenKind, DECIMAL_SEPARATOR, DIRECTIVE_PREFIX, EXPONENT_LOWER, EXPONENT_MINUS,
+    EXPONENT_PLUS, EXPONENT_UPPER, LINE_COMMENT_PREFIX, LINE_TERMINATOR, STRING_DELIMITER,
+    STRING_ESCAPE,
 };
 
 /// Lexing failure.
@@ -74,11 +75,7 @@ impl Lexer<'_> {
             || (character == DECIMAL_SEPARATOR
                 && matches!(self.peek_next_char(), Some(next) if next.is_ascii_digit()))
         {
-            self.bump_char();
-            while matches!(self.peek_char(), Some((_, next)) if next.is_ascii_digit() || next == DECIMAL_SEPARATOR)
-            {
-                self.bump_char();
-            }
+            self.scan_number();
             return Token::number_from_source(self.source, start, self.offset).ok_or(
                 LexError::InvalidNumber {
                     span: Span::new(start, self.offset),
@@ -156,11 +153,38 @@ impl Lexer<'_> {
         Token::fixed(kind, start, end)
     }
 
+    fn scan_number(&mut self) {
+        self.consume_digits();
+
+        if self.peek_character() == Some(DECIMAL_SEPARATOR) {
+            self.bump_char();
+            self.consume_digits();
+        }
+
+        if matches!(self.peek_character(), Some(EXPONENT_LOWER | EXPONENT_UPPER)) {
+            self.bump_char();
+            if matches!(self.peek_character(), Some(EXPONENT_PLUS | EXPONENT_MINUS)) {
+                self.bump_char();
+            }
+            self.consume_digits();
+        }
+    }
+
+    fn consume_digits(&mut self) {
+        while matches!(self.peek_character(), Some(character) if character.is_ascii_digit()) {
+            self.bump_char();
+        }
+    }
+
     fn peek_char(&self) -> Option<(usize, char)> {
         self.source[self.offset..]
             .char_indices()
             .next()
             .map(|(relative, character)| (self.offset + relative, character))
+    }
+
+    fn peek_character(&self) -> Option<char> {
+        self.peek_char().map(|(_, character)| character)
     }
 
     fn peek_next_char(&self) -> Option<char> {

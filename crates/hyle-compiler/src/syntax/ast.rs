@@ -56,6 +56,8 @@ pub struct FieldAst {
     pub default: Option<LiteralAst>,
     /// Optional runtime bounds.
     pub bounds: Option<BoundsAst>,
+    /// Optional precision literal.
+    pub precision: Option<LiteralAst>,
 }
 
 /// External input declaration.
@@ -67,6 +69,10 @@ pub struct InputAst {
     pub ty: TypeAst,
     /// Optional default value.
     pub default: Option<LiteralAst>,
+    /// Optional runtime bounds.
+    pub bounds: Option<BoundsAst>,
+    /// Optional precision literal.
+    pub precision: Option<LiteralAst>,
 }
 
 /// Logical scalar type.

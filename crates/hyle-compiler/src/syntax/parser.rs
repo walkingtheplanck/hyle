@@ -163,11 +163,17 @@ impl Parser {
             } else {
                 None
             };
+            let precision = if self.match_symbol(Symbol::Tilde) {
+                Some(self.parse_number_literal("precision")?)
+            } else {
+                None
+            };
             fields.push(FieldAst {
                 name,
                 ty,
                 default,
                 bounds,
+                precision,
             });
         }
 
@@ -187,8 +193,24 @@ impl Parser {
         } else {
             None
         };
+        let bounds = if self.at_symbol(Symbol::LeftBracket) || self.at_symbol(Symbol::LeftParen) {
+            Some(self.parse_bounds()?)
+        } else {
+            None
+        };
+        let precision = if self.match_symbol(Symbol::Tilde) {
+            Some(self.parse_number_literal("precision")?)
+        } else {
+            None
+        };
         self.expect_symbol(Symbol::Semicolon)?;
-        Ok(InputAst { name, ty, default })
+        Ok(InputAst {
+            name,
+            ty,
+            default,
+            bounds,
+            precision,
+        })
     }
 
     fn parse_rule(&mut self) -> ParseResult<RuleAst> {

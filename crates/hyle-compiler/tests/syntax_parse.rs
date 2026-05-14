@@ -64,6 +64,85 @@ fn parses_numeric_radius_and_bounds_as_literals() {
 }
 
 #[test]
+fn parses_float_literal_forms() {
+    let script = parse(
+        "#hyle 0.1
+#dimensions 3
+#cell Cube
+model Numbers {
+    fields {
+        a: Float<123.45>
+        b: Float<123.>
+        c: Float<.45>
+        d: Float<1e10>
+        e: Float<1.0e-10>
+        f: Float<9.21E-43>
+    }
+}",
+    )
+    .expect("script should parse");
+
+    let defaults = script.models[0]
+        .fields
+        .iter()
+        .map(|field| field.default.as_ref().expect("default"))
+        .collect::<Vec<_>>();
+
+    assert_eq!(defaults[0], &LiteralAst::Float("123.45".to_owned()));
+    assert_eq!(defaults[1], &LiteralAst::Float("123.".to_owned()));
+    assert_eq!(defaults[2], &LiteralAst::Float(".45".to_owned()));
+    assert_eq!(defaults[3], &LiteralAst::Float("1e10".to_owned()));
+    assert_eq!(defaults[4], &LiteralAst::Float("1.0e-10".to_owned()));
+    assert_eq!(defaults[5], &LiteralAst::Float("9.21E-43".to_owned()));
+}
+
+#[test]
+fn parses_optional_field_precision() {
+    let script = parse(GAME).expect("script should parse");
+    let grass = script
+        .models
+        .iter()
+        .find(|model| model.name == "Grass")
+        .expect("grass model");
+    let humidity = grass
+        .fields
+        .iter()
+        .find(|field| field.name == "humidity")
+        .expect("humidity field");
+    let biomass = grass
+        .fields
+        .iter()
+        .find(|field| field.name == "biomass")
+        .expect("biomass field");
+
+    assert_eq!(
+        humidity.precision,
+        Some(LiteralAst::Float("1e-3".to_owned()))
+    );
+    assert_eq!(biomass.precision, None);
+}
+
+#[test]
+fn parses_optional_input_bounds_and_precision() {
+    let script = parse(
+        "#hyle 0.1
+#dimensions 3
+#cell Cube
+in humidity: Float [0.0 1.0) ~1e-3;",
+    )
+    .expect("script should parse");
+
+    let input = &script.inputs[0];
+    let bounds = input.bounds.as_ref().expect("bounds");
+
+    assert_eq!(bounds.lower, LiteralAst::Float("0.0".to_owned()));
+    assert_eq!(bounds.upper, LiteralAst::Float("1.0".to_owned()));
+    assert!(bounds.lower_inclusive);
+    assert!(!bounds.upper_inclusive);
+    assert_eq!(input.precision, Some(LiteralAst::Float("1e-3".to_owned())));
+}
+
+#[test]
 fn rejects_missing_version_directive() {
     let result = parse("#dimensions 3\n#cell Cube\nmodel Fire { fields { intensity: Float } }");
 

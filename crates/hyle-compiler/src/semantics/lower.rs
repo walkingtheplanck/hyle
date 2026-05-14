@@ -278,6 +278,11 @@ fn lower_field(field: &FieldAst) -> FieldIr {
         ty: lower_type(&field.ty),
         default: field.default.as_ref().map(lower_literal),
         bounds: field.bounds.as_ref().map(lower_bounds),
+        precision: field
+            .precision
+            .as_ref()
+            .map(lower_literal_text)
+            .unwrap_or_else(default_precision),
     }
 }
 
@@ -286,6 +291,12 @@ fn lower_input(input: &InputAst) -> InputIr {
         name: ident(&input.name),
         ty: lower_type(&input.ty),
         default: input.default.as_ref().map(lower_literal),
+        bounds: input.bounds.as_ref().map(lower_bounds),
+        precision: input
+            .precision
+            .as_ref()
+            .map(lower_literal_text)
+            .unwrap_or_else(default_precision),
     }
 }
 
@@ -432,6 +443,10 @@ fn lower_literal_text(literal: &LiteralAst) -> String {
         LiteralAst::Integer(value) | LiteralAst::Float(value) => value.clone(),
         LiteralAst::Bool(value) => value.to_string(),
     }
+}
+
+fn default_precision() -> String {
+    "f32".to_owned()
 }
 
 fn lower_sampling(sampling: &SamplingAst) -> SamplingIr {

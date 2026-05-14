@@ -36,6 +36,8 @@ pub struct FieldIr {
     pub default: Option<LiteralIr>,
     /// Optional runtime bounds.
     pub bounds: Option<BoundsIr>,
+    /// Numeric precision, or the default runtime precision label.
+    pub precision: String,
 }
 
 /// The data model referenced by rules and backends.
@@ -60,4 +62,8 @@ pub struct InputIr {
     pub ty: TypeIr,
     /// Optional default value.
     pub default: Option<LiteralIr>,
+    /// Optional runtime bounds.
+    pub bounds: Option<BoundsIr>,
+    /// Numeric precision, or the default runtime precision label.
+    pub precision: String,
 }

@@ -90,7 +90,7 @@ model Grass {
     range VonNeumann1
 
     fields {
-        humidity: Float<0.5> [0.0 1.0)
+        humidity: Float<0.5> [0.0 1.0) ~1e-3
         biomass: Float<0.5> [0.0 10.0]
     }
 }
@@ -104,7 +104,7 @@ model Ash {
 }
 
 // External simulation inputs.
-in wind_speed: Float<0.01>;
+in wind_speed: Float<0.01> [0.0 250];
 
 // Local update rule.
 //
