@@ -1,3 +1,5 @@
+mod common;
+
 use hyle_compiler::{
     compile, CompileInput, CompileOptions, SoleExpr, SoleLiteralValue, SourceFile,
 };
@@ -19,6 +21,18 @@ fn compiles_game_to_expected_sole_json_shape() {
     let actual = serde_json::to_value(&output.module).expect("sole json");
     let expected = serde_json::from_str::<serde_json::Value>(GAME_SOLE_JSON).expect("fixture json");
 
+    common::dump_sections(
+        "sole_ir::compiles_game_to_expected_sole_json_shape",
+        &[
+            ("input", GAME.to_owned()),
+            (
+                "actual output",
+                serde_json::to_string_pretty(&actual).expect("actual json"),
+            ),
+            ("expected output", GAME_SOLE_JSON.to_owned()),
+        ],
+    );
+
     assert_eq!(actual, expected);
 }
 
@@ -32,6 +46,12 @@ fn lowers_sole_ids_and_precision() {
         CompileOptions::default(),
     )
     .expect("compile should succeed");
+
+    common::dump_json(
+        "sole_ir::lowers_sole_ids_and_precision",
+        GAME,
+        &output.module,
+    );
 
     let grass = &output.module.models[1];
     let humidity = &grass.fields[0];
@@ -58,6 +78,12 @@ fn lowers_structured_rule_expressions() {
         CompileOptions::default(),
     )
     .expect("compile should succeed");
+
+    common::dump_json(
+        "sole_ir::lowers_structured_rule_expressions",
+        GAME,
+        &output.module.rules,
+    );
 
     let first_rule = &output.module.rules[0];
     assert_eq!(first_rule.name, "fire_update");

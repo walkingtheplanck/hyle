@@ -1,3 +1,5 @@
+mod common;
+
 use hyle_compiler::{compile, CompileInput, CompileOptions, SourceFile};
 
 const GAME: &str = include_str!("../../../examples/game.hyle");
@@ -12,6 +14,8 @@ fn compiles_single_hyle_script() {
         CompileOptions::default(),
     )
     .expect("compile should succeed");
+
+    common::dump_json("compile::compiles_single_hyle_script", GAME, &output.module);
 
     assert_eq!(output.module.version, "0.1");
     assert_eq!(output.module.world.dimensions, 3);
@@ -49,13 +53,16 @@ fn compiles_single_hyle_script() {
 
 #[test]
 fn rejects_empty_source() {
+    let source = "   ";
     let result = compile(
         CompileInput {
-            source: SourceFile::new("empty.hyle", "   "),
+            source: SourceFile::new("empty.hyle", source),
             module_name: None,
         },
         CompileOptions::default(),
     );
+
+    common::dump_debug("compile::rejects_empty_source", source, &result);
 
     assert!(result.is_err());
 }
