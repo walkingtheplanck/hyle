@@ -13,39 +13,38 @@ fn compiles_single_hyle_script() {
     )
     .expect("compile should succeed");
 
-    assert_eq!(output.module.name.as_str(), "wildfire");
-    assert_eq!(output.module.lattice.dimensions, 3);
-    assert_eq!(output.module.lattice.cell, "Cube");
-    assert_eq!(output.module.neighborhoods.len(), 1);
+    assert_eq!(output.module.version, "0.1");
+    assert_eq!(output.module.world.dimensions, 3);
+    assert_eq!(output.module.world.cell, "Cube");
+    assert_eq!(output.module.ranges.len(), 1);
     assert_eq!(output.module.models.len(), 3);
     assert_eq!(output.module.inputs.len(), 1);
     assert_eq!(output.module.rules.len(), 4);
-    assert_eq!(output.module.pipeline.stages.len(), 1);
 
     let grass = output
         .module
         .models
         .iter()
-        .find(|model| model.name.as_str() == "Grass")
+        .find(|model| model.name == "Grass")
         .expect("grass model");
     let humidity = grass
         .fields
         .iter()
-        .find(|field| field.name.as_str() == "humidity")
+        .find(|field| field.name == "humidity")
         .expect("humidity field");
     let biomass = grass
         .fields
         .iter()
-        .find(|field| field.name.as_str() == "biomass")
+        .find(|field| field.name == "biomass")
         .expect("biomass field");
-    assert_eq!(humidity.precision, "1e-3");
-    assert_eq!(biomass.precision, "f32");
+    assert_eq!(humidity.epsilon, 0.001);
+    assert_eq!(biomass.epsilon, 1e-7);
 
     let wind_speed = &output.module.inputs[0];
     let bounds = wind_speed.bounds.as_ref().expect("wind speed bounds");
-    assert_eq!(wind_speed.precision, "f32");
-    assert_eq!(bounds.lower, "0.0");
-    assert_eq!(bounds.upper, "250");
+    assert_eq!(wind_speed.epsilon, 1e-7);
+    assert_eq!(format!("{:?}", bounds.min), "Float(0.0)");
+    assert_eq!(format!("{:?}", bounds.max), "Float(250.0)");
 }
 
 #[test]

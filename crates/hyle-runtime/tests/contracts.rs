@@ -1,4 +1,4 @@
-use hyle_compiler::ir::{Identifier, ModuleIr};
+use hyle_compiler::{SoleModule, SoleWorld};
 use hyle_runtime::{DispatchTarget, Instance, LoadedModule};
 
 #[test]
@@ -11,11 +11,18 @@ fn instance_advances() {
 
 #[test]
 fn loaded_module_wraps_ir() {
-    let module = ModuleIr {
-        name: Identifier::new("life").expect("identifier"),
-        ..ModuleIr::default()
+    let module = SoleModule {
+        version: "0.1".to_owned(),
+        world: SoleWorld {
+            dimensions: 2,
+            cell: "Square".to_owned(),
+        },
+        ranges: Vec::new(),
+        models: Vec::new(),
+        inputs: Vec::new(),
+        rules: Vec::new(),
     };
     let loaded = LoadedModule::new(module, DispatchTarget::Cpu);
 
-    assert_eq!(loaded.ir.name.as_str(), "life");
+    assert_eq!(loaded.module.version, "0.1");
 }

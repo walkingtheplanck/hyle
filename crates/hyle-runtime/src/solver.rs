@@ -1,4 +1,4 @@
-use hyle_compiler::ir::ModuleIr;
+use hyle_compiler::SoleModule;
 
 use crate::{DispatchTarget, Instance, LoadedModule, RuntimeError};
 
@@ -8,7 +8,7 @@ pub trait Solver {
     fn target(&self) -> DispatchTarget;
 
     /// Loads a compiled module into backend-specific state.
-    fn load_module(&mut self, module: ModuleIr) -> Result<LoadedModule, RuntimeError>;
+    fn load_module(&mut self, module: SoleModule) -> Result<LoadedModule, RuntimeError>;
 
     /// Creates an instance from a loaded module.
     fn create_instance(&mut self, module: &LoadedModule) -> Result<Instance, RuntimeError>;

@@ -1,0 +1,79 @@
+use hyle_compiler::{
+    compile, CompileInput, CompileOptions, SoleExpr, SoleLiteralValue, SourceFile,
+};
+
+const GAME: &str = include_str!("../../../examples/game.hyle");
+const GAME_SOLE_JSON: &str = include_str!("../../../examples/game.sole.json");
+
+#[test]
+fn compiles_game_to_expected_sole_json_shape() {
+    let output = compile(
+        CompileInput {
+            source: SourceFile::new("game.hyle", GAME),
+            module_name: None,
+        },
+        CompileOptions::default(),
+    )
+    .expect("compile should succeed");
+
+    let actual = serde_json::to_value(&output.module).expect("sole json");
+    let expected = serde_json::from_str::<serde_json::Value>(GAME_SOLE_JSON).expect("fixture json");
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn lowers_sole_ids_and_precision() {
+    let output = compile(
+        CompileInput {
+            source: SourceFile::new("game.hyle", GAME),
+            module_name: None,
+        },
+        CompileOptions::default(),
+    )
+    .expect("compile should succeed");
+
+    let grass = &output.module.models[1];
+    let humidity = &grass.fields[0];
+    let biomass = &grass.fields[1];
+    let wind_speed = &output.module.inputs[0];
+
+    assert_eq!(grass.name, "Grass");
+    assert_eq!(humidity.epsilon, 0.001);
+    assert_eq!(biomass.epsilon, 1e-7);
+    assert_eq!(wind_speed.epsilon, 1e-7);
+    assert_eq!(
+        wind_speed.bounds.as_ref().expect("bounds").max,
+        SoleLiteralValue::Float(250.0)
+    );
+}
+
+#[test]
+fn lowers_structured_rule_expressions() {
+    let output = compile(
+        CompileInput {
+            source: SourceFile::new("game.hyle", GAME),
+            module_name: None,
+        },
+        CompileOptions::default(),
+    )
+    .expect("compile should succeed");
+
+    let first_rule = &output.module.rules[0];
+    assert_eq!(first_rule.name, "fire_update");
+    assert_eq!(first_rule.anchor, 0);
+    assert_eq!(first_rule.target, 0);
+    assert_eq!(first_rule.range, 0);
+
+    let SoleExpr::Reduce { reduce } = &first_rule.lets[0].value else {
+        panic!("expected reduce expression");
+    };
+    assert_eq!(reduce.op, "Sum");
+    assert_eq!(reduce.var, "n");
+
+    let SoleExpr::Call { call } = &first_rule.writes[0].value else {
+        panic!("expected clamp call");
+    };
+    assert_eq!(call.function, "clamp");
+    assert_eq!(call.args.len(), 3);
+}

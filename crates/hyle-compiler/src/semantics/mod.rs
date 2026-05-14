@@ -1,4 +1,4 @@
-//! Semantic analysis and lowering from syntax AST to compiler IR.
+//! Semantic analysis and lowering from syntax AST to `.sole` IR.
 
 pub mod hir;
 pub mod lower;

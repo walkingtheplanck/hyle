@@ -1,5 +1,5 @@
+use crate::codegen::sole_ir::SoleModule;
 use crate::diagnostics::{Diagnostic, DiagnosticReport};
-use crate::ir::{ModuleIr, SchemaVersion};
 use crate::semantics::lower_script;
 use crate::source::SourceFile;
 use crate::syntax::{parse, ScriptAst, SyntaxError};
@@ -16,8 +16,6 @@ pub struct CompileInput {
 /// Compiler options for the scaffold pipeline.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CompileOptions {
-    /// Schema version to stamp onto the lowered IR.
-    pub schema_version: SchemaVersion,
     /// Whether the future `.sole` codegen stage should run.
     pub generate_sole: bool,
 }
@@ -27,16 +25,16 @@ pub struct CompileOptions {
 pub struct CompileOutput {
     /// Parsed syntax tree.
     pub syntax: ScriptAst,
-    /// Lowered module IR.
-    pub module: ModuleIr,
+    /// Lowered `.sole` IR.
+    pub module: SoleModule,
     /// Generated `.sole` output. This remains `None` until codegen lands.
     pub sole: Option<String>,
 }
 
-/// Compiles a single `.hyle` script into Hyle IR.
+/// Compiles a single `.hyle` script into `.sole` IR.
 ///
 /// The code generation stage is scaffolded but intentionally not implemented
-/// yet, so this function currently produces IR only.
+/// yet, so this function currently produces the `.sole` JSON data model only.
 pub fn compile(
     input: CompileInput,
     options: CompileOptions,
@@ -44,11 +42,7 @@ pub fn compile(
     let mut syntax =
         parse(&input.source.contents).map_err(|error| syntax_report(&input.source, error))?;
     syntax.source_path = input.source.path.clone();
-    let module = lower_script(
-        &syntax,
-        input.module_name.as_deref(),
-        options.schema_version,
-    )?;
+    let module = lower_script(&syntax, input.module_name.as_deref())?;
 
     let _codegen_requested = options.generate_sole;
     let sole = None;

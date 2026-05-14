@@ -1,0 +1,400 @@
+{
+  "version": "0.1",
+  "world": {
+    "dimensions": 3,
+    "cell": "Cube"
+  },
+  "ranges": [
+    {
+      "id": 0,
+      "name": "VonNeumann1",
+      "radius": 1,
+      "center": false,
+      "metric": "Manhattan"
+    }
+  ],
+  "models": [
+    {
+      "id": 0,
+      "name": "Fire",
+      "resolution": 2,
+      "range": 0,
+      "fields": [
+        {
+          "id": 0,
+          "name": "intensity",
+          "type": "f32",
+          "default": 0.5,
+          "bounds": {
+            "min": 0.0,
+            "max": 1.0,
+            "min_closed": true,
+            "max_closed": false
+          },
+          "epsilon": 1e-7
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Grass",
+      "resolution": 1,
+      "range": 0,
+      "fields": [
+        {
+          "id": 0,
+          "name": "humidity",
+          "type": "f32",
+          "default": 0.5,
+          "bounds": {
+            "min": 0.0,
+            "max": 1.0,
+            "min_closed": true,
+            "max_closed": false
+          },
+          "epsilon": 0.001
+        },
+        {
+          "id": 1,
+          "name": "biomass",
+          "type": "f32",
+          "default": 0.5,
+          "bounds": {
+            "min": 0.0,
+            "max": 10.0,
+            "min_closed": true,
+            "max_closed": true
+          },
+          "epsilon": 1e-7
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Ash",
+      "resolution": 1,
+      "range": 0,
+      "fields": [
+        {
+          "id": 0,
+          "name": "amount",
+          "type": "f32",
+          "default": 0.0,
+          "bounds": {
+            "min": 0.0,
+            "max": 1.0,
+            "min_closed": true,
+            "max_closed": false
+          },
+          "epsilon": 1e-7
+        }
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": 0,
+      "name": "wind_speed",
+      "type": "f32",
+      "default": 0.01,
+      "bounds": {
+        "min": 0.0,
+        "max": 250.0,
+        "min_closed": true,
+        "max_closed": true
+      },
+      "epsilon": 1e-7
+    }
+  ],
+  "rules": [
+    {
+      "id": 0,
+      "name": "fire_update",
+      "anchor": 0,
+      "target": 0,
+      "range": 0,
+      "samples": [],
+      "when": null,
+      "lets": [
+        {
+          "id": 0,
+          "name": "incoming",
+          "type": "f32",
+          "value": {
+            "reduce": {
+              "op": "Sum",
+              "var": "n",
+              "over": {
+                "neighbors": {
+                  "model": 0,
+                  "range": 0
+                }
+              },
+              "expr": {
+                "read": {
+                  "var": "n",
+                  "field": 0
+                }
+              }
+            }
+          }
+        }
+      ],
+      "writes": [
+        {
+          "field": 0,
+          "value": {
+            "call": {
+              "fn": "clamp",
+              "args": [
+                {
+                  "op": "Sub",
+                  "args": [
+                    {
+                      "op": "Sub",
+                      "args": [
+                        {
+                          "op": "Add",
+                          "args": [
+                            {
+                              "read": {
+                                "model": 0,
+                                "field": 0
+                              }
+                            },
+                            {
+                              "local": 0
+                            }
+                          ]
+                        },
+                        {
+                          "literal": {
+                            "type": "f32",
+                            "value": 0.01
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "input": 0
+                    }
+                  ]
+                },
+                {
+                  "literal": {
+                    "type": "f32",
+                    "value": 0.0
+                  }
+                },
+                {
+                  "literal": {
+                    "type": "f32",
+                    "value": 1.0
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "fire_absorb_grass",
+      "anchor": 0,
+      "target": 0,
+      "range": 0,
+      "samples": [
+        {
+          "model": 1,
+          "mode": "Average"
+        }
+      ],
+      "when": null,
+      "lets": [],
+      "writes": [
+        {
+          "field": 0,
+          "value": {
+            "call": {
+              "fn": "clamp",
+              "args": [
+                {
+                  "op": "Add",
+                  "args": [
+                    {
+                      "read": {
+                        "model": 0,
+                        "field": 0
+                      }
+                    },
+                    {
+                      "op": "Mul",
+                      "args": [
+                        {
+                          "read": {
+                            "model": 1,
+                            "field": 1
+                          }
+                        },
+                        {
+                          "literal": {
+                            "type": "f32",
+                            "value": 0.01
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "literal": {
+                    "type": "f32",
+                    "value": 0.0
+                  }
+                },
+                {
+                  "literal": {
+                    "type": "f32",
+                    "value": 1.0
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "grass_burn",
+      "anchor": 1,
+      "target": 1,
+      "range": 0,
+      "samples": [
+        {
+          "model": 0,
+          "mode": "Average"
+        }
+      ],
+      "when": null,
+      "lets": [],
+      "writes": [
+        {
+          "field": 0,
+          "value": {
+            "call": {
+              "fn": "clamp",
+              "args": [
+                {
+                  "op": "Sub",
+                  "args": [
+                    {
+                      "read": {
+                        "model": 1,
+                        "field": 0
+                      }
+                    },
+                    {
+                      "op": "Mul",
+                      "args": [
+                        {
+                          "read": {
+                            "model": 0,
+                            "field": 0
+                          }
+                        },
+                        {
+                          "literal": {
+                            "type": "f32",
+                            "value": 0.05
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "literal": {
+                    "type": "f32",
+                    "value": 0.0
+                  }
+                },
+                {
+                  "literal": {
+                    "type": "f32",
+                    "value": 1.0
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "grass_to_ash",
+      "anchor": 1,
+      "target": 2,
+      "range": 0,
+      "samples": [
+        {
+          "model": 0,
+          "mode": "Average"
+        }
+      ],
+      "when": {
+        "op": "And",
+        "args": [
+          {
+            "op": "Lte",
+            "args": [
+              {
+                "read": {
+                  "model": 1,
+                  "field": 0
+                }
+              },
+              {
+                "literal": {
+                  "type": "f32",
+                  "value": 0.05
+                }
+              }
+            ]
+          },
+          {
+            "op": "Gt",
+            "args": [
+              {
+                "read": {
+                  "model": 0,
+                  "field": 0
+                }
+              },
+              {
+                "literal": {
+                  "type": "f32",
+                  "value": 0.3
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "lets": [],
+      "writes": [
+        {
+          "field": 0,
+          "value": {
+            "read": {
+              "model": 1,
+              "field": 1
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

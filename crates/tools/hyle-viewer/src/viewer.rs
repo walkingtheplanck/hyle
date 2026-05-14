@@ -1,14 +1,14 @@
-use hyle_compiler::ir::ModuleIr;
+use hyle_compiler::SoleModule;
 
 /// Placeholder viewer-facing state holder.
 #[derive(Default)]
 pub struct ViewerScaffold {
-    module: Option<ModuleIr>,
+    module: Option<SoleModule>,
 }
 
 impl ViewerScaffold {
     /// Attaches a module for future visualization work.
-    pub fn attach_module(&mut self, module: ModuleIr) {
+    pub fn attach_module(&mut self, module: SoleModule) {
         self.module = Some(module);
     }
 

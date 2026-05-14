@@ -2,7 +2,9 @@
 
 use thiserror::Error;
 
-use crate::ir::ModuleIr;
+pub mod sole_ir;
+
+use crate::codegen::sole_ir::SoleModule;
 
 /// Generated `.sole` artifact.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -27,6 +29,6 @@ pub enum CodegenError {
 ///
 /// Always returns [`CodegenError::NotImplemented`] until the code generator is
 /// implemented.
-pub fn generate_sole(_module: &ModuleIr) -> Result<SoleArtifact, CodegenError> {
+pub fn generate_sole(_module: &SoleModule) -> Result<SoleArtifact, CodegenError> {
     Err(CodegenError::NotImplemented)
 }
