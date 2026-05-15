@@ -20,6 +20,7 @@ fn compiles_game_to_expected_sole_json_shape() {
 
     let actual = serde_json::to_value(&output.module).expect("sole json");
     let expected = serde_json::from_str::<serde_json::Value>(GAME_SOLE_JSON).expect("fixture json");
+    let json = output.module.to_json_string().expect("json string");
 
     common::dump_sections(
         "sole_ir::compiles_game_to_expected_sole_json_shape",
@@ -34,6 +35,8 @@ fn compiles_game_to_expected_sole_json_shape() {
     );
 
     assert_eq!(actual, expected);
+    assert_eq!(json, GAME_SOLE_JSON.trim_end());
+    assert_eq!(output.module.to_string(), json);
 }
 
 #[test]

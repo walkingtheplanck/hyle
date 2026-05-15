@@ -1,3 +1,5 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 /// `.sole` JSON module produced by code generation.
@@ -15,6 +17,25 @@ pub struct SoleModule {
     pub inputs: Vec<SoleInput>,
     /// Executable update/transform rules.
     pub rules: Vec<SoleRule>,
+}
+
+impl SoleModule {
+    /// Serializes this module to pretty `.sole.json`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a JSON serialization error if any contained value cannot be
+    /// represented as JSON.
+    pub fn to_json_string(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+}
+
+impl fmt::Display for SoleModule {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let json = self.to_json_string().map_err(|_| fmt::Error)?;
+        formatter.write_str(&json)
+    }
 }
 
 /// World lattice declaration.
