@@ -1,4 +1,4 @@
-use hyle_compiler::{SoleModule, SoleWorld};
+use hyle_sole::{SoleModule, SoleWorld};
 use hyle_viewer::ViewerScaffold;
 
 #[test]

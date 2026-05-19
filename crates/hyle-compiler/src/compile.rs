@@ -1,8 +1,8 @@
-use crate::codegen::sole_ir::SoleModule;
 use crate::diagnostics::{Diagnostic, DiagnosticReport};
 use crate::semantics::lower_script;
 use crate::source::SourceFile;
 use crate::syntax::{parse, SyntaxError};
+use hyle_sole::SoleModule;
 
 /// Source input expected by the compiler.
 #[derive(Clone, Debug, PartialEq, Eq)]

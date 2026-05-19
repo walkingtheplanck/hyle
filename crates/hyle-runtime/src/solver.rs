@@ -1,18 +1,21 @@
-use hyle_compiler::SoleModule;
+use crate::io_handler::IOHandler;
+use crate::options::LoadOptions;
+use crate::RuntimeError;
 
-use crate::{DispatchTarget, Instance, LoadedModule, RuntimeError};
+pub trait Solver: Send + Sync {
+    fn name(&self) -> &'static str;
 
-/// Minimal solver contract shared by proof-of-concept backends.
-pub trait Solver {
-    /// Returns the backend category implemented by this solver.
-    fn target(&self) -> DispatchTarget;
+    fn load(&self, sole: &[u8], options: LoadOptions) -> Result<Box<dyn Instance>, RuntimeError>;
+}
 
-    /// Loads a compiled module into backend-specific state.
-    fn load_module(&mut self, module: SoleModule) -> Result<LoadedModule, RuntimeError>;
+pub trait Instance: Send {
+    fn step(&mut self) -> Result<(), RuntimeError>;
 
-    /// Creates an instance from a loaded module.
-    fn create_instance(&mut self, module: &LoadedModule) -> Result<Instance, RuntimeError>;
+    fn field(
+        &mut self,
+        model_name: &str,
+        field_name: &str,
+    ) -> Result<Box<dyn IOHandler>, RuntimeError>;
 
-    /// Advances an instance by one logical step.
-    fn step(&mut self, instance: &mut Instance) -> Result<(), RuntimeError>;
+    fn input(&mut self, input_name: &str) -> Result<Box<dyn IOHandler>, RuntimeError>;
 }

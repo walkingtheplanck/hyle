@@ -1,14 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::codegen::sole_ir::{
-    SoleBounds, SoleCall, SoleExpr, SoleField, SoleInput, SoleLet, SoleLiteral, SoleLiteralValue,
-    SoleModel, SoleModule, SoleNeighbors, SoleOpExpr, SoleRange, SoleRead, SoleReduce, SoleRule,
-    SoleSample, SoleWorld, SoleWrite,
-};
 use crate::diagnostics::{Diagnostic, DiagnosticReport};
 use crate::syntax::{
     BinaryOpAst, BoundsAst, ExprAst, ExprKindAst, FieldAst, InputAst, LiteralAst, ModelAst,
     ReductionOpAst, RuleAst, RuleStatementAst, SamplingAst, ScriptAst, TypeAst, UnaryOpAst,
+};
+use hyle_sole::{
+    SoleBounds, SoleCall, SoleExpr, SoleField, SoleInput, SoleLet, SoleLiteral, SoleLiteralValue,
+    SoleModel, SoleModule, SoleNeighbors, SoleOpExpr, SoleRange, SoleRead, SoleReduce, SoleRule,
+    SoleSample, SoleWorld, SoleWrite,
 };
 
 const DEFAULT_EPSILON: f64 = 1e-7;

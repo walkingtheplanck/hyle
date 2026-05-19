@@ -1,8 +1,7 @@
 mod common;
 
-use hyle_compiler::{
-    compile, CompileInput, CompileOptions, SoleExpr, SoleLiteralValue, SourceFile,
-};
+use hyle_compiler::{compile, CompileInput, CompileOptions, SourceFile};
+use hyle_sole::{SoleExpr, SoleLiteralValue};
 
 const GAME: &str = include_str!("../../../examples/game.hyle");
 const GAME_SOLE_JSON: &str = include_str!("../../../examples/game.sole.json");

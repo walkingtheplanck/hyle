@@ -9,4 +9,4 @@ description = "Disposable viewer scaffold for Hyle."
 publish = false
 
 [dependencies]
-hyle-compiler = { path = "../../hyle-compiler" }
+hyle-sole = { path = "../../hyle-sole" }

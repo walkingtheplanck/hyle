@@ -1,12 +1,16 @@
 [package]
-name = "hyle-runtime"
+name = "hyle-compiler-ffi"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-description = "Runtime contracts shared by Hyle backends."
+description = "C ABI surface for the Hyle compiler."
+publish = false
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
+hyle-compiler = { path = "../hyle-compiler" }
 hyle-sole = { path = "../hyle-sole" }
-thiserror.workspace = true

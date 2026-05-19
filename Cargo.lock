@@ -6,40 +6,65 @@ version = 4
 name = "hyle-compiler"
 version = "0.1.0"
 dependencies = [
+ "hyle-sole",
  "serde",
  "serde_json",
  "thiserror",
 ]
 
 [[package]]
-name = "hyle-cpu"
+name = "hyle-compiler-ffi"
 version = "0.1.0"
 dependencies = [
  "hyle-compiler",
+ "hyle-sole",
+]
+
+[[package]]
+name = "hyle-cpu"
+version = "0.1.0"
+dependencies = [
  "hyle-runtime",
+ "hyle-sole",
 ]
 
 [[package]]
 name = "hyle-gpu"
 version = "0.1.0"
 dependencies = [
- "hyle-compiler",
  "hyle-runtime",
+ "hyle-sole",
 ]
 
 [[package]]
 name = "hyle-runtime"
 version = "0.1.0"
 dependencies = [
- "hyle-compiler",
+ "hyle-sole",
  "thiserror",
+]
+
+[[package]]
+name = "hyle-runtime-ffi"
+version = "0.1.0"
+dependencies = [
+ "hyle-runtime",
+]
+
+[[package]]
+name = "hyle-sole"
+version = "0.1.0"
+dependencies = [
+ "hyle-compiler",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
 name = "hyle-viewer"
 version = "0.1.0"
 dependencies = [
- "hyle-compiler",
+ "hyle-sole",
 ]
 
 [[package]]

@@ -2,9 +2,7 @@
 
 use thiserror::Error;
 
-pub mod sole_ir;
-
-use crate::codegen::sole_ir::SoleModule;
+use hyle_sole::SoleModule;
 
 /// Generated `.sole` artifact.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -23,7 +21,7 @@ pub enum CodegenError {
     NotImplemented,
 }
 
-/// Generates `.sole` code from compiler IR.
+/// Generates `.sole` code from a `.sole` module.
 ///
 /// # Errors
 ///

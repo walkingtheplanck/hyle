@@ -1,4 +1,4 @@
-use hyle_compiler::SoleModule;
+use hyle_sole::SoleModule;
 
 /// Placeholder viewer-facing state holder.
 #[derive(Default)]

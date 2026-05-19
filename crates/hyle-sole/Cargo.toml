@@ -1,16 +1,15 @@
 [package]
-name = "hyle-compiler"
+name = "hyle-sole"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-description = "Compiler for Hyle source scripts."
+description = "Standalone .sole IR data model and JSON codec."
 
 [dependencies]
-hyle-sole = { path = "../hyle-sole" }
-thiserror.workspace = true
-
-[dev-dependencies]
 serde.workspace = true
 serde_json.workspace = true
+
+[dev-dependencies]
+hyle-compiler = { path = "../hyle-compiler" }

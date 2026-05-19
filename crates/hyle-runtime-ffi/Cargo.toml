@@ -1,13 +1,15 @@
 [package]
-name = "hyle-cpu"
+name = "hyle-runtime-ffi"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-description = "Disposable CPU proof-of-concept backend for Hyle."
+description = "C ABI surface for the Hyle runtime."
 publish = false
 
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
 [dependencies]
-hyle-sole = { path = "../../hyle-sole" }
-hyle-runtime = { path = "../../hyle-runtime" }
+hyle-runtime = { path = "../hyle-runtime" }
