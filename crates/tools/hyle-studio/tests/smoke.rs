@@ -1,5 +1,5 @@
 use hyle_sole::{SoleModule, SoleWorld};
-use hyle_viewer::ViewerScaffold;
+use hyle_studio::ViewerScaffold;
 
 #[test]
 fn viewer_tracks_attached_module() {

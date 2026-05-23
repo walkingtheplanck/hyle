@@ -1,11 +1,11 @@
 [package]
-name = "hyle-viewer"
+name = "hyle-studio"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-description = "Disposable viewer scaffold for Hyle."
+description = "Official portable app for visualizing and testing Hyle scripts"
 publish = false
 
 [dependencies]

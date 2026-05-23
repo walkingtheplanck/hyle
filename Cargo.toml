@@ -6,7 +6,7 @@ members = [
     "crates/hyle-runtime",
     "crates/backends/hyle-cpu",
     "crates/backends/hyle-gpu",
-    "crates/tools/hyle-viewer",
+    "crates/tools/hyle-studio",
     "crates/hyle-runtime-ffi",
 ]
 default-members = [
@@ -15,7 +15,7 @@ default-members = [
     "crates/hyle-runtime",
     "crates/backends/hyle-cpu",
     "crates/backends/hyle-gpu",
-    "crates/tools/hyle-viewer",
+    "crates/tools/hyle-studio",
 ]
 resolver = "2"
 
