@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Hyle Studio</title>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #hyle_canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id="hyle_canvas"></canvas>
+
+<script type="module">
+    import init, { start } from "./pkg/hyle-studio.js";
+
+    await init();
+    await start(document.getElementById("hyle_canvas"));
+</script>
+</body>
+</html>
