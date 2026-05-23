@@ -7,7 +7,6 @@ pub mod semantics;
 pub mod source;
 pub mod syntax;
 
-pub use compile::{compile, CompileInput, CompileOptions, CompileOutput};
+pub use compile::{compile, CompileInput, CompileOptions, CompileOutput, SourceFile};
 pub use diagnostics::{Diagnostic, DiagnosticReport, DiagnosticSeverity};
-pub use source::SourceFile;
 pub use syntax::parse;
