@@ -1,5 +1,6 @@
 /target
 /target-docci
+/crates/tools/hyle-studio/pkg
 /.idea
 /.vscode
 /.ai
