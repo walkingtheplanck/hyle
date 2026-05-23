@@ -3,7 +3,7 @@ mod types;
 
 use error::ffi_call;
 pub use error::hyle_runtime_last_error_message;
-pub use types::{HyleRuntimeInstance, HyleRuntimeLoadOptions, HyleRuntimeStatus};
+pub use types::{HyleRuntimeInstance, HyleRuntimeStatus};
 
 #[no_mangle]
 /// Advances a runtime instance by one step.

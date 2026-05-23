@@ -12,5 +12,5 @@ publish = false
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-hyle-compiler = { path = "../hyle-compiler" }
-hyle-sole = { path = "../hyle-sole" }
+hyle-compiler = { path = "../../hyle-compiler" }
+hyle-sole = { path = "../../hyle-sole" }

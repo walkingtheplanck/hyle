@@ -2,12 +2,12 @@
 members = [
     "crates/hyle-sole",
     "crates/hyle-compiler",
-    "crates/hyle-compiler-ffi",
+    "crates/hyle-ffi/hyle-compiler",
     "crates/hyle-runtime",
     "crates/backends/hyle-cpu",
     "crates/backends/hyle-gpu",
     "crates/tools/hyle-studio",
-    "crates/hyle-runtime-ffi",
+    "crates/hyle-ffi/hyle-runtime",
 ]
 default-members = [
     "crates/hyle-sole",

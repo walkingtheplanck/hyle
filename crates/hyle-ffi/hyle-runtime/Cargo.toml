@@ -12,4 +12,4 @@ publish = false
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-hyle-runtime = { path = "../hyle-runtime" }
+hyle-runtime = { package = "hyle-runtime", path = "../../hyle-runtime" }

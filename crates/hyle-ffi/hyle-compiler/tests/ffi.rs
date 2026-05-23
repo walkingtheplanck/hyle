@@ -10,8 +10,8 @@ use hyle_compiler_ffi::{
     hyle_compiler_string_free, HyleCompilerModule, HyleCompilerStatus, HyleCompilerString,
 };
 
-const GAME: &str = include_str!("../../../examples/game.hyle");
-const GAME_SOLE_JSON: &str = include_str!("../../../examples/game.sole.json");
+const GAME: &str = include_str!("../../../../examples/game.hyle");
+const GAME_SOLE_JSON: &str = include_str!("../../../../examples/game.sole.json");
 
 #[test]
 fn compiles_hyle_source_to_sole_json() {
