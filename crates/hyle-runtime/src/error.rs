@@ -15,4 +15,10 @@ pub enum RuntimeError {
     /// Generic field access failure.
     #[error("field access failed: {0}")]
     FieldAccess(String),
+    /// Generic input access failure.
+    #[error("input access failed: {0}")]
+    InputAccess(String),
+    /// Generic cell edit failure.
+    #[error("cell edit failed: {0}")]
+    CellEdit(String),
 }
