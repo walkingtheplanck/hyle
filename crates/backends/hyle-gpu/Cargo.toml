@@ -10,4 +10,4 @@ publish = false
 
 [dependencies]
 hyle-sole = { path = "../../hyle-sole" }
-hyle-runtime = { path = "../../hyle-runtime" }
+hyle-runtime = { package = "hyle-runtime", path = "../../hyle-runtime" }
