@@ -1,0 +1,12 @@
+[package]
+name = "hyle"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+hyle-runtime = { path = "../hyle-runtime" }
+hyle-compiler = { path = "../hyle-compiler" }
+hyle-sole = { path = "../hyle-sole" }

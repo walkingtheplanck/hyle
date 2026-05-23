@@ -1,0 +1,12 @@
+[package]
+name = "hyle-quickstart"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+hyle = { path = "../../crates/hyle" }
+hyle-cpu = { path = "../../crates/backends/hyle-cpu" }

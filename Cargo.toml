@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/hyle",
     "crates/hyle-sole",
     "crates/hyle-compiler",
     "crates/hyle-ffi/hyle-compiler",
@@ -8,8 +9,10 @@ members = [
     "crates/backends/hyle-gpu",
     "crates/tools/hyle-studio",
     "crates/hyle-ffi/hyle-runtime",
+    "examples/quickstart",
 ]
 default-members = [
+    "crates/hyle",
     "crates/hyle-sole",
     "crates/hyle-compiler",
     "crates/hyle-runtime",
